@@ -1,5 +1,7 @@
 # STATUS — Estado verificável do Arke
 
+**M5-HANDLE-01 em andamento:** puxador vertical contínuo e encaixe nos três estados; toque e ações acessíveis preservados. Testes de arrasto/scroll e CI/capturas pendentes. Sem merge/release.
+
 
 **M5-TONES-01 verificado:** fundo/cartão com tons semânticos distintos nas duas plataformas, sem contorno/sombra ou alteração de layout. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41305472522), fonte `a2e4e0b354ef4d79851779cc7f8040a16812af35`. Builds, testes UI/unitários e lint aprovados; oito PNGs inspecionados. Contrato: [M5-TONES-01](engenharia/M5-TONES-01.md). Sem merge/release. Próximo: puxador entre cartões.
 

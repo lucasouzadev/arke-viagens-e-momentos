@@ -21,4 +21,6 @@
     <string name="empty_detail">Em breve, você poderá guardar lugares antes mesmo de criar uma viagem.</string>
     <string name="context_pending">Este espaço está em desenvolvimento.</string>
     <string name="development_notice">Versão de desenvolvimento · nenhum dado salvo</string>
+    <string name="more_map">Mostrar mais mapa</string>
+    <string name="more_content">Expandir conteúdo</string>
 </resources>

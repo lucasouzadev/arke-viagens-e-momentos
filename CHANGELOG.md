@@ -4,6 +4,8 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 ## Projeto em desenvolvimento — 1 de novembro de 2026
 
+- Adicionamos um puxador entre os cartões para ajustar o espaço do mapa; a escolha por toque continua disponível.
+
 - Diferenciamos os tons do fundo e do cartão para preservar sua forma nos modos claro e escuro.
 
 - Organizamos o cabeçalho com adicionar lugar, contexto central e relógio; o salvamento de lugares continua em desenvolvimento.

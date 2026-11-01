@@ -33,3 +33,5 @@
 Dois cartões ocupam quase toda a viewport, separados por pequeno intervalo/puxador. O estado equilibrado é inicial. Arraste **apenas o puxador** para alternar proporção; rolar o conteúdo nunca redimensiona. Respeitar barras/áreas seguras do sistema.
 
 **Composição tonal aprovada em 01/11/2026:** o fundo e o cartão inferior devem ter tons distintos em claro/escuro. iOS: systemGroupedBackground no fundo e secondarySystemGroupedBackground no cartão. Android: surfaceContainerLow no fundo e surface no cartão, sem elevação/sombra. Cores semânticas acompanham o tema; não adicionar outras cores de marca. Remover contorno não significa igualar preenchimentos.
+
+**Puxador autorizado em 01/11/2026:** faixa com indicador e proporção atual, arrasto vertical contínuo restrito à própria faixa, encaixe nas três proporções existentes ao soltar e seletor nativo por toque preservado. Sem animação automática neste recorte; mapa/corpo mantêm seus gestos. Ver [M5-HANDLE-01](../engenharia/M5-HANDLE-01.md).

@@ -1,6 +1,14 @@
 package dev.arke.app
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import kotlin.math.abs
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -43,14 +51,36 @@ fun ArkeHome() {
         ) {
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.tagline), style = MaterialTheme.typography.headlineMedium)
-            val mapWeight = when (state.detent) {
-                PanelDetent.EXPLORE -> 0.65f
-                PanelDetent.BALANCED -> 0.45f
-                PanelDetent.DETAILS -> 0.25f
-            }
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-                val minContentHeight = (160 * LocalDensity.current.fontScale).dp
-                val mapHeight = maxOf(64.dp, minOf(maxHeight * mapWeight, maxHeight - minContentHeight - 64.dp))
+                val density = LocalDensity.current
+                val minContentHeight = (160 * density.fontScale).dp
+                val availableHeight = maxHeight
+                fun heightFor(detent: PanelDetent) = maxOf(64.dp, minOf(availableHeight * when (detent) {
+                    PanelDetent.EXPLORE -> 0.65f
+                    PanelDetent.BALANCED -> 0.45f
+                    PanelDetent.DETAILS -> 0.25f
+                }, availableHeight - minContentHeight - 64.dp))
+                var dragHeight by remember(availableHeight, density.density, density.fontScale) { mutableStateOf<Float?>(null) }
+                val restingHeight = heightFor(state.detent)
+                val maxMapPx = with(density) { maxOf(64.dp, availableHeight - minContentHeight - 64.dp).toPx() }
+                val minMapPx = with(density) { 64.dp.toPx() }
+                val mapHeight = with(density) { dragHeight?.toDp() } ?: restingHeight
+                val dragModifier = Modifier.draggable(
+                    orientation = Orientation.Vertical,
+                    state = rememberDraggableState { delta ->
+                        val current = dragHeight ?: with(density) { restingHeight.toPx() }
+                        dragHeight = (current + delta).coerceIn(minMapPx, maxMapPx)
+                    },
+                    onDragStarted = { dragHeight = with(density) { restingHeight.toPx() } },
+                    onDragStopped = {
+                        val target = dragHeight
+                        if (target != null) {
+                            val closest = PanelDetent.entries.minBy { abs(with(density) { heightFor(it).toPx() } - target) }
+                            state = state.setDetent(closest)
+                        }
+                        dragHeight = null
+                    },
+                )
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Card(
                         modifier = Modifier.fillMaxWidth().height(mapHeight),
@@ -59,7 +89,7 @@ fun ArkeHome() {
                     ) { TravelMap(Modifier.fillMaxSize()) }
 
                     Box(Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                        DetentMenu(state.detent) { state = state.setDetent(it) }
+                        DetentMenu(state.detent, dragModifier) { state = state.setDetent(it) }
                     }
 
                     Card(
@@ -70,7 +100,7 @@ fun ArkeHome() {
                         Column(Modifier.padding(16.dp)) {
                             CardHeader(state.context, { showingAddPlace = true }) { state = state.selectContext(it) }
                             HorizontalDivider(Modifier.padding(vertical = 12.dp))
-                            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                            Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {
                                 Text(
                                     stringResource(if (state.context == TravelContext.PLANNING) R.string.empty_title else state.context.title()),
                                     style = MaterialTheme.typography.titleLarge,
@@ -138,17 +168,30 @@ private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit
 }
 
 @Composable
-private fun DetentMenu(selected: PanelDetent, onSelect: (PanelDetent) -> Unit) {
+private fun DetentMenu(selected: PanelDetent, dragModifier: Modifier, onSelect: (PanelDetent) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val description = stringResource(R.string.change_panel, stringResource(selected.title()))
+    val moreMap = stringResource(R.string.more_map)
+    val moreContent = stringResource(R.string.more_content)
     Box {
         TextButton(
             onClick = { expanded = true },
             colors = ButtonDefaults.textButtonColors(
                 contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
             ),
-            modifier = Modifier.heightIn(min = 48.dp).testTag("home.panelMenu").semantics { contentDescription = description },
-        ) { Text(stringResource(selected.title()) + " ↕", style = MaterialTheme.typography.labelMedium) }
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).then(dragModifier).testTag("home.panelMenu").semantics {
+                contentDescription = description
+                customActions = listOf(
+                    CustomAccessibilityAction(moreMap) { onSelect(PanelDetent.entries[maxOf(0, selected.ordinal - 1)]); true },
+                    CustomAccessibilityAction(moreContent) { onSelect(PanelDetent.entries[minOf(2, selected.ordinal + 1)]); true },
+                )
+            },
+        ) {
+            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(Modifier.size(width = 36.dp, height = 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
+                Text(stringResource(selected.title()), style = MaterialTheme.typography.labelMedium)
+            }
+        }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             PanelDetent.entries.forEach { detent ->
                 DropdownMenuItem(

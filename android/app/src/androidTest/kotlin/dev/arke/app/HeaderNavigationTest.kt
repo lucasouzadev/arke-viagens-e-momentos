@@ -1,5 +1,6 @@
 package dev.arke.app
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -30,4 +31,21 @@ class HeaderNavigationTest {
         compose.onNodeWithText("Entendi").assertDoesNotExist()
         compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
     }
+    @Test fun handleDragsSnapAndBodyScrollDoesNotResize() {
+        val handle = compose.onNodeWithTag("home.panelMenu")
+        handle.performClick()
+        compose.onNodeWithTag("detent.BALANCED").performClick()
+        val distance = compose.onRoot().fetchSemanticsNode().size.height * 0.35f
+        handle.performTouchInput { swipe(center, center + Offset(0f, -distance), 600) }
+        handle.assertContentDescriptionEquals("Ajustar painel. Atual: Detalhes")
+        compose.onNodeWithTag("home.contentBody").performTouchInput { swipeUp() }
+        handle.assertContentDescriptionEquals("Ajustar painel. Atual: Detalhes")
+        compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
+        handle.performTouchInput { swipe(center, center + Offset(0f, distance), 600) }
+        handle.assertContentDescriptionEquals("Ajustar painel. Atual: Explorar")
+        handle.performClick()
+        compose.onNodeWithTag("detent.BALANCED").performClick()
+        handle.assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
+    }
+
 }

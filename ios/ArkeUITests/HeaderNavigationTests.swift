@@ -40,4 +40,31 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertFalse(notice.exists)
         XCTAssertTrue(app.buttons["home.contextMenu"].exists)
     }
+    func testPanelDragSnapsAndBodyScrollDoesNotResize() {
+        let app = XCUIApplication()
+        app.launch()
+        let handle = app.buttons["home.panelMenu"]
+        XCTAssertTrue(handle.waitForExistence(timeout: 15))
+        handle.tap()
+        app.buttons["Equilibrado"].tap()
+        let distance = app.frame.height * 0.35
+        var start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -distance)))
+        expectation(for: NSPredicate(format: "value == %@", "Detalhes"), evaluatedWith: handle)
+        waitForExpectations(timeout: 5)
+        let body = app.scrollViews["home.contentBody"]
+        XCTAssertTrue(body.exists)
+        body.swipeUp()
+        XCTAssertEqual(handle.value as? String, "Detalhes")
+        XCTAssertEqual(app.staticTexts["home.contextTitle"].label, "Planejamento")
+        start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)))
+        expectation(for: NSPredicate(format: "value == %@", "Explorar"), evaluatedWith: handle)
+        waitForExpectations(timeout: 5)
+        handle.tap()
+        app.buttons["Equilibrado"].tap()
+        expectation(for: NSPredicate(format: "value == %@", "Equilibrado"), evaluatedWith: handle)
+        waitForExpectations(timeout: 5)
+    }
+
 }

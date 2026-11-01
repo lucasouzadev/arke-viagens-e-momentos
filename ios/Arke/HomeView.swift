@@ -5,6 +5,7 @@ struct HomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
+    @GestureState private var panelTranslation: CGFloat = 0
     @State private var showingAddPlace = false
     @State private var showingContextPicker = false
     @State private var showingPanelPicker = false
@@ -29,11 +30,13 @@ struct HomeView: View {
                     ))) {}
                         .mapStyle(.standard)
                         .accessibilityLabel("Mapa Apple. Explore o mundo; localização pessoal desativada.")
-                        .frame(height: mapHeight(in: geometry.size.height))
+                        .frame(height: clampedMapHeight(mapHeight(in: geometry.size.height) + panelTranslation, in: geometry.size.height))
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .contentShape(RoundedRectangle(cornerRadius: 20))
 
-                    panelMenu.zIndex(1)
+                    panelMenu
+                        .simultaneousGesture(panelDrag(in: geometry.size.height))
+                        .zIndex(1)
 
                     VStack(spacing: 12) {
                         cardHeader
@@ -54,6 +57,7 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .frame(maxHeight: .infinity)
+                        .accessibilityIdentifier("home.contentBody")
                     }
                     .padding(20)
                     .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
@@ -115,8 +119,11 @@ struct HomeView: View {
 
     private var panelMenu: some View {
         Button { showingPanelPicker = true } label: {
-            Label(state.detent.title, systemImage: "chevron.up.chevron.down")
-                .font(.caption)
+            VStack(spacing: 4) {
+                Capsule().fill(.secondary).frame(width: 36, height: 4)
+                    .accessibilityHidden(true)
+                Text(state.detent.title).font(.caption)
+            }
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .contentShape(Rectangle())
         }
@@ -125,6 +132,16 @@ struct HomeView: View {
         .accessibilityLabel("Ajustar proporção")
         .accessibilityValue(state.detent.title)
         .accessibilityIdentifier("home.panelMenu")
+        .accessibilityHint("Arraste para ajustar ou toque para escolher a proporção.")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: movePanel(towardMap: true)
+            case .decrement: movePanel(towardMap: false)
+            @unknown default: break
+            }
+        }
+        .accessibilityAction(named: "Mostrar mais mapa") { movePanel(towardMap: true) }
+        .accessibilityAction(named: "Expandir conteúdo") { movePanel(towardMap: false) }
         .confirmationDialog("Proporção atual: \(state.detent.title)", isPresented: $showingPanelPicker, titleVisibility: .visible) {
             ForEach(PanelDetent.allCases, id: \.self) { detent in
                 Button(detent.title + (detent == state.detent ? " ✓" : "")) {
@@ -141,17 +158,44 @@ struct HomeView: View {
         colorScheme == .dark ? AnyShapeStyle(Color(uiColor: .label)) : AnyShapeStyle(.tint)
     }
 
-    private func mapHeight(in height: CGFloat) -> CGFloat {
-        max(64, min(height * mapFraction, height - minimumContentHeight - 60))
+    private func panelDrag(in height: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .global)
+            .updating($panelTranslation) { value, translation, _ in
+                translation = value.translation.height
+            }
+            .onEnded { value in
+                let target = clampedMapHeight(mapHeight(in: height) + value.translation.height, in: height)
+                let closest = PanelDetent.allCases.min {
+                    abs(mapHeight(for: $0, in: height) - target) < abs(mapHeight(for: $1, in: height) - target)
+                }
+                if let closest { detentValue = closest.rawValue }
+            }
     }
 
-    private var mapFraction: CGFloat {
-        switch state.detent {
-        case .explore: 0.65
-        case .balanced: 0.45
-        case .details: 0.25
-        }
+    private func movePanel(towardMap: Bool) {
+        let ordered: [PanelDetent] = [.details, .balanced, .explore]
+        guard let index = ordered.firstIndex(of: state.detent) else { return }
+        detentValue = ordered[min(2, max(0, index + (towardMap ? 1 : -1)))].rawValue
     }
+
+    private func clampedMapHeight(_ value: CGFloat, in height: CGFloat) -> CGFloat {
+        max(64, min(value, height - minimumContentHeight - 60))
+    }
+
+    private func mapHeight(in height: CGFloat) -> CGFloat {
+        mapHeight(for: state.detent, in: height)
+    }
+
+    private func mapHeight(for detent: PanelDetent, in height: CGFloat) -> CGFloat {
+        let fraction: CGFloat
+        switch detent {
+        case .explore: fraction = 0.65
+        case .balanced: fraction = 0.45
+        case .details: fraction = 0.25
+        }
+        return clampedMapHeight(height * fraction, in: height)
+    }
+
 }
 
 private extension TravelContext {

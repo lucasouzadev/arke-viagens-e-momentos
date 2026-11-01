@@ -92,3 +92,5 @@
 A documentação original não implementou aplicativo. A branch inicial de desenvolvimento acrescenta bases nativas e workflow de verificação, ainda sujeitos às evidências de [STATUS](STATUS.md). Sem release ou modal implementado.
 
 - [M5-TONES-01 — composição tonal](engenharia/M5-TONES-01.md): diferenciação das superfícies sem contornos.
+
+- [M5-HANDLE-01 — puxador](engenharia/M5-HANDLE-01.md): arrasto da faixa entre cartões.
