@@ -149,3 +149,5 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-HEADER-01](engenharia/M5-HEADER-01.md) | +/contexto central/relógio, cabeçalho fora do scroll | Implementado no PR #2; testes de toque e oito capturas verificados, sem merge |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.
+
+| [M5-TONES-01](engenharia/M5-TONES-01.md) | Fundo/cartão em tons semânticos distintos | CI e oito PNGs verificados no PR #2, sem merge |

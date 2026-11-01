@@ -90,3 +90,5 @@
 **ADRs aceitos e decisões explícitas** → especificações aprovadas → propostas → tarefas/roadmap → STATUS factual → HANDOFF contextual. README e CHANGELOG comunicam o projeto e **não devem impor comportamento técnico novo**.
 
 A documentação original não implementou aplicativo. A branch inicial de desenvolvimento acrescenta bases nativas e workflow de verificação, ainda sujeitos às evidências de [STATUS](STATUS.md). Sem release ou modal implementado.
+
+- [M5-TONES-01 — composição tonal](engenharia/M5-TONES-01.md): diferenciação das superfícies sem contornos.

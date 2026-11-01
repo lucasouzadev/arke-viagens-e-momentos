@@ -1,7 +1,7 @@
 # HANDOFF — Continuidade entre agents
 
 
-**M5-TONES-01 em validação:** diferenciação de fundo/cartão por cores semânticas nas duas plataformas, autorizada no chat. Sem contornos/sombras ou mudanças de layout. Contrato: docs/engenharia/M5-TONES-01.md.
+**M5-TONES-01 verificado:** fundo/cartão com tons semânticos distintos nas duas plataformas, sem contorno/sombra ou alteração de layout. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41305472522), fonte `a2e4e0b354ef4d79851779cc7f8040a16812af35`. Builds, testes UI/unitários e lint aprovados; oito PNGs inspecionados. Contrato: [M5-TONES-01](../engenharia/M5-TONES-01.md). Sem merge/release. Próximo: puxador entre cartões.
 
 **Função:** protocolo e registro do **último handoff conhecido**. O progresso canônico de milestones fica em [STATUS](../STATUS.md); a ordem de execução fica em [ROADMAP](../ROADMAP.md). Esses três documentos têm responsabilidades distintas.
 
