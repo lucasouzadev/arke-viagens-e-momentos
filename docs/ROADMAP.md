@@ -144,7 +144,7 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | Tarefa | Entrega | Estado |
 | --- | --- | --- |
 | [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md) | Bases SwiftUI/Compose, home inicial, testes e CI | Builds/testes aprovados; revisão visual/acessibilidade pendentes no PR #2 |
-| [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) | Apple Maps iOS, Google Maps Android e capturas reais de simuladores | 8 PNGs inspecionados e CI aprovada; mapa Google real bloqueado por chave/projeto; contraste escuro pendente |
-| M5-UI-02, no contrato M5-PREVIEW-01 | Cartões sem contorno e correção de labels no escuro | Em andamento, autorizado em 01/11/2026; novos builds/capturas pendentes |
+| [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) | Apple Maps iOS, Google Maps Android e capturas reais de simuladores | 8 PNGs originais inspecionados e CI aprovada; mapa Google real bloqueado por chave/projeto; contraste tratado em M5-UI-02 |
+| M5-UI-02, no contrato M5-PREVIEW-01 | Cartões sem contorno e correção de labels no escuro | Implementado/verificado em CI e 8 PNGs; disponível no PR #2, sem merge |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.

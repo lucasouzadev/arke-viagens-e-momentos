@@ -12,6 +12,10 @@
 
 Primeira verificação de M5-UI-02: [execução](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41272639484), fonte `b9b0a98`, builds/testes/capturas aprovados nas duas plataformas. Oito PNGs inspecionados: contornos removidos em ambos; labels Android escuros corrigidos. No iOS, `.primary` hierárquico ainda herdou o tint azul do menu; substituído por `Color(uiColor: .label)` explícito. Nova captura iOS necessária antes de declarar contraste corrigido.
 
+**Resultado M5-UI-02:** implementado e verificado em [CI/capturas](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41273311115), fonte `0683e8e1df10ef5bd2e53f381aa52bb71ed2cebb`. Build/testes iOS e Android, lint Android e captura dos dois simuladores aprovados. Oito PNGs atuais inspecionados: cartões sem contorno/sombra, superfícies/spacing preservados, Apple Maps com atribuição e fallback Google sem chave preservados; labels dos dois sistemas escuros aparecem claros. Originais entregues no chat, em claro/escuro e padrão/compacto, sem retoques.
+
+**Gates finais deste ajuste:** G-01/02/03/04 PASSOU no escopo; G-05/06 PASSOU para estado inicial estático nas quatro configurações de M5-PREVIEW-01; G-07 PASSOU para a correção visual de labels escuros, sem declarar aprovação global de a11y (leitores de tela, foco e fonte ampliada NÃO EXECUTADOS); G-08/09/10 NÃO APLICÁVEIS a novos dados/rede/licenças, pois não houve alteração nessas áreas; G-11 profiling NÃO EXECUTADO; G-12 PASSOU para build/testes existentes e smoke/capturas, sem testes novos para estilos; G-13/14/15 PASSOU no recorte. Avisos anteriores de lint e bloqueios de distribuição/Google Cloud permanecem. Sem merge/release. Próximo passo: interações e acessibilidade, sem aprovar marca final ou contratos de Pin por associação.
+
 ---
 
 **Data:** 31/10/2026 · **Estado:** capturas reais geradas e inspecionadas; Google Maps real bloqueado por configuração externa; contraste escuro pendente.
