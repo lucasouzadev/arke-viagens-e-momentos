@@ -61,4 +61,5 @@
     <string name="place_position">Lugar %1$d de %2$d</string>
     <string name="place_unavailable">Este lugar não está mais disponível.</string>
     <string name="place_detail_notice">Ideia salva neste aparelho. O endereço ainda não está associado ao mapa.</string>
+    <string name="view_place_details_label">Ver detalhes de %1$s</string>
 </resources>

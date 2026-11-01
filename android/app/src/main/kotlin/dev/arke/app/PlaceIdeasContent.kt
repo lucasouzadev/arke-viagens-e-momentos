@@ -42,9 +42,12 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onDelete: (String) -> Unit) {
                 Text(idea.name, style = MaterialTheme.typography.titleMedium)
                 Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (idea.note.isNotEmpty()) Text(idea.note)
-                TextButton(onClick = { selectedID = idea.id }, modifier = Modifier.heightIn(min = 48.dp)
-                    .testTag("place.open.${idea.id}").semantics { contentDescription = "Ver detalhes de ${idea.name}" }) {
-                    Text(stringResource(R.string.view_place_details))
+                val openLabel = stringResource(R.string.view_place_details_label, idea.name)
+                TextButton(onClick = { selectedID = idea.id },
+                    colors = ButtonDefaults.textButtonColors(contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary),
+                    contentPadding = PaddingValues(0.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) {
+                    Text(stringResource(R.string.view_place_details), Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                 }
                 val deleteLabel = stringResource(R.string.delete_place) + ": " + idea.name
                 TextButton(

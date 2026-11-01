@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PlaceIdeasContent: View {
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: PlaceIdeasStore
     let onDelete: (String) -> Void
     @State private var deleting: PlaceIdea?
@@ -18,8 +19,13 @@ struct PlaceIdeasContent: View {
                         Text(idea.name).arkeText(.contextTitle)
                         Text(idea.address).foregroundStyle(.secondary)
                         if !idea.note.isEmpty { Text(idea.note) }
-                        Button("Ver detalhes") { selected = idea }
-                            .frame(minHeight: 48)
+                        Button { selected = idea } label: {
+                            Text("Ver detalhes").arkeText(.button)
+                                .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
+                                .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                            .buttonStyle(.plain)
                             .accessibilityLabel("Ver detalhes de \(idea.name)")
                             .accessibilityIdentifier("place.open.\(idea.id)")
                         Button("Excluir lugar", role: .destructive) { deleting = idea }
