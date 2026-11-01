@@ -1,6 +1,7 @@
 package dev.arke.app
 
 import androidx.compose.ui.geometry.Offset
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -90,6 +91,26 @@ class HeaderNavigationTest {
         handle.performClick()
         compose.onNodeWithTag("detent.BALANCED").performClick()
         handle.assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
+    }
+
+    @Test fun longDetailsScrollWhileActionsRemainReachable() {
+        val idea = dev.arke.core.PlaceIdea.from(dev.arke.core.PlaceDraft(
+            id = "long-detail", name = "Jardim de teste", address = "Entrada principal",
+            note = "Caminhar pelos jardins e descobrir novos caminhos. ".repeat(18),
+        ))
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.setContent {
+                androidx.compose.material3.MaterialTheme(typography = ArkeTypography) {
+                    PlaceDetails(listOf(idea), idea.id, onClose = {})
+                }
+            }
+        }
+        val body = compose.onNodeWithTag("detail.body")
+        val range = body.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange]
+        org.junit.Assert.assertTrue(range.maxValue() > 0f)
+        body.performTouchInput { swipeUp() }
+        org.junit.Assert.assertTrue(range.value() > 0f)
+        compose.onNodeWithTag("detail.close").assertIsDisplayed().performClick()
     }
 
     @Test fun detailsHaveFiniteNavigationAndSurviveRecreation() {

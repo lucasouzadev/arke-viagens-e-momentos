@@ -4,6 +4,8 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 ## Projeto em desenvolvimento — 1 de novembro de 2026
 
+- Reorganizamos os detalhes dos lugares em um painel mais compacto, com informações agrupadas e botões arredondados.
+
 - Simplificamos os detalhes dos lugares, com ícones, informações extras por toque e botões de navegação preenchidos.
 
 - Preparamos a leitura dos detalhes de lugares salvos, com navegação entre ideias e retorno à tela anterior.

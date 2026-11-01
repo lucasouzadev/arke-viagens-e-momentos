@@ -61,6 +61,7 @@ struct PlaceDetails: View {
     let onClose: () -> Void
     @State private var selectedID: String
     @State private var showingInfo = false
+    @State private var contentHeight: CGFloat = 280
 
     init(ideas: [PlaceIdea], initialID: String, onClose: @escaping () -> Void) {
         self.ideas = ideas
@@ -76,7 +77,8 @@ struct PlaceDetails: View {
             HStack(spacing: 8) {
                 Button(action: onClose) {
                     Image(systemName: "xmark").font(.system(size: 20, weight: .medium))
-                        .frame(width: 48, height: 48).contentShape(Rectangle())
+                        .frame(width: 48, height: 48)
+                        .background(ArkeUI.insetSurface(colorScheme), in: Circle()).contentShape(Circle())
                 }.accessibilityLabel("Fechar").accessibilityIdentifier("detail.close")
                 VStack(spacing: 0) {
                     Text("Seus lugares").arkeText(.contextTitle).accessibilityAddTraits(.isHeader)
@@ -89,7 +91,8 @@ struct PlaceDetails: View {
                 }.frame(maxWidth: .infinity)
                 Button { showingInfo = true } label: {
                     Image(systemName: "info.circle").font(.system(size: 22))
-                        .frame(width: 48, height: 48).contentShape(Rectangle())
+                        .frame(width: 48, height: 48)
+                        .background(ArkeUI.insetSurface(colorScheme), in: Circle()).contentShape(Circle())
                 }
                 .accessibilityLabel("Informações sobre este lugar").accessibilityIdentifier("detail.info")
                 .popover(isPresented: $showingInfo) {
@@ -105,24 +108,33 @@ struct PlaceDetails: View {
                     .foregroundStyle(ink).frame(width: 240, alignment: .leading).padding(20)
                     .presentationCompactAdaptation(.popover)
                 }
-            }.padding(.top, 24)
+            }.padding(.top, 16)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     if let index {
                         let idea = ideas[index]
-                        Text(idea.name).arkeText(.screenTitle).accessibilityAddTraits(.isHeader)
+                        Text(idea.name).arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
                             .accessibilityIdentifier("detail.name")
-                        contentRow(icon: "mappin", value: idea.address, label: "Endereço", identifier: "detail.address")
-                        if !idea.note.isEmpty {
-                            contentRow(icon: "text.alignleft", value: idea.note, label: "Nota", identifier: "detail.note")
+                        VStack(alignment: .leading, spacing: 20) {
+                            contentRow(icon: "mappin", value: idea.address, label: "Endereço", identifier: "detail.address")
+                            if !idea.note.isEmpty {
+                                contentRow(icon: "text.alignleft", value: idea.note, label: "Nota", identifier: "detail.note")
+                            }
                         }
+                        .padding(20).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
                     } else {
                         Text("Este lugar não está mais disponível.").arkeText(.body)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 24).padding(.bottom, 48)
+                .background { GeometryReader { proxy in
+                    Color.clear.preference(key: DetailContentHeight.self, value: proxy.size.height)
+                } }
             }
             .id(selectedID).accessibilityIdentifier("detail.body")
+            .onPreferenceChange(DetailContentHeight.self) { height in
+                if abs(contentHeight - height) > 1 { contentHeight = height }
+            }
             .mask {
                 VStack(spacing: 0) {
                     Rectangle()
@@ -136,7 +148,7 @@ struct PlaceDetails: View {
         }
         .buttonStyle(.plain).foregroundStyle(ink).padding(.horizontal, 20)
         .background(ArkeUI.sheetSurface(colorScheme))
-        .presentationDetents([.fraction(0.94)]).presentationDragIndicator(.visible)
+        .presentationDetents([.height(max(300, contentHeight + 144))]).presentationDragIndicator(.visible)
         .presentationCornerRadius(28).presentationBackground(ArkeUI.sheetSurface(colorScheme))
     }
 
@@ -146,7 +158,7 @@ struct PlaceDetails: View {
             Text(value).arkeText(.body).accessibilityLabel("\(label): \(value)")
                 .accessibilityIdentifier(identifier).frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(16).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 12))
+
     }
 
     private func navigation(_ title: String, offset: Int, enabled: Bool, id: String, primary: Bool) -> some View {
@@ -155,16 +167,21 @@ struct PlaceDetails: View {
         } label: {
             Text(title).arkeText(.button).foregroundStyle(primary ? .white : ink)
                 .frame(maxWidth: .infinity, minHeight: 48)
-                .background(primary ? ArkeUI.blue : ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 12))
+                .background(primary ? ArkeUI.blue : ArkeUI.insetSurface(colorScheme), in: Capsule())
                 .contentShape(Rectangle())
         }.disabled(!enabled).opacity(enabled ? 1 : 0.4).accessibilityIdentifier(id)
     }
 }
 
+private struct DetailContentHeight: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 #if DEBUG
 enum DetailCapture {
     static let ideas = [
-        PlaceIdea(draft: PlaceDraft(id: "capture-garden", name: "Jardim das descobertas", address: "Entrada principal, perto da praça central", note: "Chegar pela manhã, caminhar pelos jardins e reservar um tempo para um café.")),
+        PlaceIdea(draft: PlaceDraft(id: "capture-garden", name: "Jardim das descobertas", address: "Entrada principal, perto da praça central", note: ProcessInfo.processInfo.arguments.contains("--test-long-detail") ? String(repeating: "Caminhar pelos jardins e descobrir novos caminhos. ", count: 18) : "Chegar pela manhã, caminhar pelos jardins e reservar um tempo para um café.")),
         PlaceIdea(draft: PlaceDraft(id: "capture-museum", name: "Museu dos caminhos", address: "Avenida das ideias, 100"))
     ]
 }

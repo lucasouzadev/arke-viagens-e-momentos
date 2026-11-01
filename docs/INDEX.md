@@ -105,3 +105,5 @@ A documentação original não implementou aplicativo. A branch inicial de desen
 - [M5-DETAILS-01](engenharia/M5-DETAILS-01.md): seleção e leitura de ideias salvas.
 
 - [M5-DETAILS-UI-02](engenharia/M5-DETAILS-UI-02.md): detalhes mais limpos, ícones e informação por toque.
+
+- [M5-DETAILS-UI-03 — Sheet compacto](engenharia/M5-DETAILS-UI-03.md).

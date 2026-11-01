@@ -134,6 +134,23 @@ final class HeaderNavigationTests: XCTestCase {
         waitForExpectations(timeout: 5)
     }
 
+    func testLongDetailsScrollWhileActionsRemainReachable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--capture-place-details", "--test-long-detail"]
+        app.launch()
+        let note = app.staticTexts["detail.note"]
+        XCTAssertTrue(note.waitForExistence(timeout: 15))
+        let body = app.scrollViews["detail.body"]
+        XCTAssertGreaterThan(note.frame.maxY, body.frame.maxY)
+        let originalY = note.frame.minY
+        body.swipeUp()
+        XCTAssertLessThan(note.frame.minY, originalY)
+        XCTAssertTrue(app.buttons["detail.next"].isHittable)
+        XCTAssertTrue(app.buttons["detail.close"].isHittable)
+        app.buttons["detail.next"].tap()
+        XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
+    }
+
     func testDetailsHaveFiniteNavigationAndReturnToHome() {
         let app = XCUIApplication()
         app.launchArguments = ["--capture-place-details"]
@@ -149,8 +166,11 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["detail.position"].label, "Lugar 1 de 2")
         XCTAssertFalse(app.buttons["detail.previous"].isEnabled)
         XCTAssertLessThan(app.buttons["detail.close"].frame.midX, app.staticTexts["detail.title"].frame.midX)
+        let firstCloseY = app.buttons["detail.close"].frame.minY
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
+        expectation(for: NSPredicate(format: "frame.origin.y > %f", firstCloseY + 20), evaluatedWith: app.buttons["detail.close"])
+        waitForExpectations(timeout: 5)
         XCTAssertEqual(app.staticTexts["detail.position"].label, "Lugar 2 de 2")
         XCTAssertFalse(app.buttons["detail.next"].isEnabled)
         XCTAssertFalse(app.staticTexts["detail.note"].exists)

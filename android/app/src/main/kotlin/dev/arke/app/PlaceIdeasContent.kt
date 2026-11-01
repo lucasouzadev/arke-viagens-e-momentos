@@ -6,6 +6,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
@@ -92,9 +94,9 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
             }
         },
     ) {
-        Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).padding(horizontal = 20.dp)) {
+        Column(Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.9f).dp).padding(horizontal = 20.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose, modifier = Modifier.size(48.dp).testTag("detail.close")) {
+                IconButton(onClick = onClose, modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.close")) {
                     Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_details), tint = ink)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -108,7 +110,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                     }
                 }
                 Box {
-                    IconButton(onClick = { showingInfo = true }, modifier = Modifier.size(48.dp).testTag("detail.info")) {
+                    IconButton(onClick = { showingInfo = true }, modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.info")) {
                         Icon(painterResource(R.drawable.ic_info), stringResource(R.string.detail_info_label), tint = ink)
                     }
                     DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
@@ -122,7 +124,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                 }
             }
             key(selectedID) {
-                Column(Modifier.fillMaxWidth().weight(1f).drawWithContent {
+                Column(Modifier.fillMaxWidth().weight(1f, fill = false).drawWithContent {
                     drawContent()
                     drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
                         startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f), endY = size.height))
@@ -130,21 +132,24 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                     verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     if (index >= 0) {
                         val idea = ideas[index]
-                        Text(idea.name, style = MaterialTheme.typography.headlineMedium,
+                        Text(idea.name, style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.testTag("detail.name").semantics { heading() })
-                        DetailContentRow(idea.address, R.drawable.ic_pin, stringResource(R.string.place_address), "detail.address")
-                        if (idea.note.isNotEmpty()) DetailContentRow(idea.note, R.drawable.ic_note, stringResource(R.string.place_note), "detail.note")
+                        Column(Modifier.fillMaxWidth().background(insetColor, RoundedCornerShape(24.dp)).padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                            DetailContentRow(idea.address, R.drawable.ic_pin, stringResource(R.string.place_address), "detail.address")
+                            if (idea.note.isNotEmpty()) DetailContentRow(idea.note, R.drawable.ic_note, stringResource(R.string.place_note), "detail.note")
+                        }
                     } else Text(stringResource(R.string.place_unavailable))
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Button(onClick = { if (index > 0) selectedID = ideas[index - 1].id }, enabled = index > 0,
                     colors = ButtonDefaults.buttonColors(containerColor = insetColor, contentColor = ink),
-                    shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.previous")) {
+                    shape = CircleShape, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.previous")) {
                     Text(stringResource(R.string.previous_place))
                 }
                 Button(onClick = { if (index >= 0 && index + 1 < ideas.size) selectedID = ideas[index + 1].id },
-                    enabled = index >= 0 && index + 1 < ideas.size, shape = RoundedCornerShape(12.dp),
+                    enabled = index >= 0 && index + 1 < ideas.size, shape = CircleShape,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.next")) { Text(stringResource(R.string.next_place)) }
             }
         }
@@ -153,7 +158,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
 
 @Composable
 private fun DetailContentRow(value: String, icon: Int, label: String, tag: String) {
-    Row(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(12.dp)).padding(16.dp),
+    Row(Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
         Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(24.dp))
         Text(value, style = MaterialTheme.typography.bodyLarge,
