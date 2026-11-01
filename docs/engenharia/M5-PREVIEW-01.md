@@ -1,7 +1,7 @@
 # M5-PREVIEW-01 — Mapas por plataforma e capturas reais
 
-**Data:** 31/10/2026 · **Estado:** em andamento.  
-**Branch/PR:** `chore/development-kickoff`, PR #2.  
+**Data:** 31/10/2026 · **Estado:** capturas reais geradas e inspecionadas; Google Maps real bloqueado por configuração externa; contraste escuro pendente.
+**Branch/PR:** `chore/development-kickoff`, PR #2.
 **Autorização:** pedido no chat para executar simuladores, mostrar o app e usar Apple Maps no iOS e Google Maps no Android; [ADR-010](../decisoes/ADR-010.md).
 
 ## Contrato
@@ -21,10 +21,43 @@ O responsável confirmou que ainda não possui o projeto Google Cloud. Logo, **m
 
 ## Aceite e gates
 
-- [ ] Compilação e testes nativos mantidos aprovados.
-- [ ] Capturas iOS/Android reais, sem tela de launcher/splash/crash.
-- [ ] Revisão visual dos PNGs e registro de plataforma/tema/limites.
-- [ ] PNGs entregues no chat; não confundir com mockup.
-- [ ] STATUS/HANDOFF/ROADMAP/PR atualizados.
+- [x] Compilação, testes nativos e lint Android aprovados.
+- [x] Capturas iOS/Android reais, sem tela de launcher/splash/crash.
+- [x] Oito PNGs inspecionados, modelos/dimensões abaixo; nenhuma imagem reconstruída ou retocada.
+- [x] PNGs organizados para entrega no chat e ZIP; não são mockups.
+- [x] STATUS/HANDOFF/ROADMAP/PR atualizados com evidências e limites.
 
-G-01/02: revisão de escopo e ADR-010; G-03/04: compiladores/lint pendentes; G-05/06: capturas pendentes; G-07: leitor de tela e fonte ampliada NÃO EXECUTADOS; G-08: revisão de fonte sem GPS/chaves, aguardando CI; G-09: uso de mapas/termos requer revisão antes de distribuição, sem declaração de conformidade; G-10: persistência/sync NÃO APLICÁVEIS; G-11: profiling NÃO EXECUTADO; G-12: smoke de lançamento/capturas pendentes; G-13: artifacts apenas PNGs, execução pendente; G-14: atualizar ao concluir; G-15: configurado no chat, valor ausente dos arquivos.
+| Gate | Resultado no recorte |
+| --- | --- |
+| G-01/02 | PASSOU: ADR-010, dois cartões e stacks nativas preservados |
+| G-03/04 | PASSOU no recorte automatizado: build/testes das duas plataformas e lint Android, 0 erros/5 avisos anteriores |
+| G-05 | PASSOU para abertura/estado inicial nas imagens; menus, arrasto e fluxos de Pin NÃO EXECUTADOS |
+| G-06 | PASSOU para renderização estática nas quatro configurações/two themes abaixo; tablet, landscape, IME e fonte ampliada NÃO EXECUTADOS |
+| G-07 | FALHOU na meta interna de contraste para texto azul no escuro: candidato #4C728A sobre superfície Android escura cerca de 3,62:1, abaixo de 4,5:1. Leitores de tela/foco NÃO EXECUTADOS. Não aprovar identidade visual com base nestas capturas |
+| G-08 | PASSOU parcial em revisão: sem GPS/chave versionada/dados pessoais; câmera mundial e atribuição nativa visível. Não é pentest ou auditoria de SDK |
+| G-09 | BLOQUEADO para distribuição: termos/custos/privacy e licença final ainda requerem revisão; Google Cloud/chave não configurados |
+| G-10 | NÃO APLICÁVEL: sem dados de viagem persistidos/sync |
+| G-11 | NÃO EXECUTADO: sem profiling |
+| G-12 | PASSOU para testes unitários, build e smoke de lançamento/captura. E2E de interações NÃO EXECUTADO |
+| G-13 | PASSOU: PNGs gerados e publicados como artifacts por 7 dias, sem APK/IPA |
+| G-14 | PASSOU: documentos e PR reconciliados |
+| G-15 | PASSOU: configuração privada aplicada no chat; valor ausente dos arquivos |
+
+## Evidências e matriz capturada
+
+[Execução aprovada](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41265098608), fonte `4128e2e02a652de5e3cf630f52062cdb0f1cb32c`. iOS: Xcode 16.4/Swift 6.1.2, 3 testes sem falhas e build Simulator aprovado. Android: testes Kotlin, lint e assembleDebug aprovados. Scripts com sintaxe Bash validada; manifest XML e links documentais conferidos.
+
+| Dispositivo/configuração | PNG | Temas |
+| --- | --- | --- |
+| iPhone 16 Simulator | 1179 × 2556 | claro e escuro |
+| iPhone SE (3ª geração) Simulator | 750 × 1334 | claro e escuro |
+| Pixel 6 Emulator, API 35, Google APIs | 1080 × 2400 | claro e escuro |
+| Mesmo emulador com viewport/densidade compactos | 720 × 1280, 320 dpi | claro e escuro |
+
+Inspeção: Apple Maps efetivamente renderizado nos quatro PNGs iOS, com logo/legal preservados. Android executou o fallback sem chave nos quatro PNGs; **não comprova mapa Google autenticado**. Textos/botões iniciais visíveis, corpo inferior rolável em compacto, sem sobreposição aparente nesta amostra. Não houve interação automatizada com menus/pan/zoom, teste de rolagem até o fim ou avaliação manual de acessibilidade.
+
+Artifacts: `ios-screenshots` (13066724575) e `android-screenshots` (13067176208), retenção até 07/11/2026 à noite no fuso America/Sao_Paulo. Originais baixados para entrega; não versionar PNGs de fornecedor como assets do produto.
+
+## Próxima ação
+
+Ajustar o uso do azul em textos/controles no modo escuro sem aprovar um HEX final por suposição; validar contraste e leitores de tela. Configurar Google Cloud/chave restrita apenas quando o responsável avançar essa etapa. Depois testar pan/zoom, fallbacks de rede, rotação, fonte ampliada e demais interações. Nenhum merge ou release nesta tarefa.

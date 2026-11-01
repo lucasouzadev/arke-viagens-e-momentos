@@ -4,7 +4,7 @@
 
 O Arke é um projeto aberto de planejamento de viagens solo e em grupo. Pins, roteiros, gastos, metas de economia, avaliações e memórias compõem uma única experiência centrada no mapa.
 
-> **Estado atual nesta branch:** fundação iOS/Android em desenvolvimento, com SwiftUI, Compose e workflow de compilação no GitHub Actions. Mapas e recursos de viagem ainda não estão implementados. Nenhuma versão está disponível para instalar. [Autorização e limites](docs/decisoes/ADR-009.md).
+> **Estado atual nesta branch:** fundação iOS/Android em desenvolvimento, com SwiftUI, Compose e verificação no GitHub Actions. Apple Maps inicial integrado; Google Maps preparado, aguardando configuração privada. Oito capturas reais foram geradas em simuladores. Recursos de viagem e revisão de acessibilidade continuam pendentes. Nenhuma versão está disponível para instalar. [Fundação](docs/decisoes/ADR-009.md) · [Mapas e capturas](docs/decisoes/ADR-010.md).
 
 ## Princípios aprovados
 

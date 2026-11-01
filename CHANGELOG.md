@@ -5,7 +5,7 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 ## Projeto em desenvolvimento — 31 de outubro de 2026
 
 - Escolhemos Apple Maps para iPhone e Google Maps para Android; a configuração Android ainda está pendente.
-- Estamos preparando capturas reais das primeiras telas nos simuladores.
+- Geramos capturas reais das primeiras telas em iPhone e Android, em claro e escuro; o mapa Apple já aparece no iPhone.
 - Começamos a preparar o aplicativo para iPhone e Android ao mesmo tempo.
 - Criamos a primeira estrutura da tela com mapa e informações em dois cartões; os recursos ainda estão em desenvolvimento.
 - Preparamos verificações automáticas para acompanhar a construção das duas versões.

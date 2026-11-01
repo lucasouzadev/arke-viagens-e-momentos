@@ -17,7 +17,7 @@ Registros históricos importantes devem ficar em comentários de PR ou arquivos 
 
 ## Última passagem registrada — 31/10/2026
 
-**Atualização em andamento:** M5-PREVIEW-01 autorizado no chat, mesma branch/PR. Apple Maps/MapKit inicial e Google Maps Compose 6.4.1 com fallback sem chave preparados. O responsável ainda não tem projeto Google Cloud; não criar conta, faturamento ou secret. Workflow ampliado para abrir simuladores e gerar PNGs claro/escuro em telas padrão/compacta; capturas ainda pendentes. Ver [contrato](../engenharia/M5-PREVIEW-01.md) e [ADR-010](../decisoes/ADR-010.md). Próxima ação: executar CI, baixar PNGs, inspecionar e entregar imagens reais no chat.
+**Atualização M5-PREVIEW-01:** mesma branch/PR, [execução aprovada](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41265098608), fonte `4128e2e`. MapKit inicial renderizado no iPhone 16 e SE; Google Maps Compose 6.4.1 compilado, fallback sem chave executado em Pixel 6 Emulator API 35/padrão/compacto. Oito PNGs originais claro/escuro baixados e inspecionados, sem launcher/splash/crash; atribuição Apple preservada. O responsável ainda não tem Google Cloud; não criar conta, faturamento ou secret. Ver [contrato/matriz](../engenharia/M5-PREVIEW-01.md) e [ADR-010](../decisoes/ADR-010.md). Próximo passo: corrigir contraste do azul em textos no escuro (aprox. 3,62:1 em superfície Android), validar leitores de tela e interações; Google real continua dependendo da configuração externa. Nenhum merge/release. O histórico da fundação abaixo corresponde ao recorte anterior.
 
 **Tarefa:** M5-BOOTSTRAP-01 · **Branch:** `chore/development-kickoff`.
 **Base verificada:** `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`.
