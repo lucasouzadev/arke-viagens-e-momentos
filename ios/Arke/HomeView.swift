@@ -87,7 +87,7 @@ struct HomeView: View {
         }
         #if DEBUG
         .sheet(isPresented: $showingDetailPreview) {
-            PlaceDetails(ideas: DetailCapture.ideas, initialID: DetailCapture.ideas[0].id, onClose: { showingDetailPreview = false })
+            PlaceDetails(ideas: DetailCapture.ideas, initialID: DetailCapture.ideas[ProcessInfo.processInfo.arguments.contains("--capture-short-detail") ? 1 : 0].id, onClose: { showingDetailPreview = false })
         }
         #endif
         .sheet(isPresented: $showingAddPlace) {

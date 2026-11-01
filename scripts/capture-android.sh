@@ -76,6 +76,26 @@ if any(n.get('package') == 'android' for n in nodes):
 if not any(n.get('text') == 'Jardim das descobertas' for n in nodes):
     raise SystemExit('Place details are not visible')
 PYDETAILS
+    python3 - "$output/android-details-${size}-${theme}.xml" > "$output/next-target.txt" <<'PYNEXT'
+import re, sys, xml.etree.ElementTree as ET
+nodes = [n for n in ET.parse(sys.argv[1]).iter('node') if n.get('text') == 'Próximo']
+if len(nodes) != 1:
+    raise SystemExit('Expected one next-place control')
+x1, y1, x2, y2 = map(int, re.findall(r'\d+', nodes[0].get('bounds', '')))
+print((x1 + x2) // 2, (y1 + y2) // 2)
+PYNEXT
+    read -r tap_x tap_y < "$output/next-target.txt"
+    adb shell input tap "$tap_x" "$tap_y"
+    sleep 3
+    adb shell uiautomator dump /sdcard/arke-short-details.xml
+    adb pull /sdcard/arke-short-details.xml "$output/android-details-short-${size}-${theme}.xml"
+    adb exec-out screencap -p > "$output/android-details-short-${size}-${theme}.png"
+    python3 - "$output/android-details-short-${size}-${theme}.xml" <<'PYSHORT'
+import sys, xml.etree.ElementTree as ET
+nodes = list(ET.parse(sys.argv[1]).iter('node'))
+if any(n.get('package') == 'android' for n in nodes) or not any(n.get('text') == 'Museu dos caminhos' for n in nodes):
+    raise SystemExit('Short place details are not visible')
+PYSHORT
   done
 done
 adb shell wm size reset

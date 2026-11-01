@@ -7,7 +7,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
@@ -84,6 +85,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
     val sheetColor = arkeSheetColor()
     val insetColor = arkeInsetColor()
     val ink = MaterialTheme.colorScheme.onSurface
+    val maximumHeight = with(LocalDensity.current) { (LocalWindowInfo.current.containerSize.height * 0.9f).toDp() }
     ModalBottomSheet(
         onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = sheetColor, tonalElevation = 0.dp,
@@ -94,7 +96,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
             }
         },
     ) {
-        Column(Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.9f).dp).padding(horizontal = 20.dp)) {
+        Column(Modifier.fillMaxWidth().heightIn(max = maximumHeight).padding(horizontal = 20.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onClose, modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.close")) {
                     Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_details), tint = ink)

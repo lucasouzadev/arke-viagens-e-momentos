@@ -127,14 +127,11 @@ struct PlaceDetails: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 24).padding(.bottom, 48)
-                .background { GeometryReader { proxy in
-                    Color.clear.preference(key: DetailContentHeight.self, value: proxy.size.height)
-                } }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                    if abs(contentHeight - height) > 1 { contentHeight = height }
+                }
             }
             .id(selectedID).accessibilityIdentifier("detail.body")
-            .onPreferenceChange(DetailContentHeight.self) { height in
-                if abs(contentHeight - height) > 1 { contentHeight = height }
-            }
             .mask {
                 VStack(spacing: 0) {
                     Rectangle()
@@ -171,11 +168,6 @@ struct PlaceDetails: View {
                 .contentShape(Rectangle())
         }.disabled(!enabled).opacity(enabled ? 1 : 0.4).accessibilityIdentifier(id)
     }
-}
-
-private struct DetailContentHeight: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 #if DEBUG

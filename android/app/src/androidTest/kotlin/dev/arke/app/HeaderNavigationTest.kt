@@ -125,7 +125,11 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.infoText").assertDoesNotExist()
         compose.onNodeWithTag("detail.position").assertTextEquals("1 / 2")
         compose.onNodeWithTag("detail.previous").assertIsNotEnabled()
+        val firstCloseY = compose.onNodeWithTag("detail.close").fetchSemanticsNode().boundsInRoot.top
         compose.onNodeWithTag("detail.next").performClick()
+        compose.waitUntil(5_000) {
+            compose.onNodeWithTag("detail.close").fetchSemanticsNode().boundsInRoot.top > firstCloseY + 20f
+        }
         compose.onNodeWithTag("detail.name").assertTextEquals("Museu dos caminhos")
         compose.onNodeWithTag("detail.position").assertTextEquals("2 / 2")
         compose.onNodeWithTag("detail.next").assertIsNotEnabled()

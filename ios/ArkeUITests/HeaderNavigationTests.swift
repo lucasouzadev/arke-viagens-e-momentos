@@ -169,7 +169,9 @@ final class HeaderNavigationTests: XCTestCase {
         let firstCloseY = app.buttons["detail.close"].frame.minY
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
-        expectation(for: NSPredicate(format: "frame.origin.y > %f", firstCloseY + 20), evaluatedWith: app.buttons["detail.close"])
+        expectation(for: NSPredicate { _, _ in
+            app.buttons["detail.close"].frame.minY > firstCloseY + 20
+        }, evaluatedWith: app.buttons["detail.close"])
         waitForExpectations(timeout: 5)
         XCTAssertEqual(app.staticTexts["detail.position"].label, "Lugar 2 de 2")
         XCTAssertFalse(app.buttons["detail.next"].isEnabled)
