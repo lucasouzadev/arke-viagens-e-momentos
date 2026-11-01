@@ -33,16 +33,16 @@ struct PlaceEditor: View {
                         .disabled(saving)
                 } else {
                     Section("O lugar que você quer conhecer") {
-                        TextField("Nome do lugar", text: $draft.name)
+                        TextField("Nome do lugar", text: $draft.name, prompt: Text("Nome do lugar").foregroundColor(Color(uiColor: .label)))
                             .focused($field, equals: .name)
                             .textInputAutocapitalization(.words)
                             .submitLabel(.next).onSubmit { field = .address }
                             .accessibilityIdentifier("place.name")
-                        TextField("Endereço ou referência", text: $draft.address, axis: .vertical)
+                        TextField("Endereço ou referência", text: $draft.address, prompt: Text("Endereço ou referência").foregroundColor(Color(uiColor: .label)), axis: .vertical)
                             .focused($field, equals: .address).lineLimit(2...4)
                             .textContentType(.fullStreetAddress)
                             .accessibilityIdentifier("place.address")
-                        TextField("Nota opcional", text: $draft.note, axis: .vertical)
+                        TextField("Nota opcional", text: $draft.note, prompt: Text("Nota opcional").foregroundColor(Color(uiColor: .label)), axis: .vertical)
                             .focused($field, equals: .note).lineLimit(3...6)
                             .accessibilityIdentifier("place.note")
                     }
