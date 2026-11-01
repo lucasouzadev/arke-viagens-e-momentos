@@ -4,6 +4,17 @@
     classes = {};
     objectVersion = 56;
     objects = {
+        A20000000000000000000001 = {isa = PBXBuildFile; fileRef = B20000000000000000000001; };
+        B20000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ArkeCore/PlaceIdea.swift; sourceTree = "<group>"; };
+        A20000000000000000000002 = {isa = PBXBuildFile; fileRef = B20000000000000000000002; };
+        B20000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ArkeCore/PlaceIdeasDisk.swift; sourceTree = "<group>"; };
+        A20000000000000000000003 = {isa = PBXBuildFile; fileRef = B20000000000000000000003; };
+        B20000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceEditor.swift; sourceTree = "<group>"; };
+        A20000000000000000000004 = {isa = PBXBuildFile; fileRef = B20000000000000000000004; };
+        B20000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceIdeasStore.swift; sourceTree = "<group>"; };
+        A20000000000000000000005 = {isa = PBXBuildFile; fileRef = B20000000000000000000005; };
+        B20000000000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceIdeasContent.swift; sourceTree = "<group>"; };
+
         A00000000000000000000001 = {isa = PBXBuildFile; fileRef = B00000000000000000000001; };
         A00000000000000000000002 = {isa = PBXBuildFile; fileRef = B00000000000000000000002; };
         A00000000000000000000003 = {isa = PBXBuildFile; fileRef = B00000000000000000000003; };
@@ -13,12 +24,12 @@
         B00000000000000000000004 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Arke.app; sourceTree = BUILT_PRODUCTS_DIR; };
         C00000000000000000000001 = {
             isa = PBXGroup;
-            children = (C00000000000000000000002, B00000000000000000000003, B10000000000000000000001, C00000000000000000000003);
+            children = (B20000000000000000000001, B20000000000000000000002, C00000000000000000000002, B00000000000000000000003, B10000000000000000000001, C00000000000000000000003);
             sourceTree = "<group>";
         };
         C00000000000000000000002 = {
             isa = PBXGroup;
-            children = (B00000000000000000000001, B00000000000000000000002);
+            children = (B00000000000000000000001, B00000000000000000000002, B20000000000000000000003, B20000000000000000000004, B20000000000000000000005);
             path = Arke;
             sourceTree = "<group>";
         };
@@ -56,7 +67,7 @@
         E00000000000000000000001 = {
             isa = PBXSourcesBuildPhase;
             buildActionMask = 2147483647;
-            files = (A00000000000000000000001, A00000000000000000000002, A00000000000000000000003);
+            files = (A00000000000000000000001, A00000000000000000000002, A00000000000000000000003, A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000004, A20000000000000000000005);
             runOnlyForDeploymentPostprocessing = 0;
         };
         E00000000000000000000002 = {

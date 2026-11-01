@@ -1,6 +1,7 @@
 package dev.arke.app
 
 import android.os.Bundle
+import androidx.lifecycle.ViewModelProvider
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,6 +15,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val places = ViewModelProvider(this)[PlaceIdeasViewModel::class.java]
         setContent {
             // Candidate from ADR-006; pending visual approval, not final identity.
             val brandBlue = Color(0xFF4C728A)
@@ -22,7 +24,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 lightColorScheme(primary = brandBlue, onPrimary = Color.White)
             }
-            MaterialTheme(colorScheme = colors) { ArkeHome() }
+            MaterialTheme(colorScheme = colors) { ArkeHome(places) }
         }
     }
 }

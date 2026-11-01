@@ -7,6 +7,8 @@ struct HomeView: View {
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
     @GestureState private var panelTranslation: CGFloat = 0
     @State private var showingAddPlace = false
+    @State private var savedNotice = false
+    @StateObject private var places = PlaceIdeasStore()
     @State private var showingContextPicker = false
     @State private var showingPanelPicker = false
     @ScaledMetric(relativeTo: .headline) private var minimumContentHeight: CGFloat = 160
@@ -43,16 +45,21 @@ struct HomeView: View {
                         Divider()
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text(state.context == .planning ? "Sua próxima viagem começa com uma ideia" : state.context.title)
-                                    .font(.title2.bold())
-                                    .accessibilityAddTraits(.isHeader)
-                                Text(state.context == .planning
-                                     ? "Em breve, você poderá guardar lugares antes mesmo de criar uma viagem."
-                                     : "Este espaço está em desenvolvimento.")
-                                Text("Versão de desenvolvimento · nenhum dado salvo")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.top, 12)
+                                if savedNotice { Text("Lugar salvo neste aparelho.").font(.footnote).accessibilityIdentifier("place.savedNotice") }
+                                if let error = places.error, !showingAddPlace {
+                                    Text(error).foregroundStyle(Color(uiColor: .systemRed))
+                                    Button("Tentar novamente") { Task { await places.load() } }
+                                }
+                                if places.ready {
+                                    if state.context == .planning {
+                                        PlaceIdeasContent(store: places)
+                                    } else {
+                                        Text(state.context.title).font(.title2.bold())
+                                        Text("Este espaço está em desenvolvimento.")
+                                        Text("Seus lugares estão em Planejamento.")
+                                        Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
+                                    }
+                                } else if places.busy { ProgressView("Abrindo seus lugares…") }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -66,11 +73,20 @@ struct HomeView: View {
         }
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
-        .alert("Adicionar lugar", isPresented: $showingAddPlace) {
-            Button("Entendi", role: .cancel) {}
-        } message: {
-            Text("O salvamento de lugares ainda está em desenvolvimento. Em breve, você poderá marcar um ponto no mapa e guardar sua ideia de viagem.")
+        .task {
+            await places.load()
+            #if DEBUG
+            if places.ready && ProcessInfo.processInfo.arguments.contains("--capture-place-editor") { showingAddPlace = true }
+            #endif
         }
+        .sheet(isPresented: $showingAddPlace) {
+            PlaceEditor(saving: places.busy, saveError: places.error, onSave: { draft in
+                Task {
+                    if await places.add(draft) { showingAddPlace = false; savedNotice = true }
+                }
+            }, onCancel: { showingAddPlace = false })
+        }
+
     }
 
     private var cardHeader: some View {
@@ -81,6 +97,7 @@ struct HomeView: View {
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
+            .disabled(!places.ready || places.busy)
             .accessibilityLabel("Adicionar lugar")
             .accessibilityIdentifier("home.addPlace")
 

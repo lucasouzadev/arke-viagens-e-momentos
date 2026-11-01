@@ -41,7 +41,9 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 )
 
 @Composable
-fun ArkeHome() {
+fun ArkeHome(places: PlaceIdeasViewModel) {
+    val placeState by places.state.collectAsState()
+    var savedNotice by rememberSaveable { mutableStateOf(false) }
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLow) {
@@ -98,17 +100,24 @@ fun ArkeHome() {
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            CardHeader(state.context, { showingAddPlace = true }) { state = state.selectContext(it) }
+                            CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
                             HorizontalDivider(Modifier.padding(vertical = 12.dp))
                             Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {
-                                Text(
-                                    stringResource(if (state.context == TravelContext.PLANNING) R.string.empty_title else state.context.title()),
-                                    style = MaterialTheme.typography.titleLarge,
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                Text(stringResource(if (state.context == TravelContext.PLANNING) R.string.empty_detail else R.string.context_pending))
-                                Spacer(Modifier.height(24.dp))
-                                Text(stringResource(R.string.development_notice), style = MaterialTheme.typography.bodySmall)
+                                if (savedNotice) Text(stringResource(R.string.saved_place_notice), modifier = Modifier.testTag("place.savedNotice"), style = MaterialTheme.typography.bodySmall)
+                                if (placeState.error != null && !showingAddPlace) {
+                                    Text(placeState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
+                                    TextButton(onClick = places::load) { Text(stringResource(R.string.retry)) }
+                                }
+                                if (placeState.ready) {
+                                    if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState, places::remove)
+                                    else {
+                                        Text(stringResource(state.context.title()), style = MaterialTheme.typography.titleLarge)
+                                        Text(stringResource(R.string.context_pending))
+                                        Text(stringResource(R.string.places_in_planning))
+                                        TextButton(onClick = { state = state.selectContext(TravelContext.PLANNING) }) { Text(stringResource(R.string.view_places)) }
+                                    }
+                                } else if (placeState.busy) Text(stringResource(R.string.loading_places))
+
                             }
                         }
                     }
@@ -117,20 +126,17 @@ fun ArkeHome() {
         }
     }
     if (showingAddPlace) {
-        AlertDialog(
-            onDismissRequest = { showingAddPlace = false },
-            title = { Text(stringResource(R.string.add_place)) },
-            text = { Text(stringResource(R.string.add_place_pending)) },
-            confirmButton = { TextButton(onClick = { showingAddPlace = false }) { Text(stringResource(R.string.understood)) } },
-        )
+        PlaceEditor(saving = placeState.busy, saveError = placeState.error,
+            onSave = { draft -> places.add(draft) { showingAddPlace = false; savedNotice = true } },
+            onCancel = { showingAddPlace = false })
     }
 }
 
 @Composable
-private fun CardHeader(context: TravelContext, onAdd: () -> Unit, onSelect: (TravelContext) -> Unit) {
+private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Boolean, onSelect: (TravelContext) -> Unit) {
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        IconButton(onClick = onAdd, modifier = Modifier.size(48.dp).testTag("home.addPlace")) {
+        IconButton(onClick = onAdd, enabled = addEnabled, modifier = Modifier.size(48.dp).testTag("home.addPlace")) {
             Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = actionColor)
         }
         Text(

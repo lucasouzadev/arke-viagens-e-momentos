@@ -94,3 +94,5 @@ A documentação original não implementou aplicativo. A branch inicial de desen
 - [M5-TONES-01 — composição tonal](engenharia/M5-TONES-01.md): diferenciação das superfícies sem contornos.
 
 - [M5-HANDLE-01 — puxador](engenharia/M5-HANDLE-01.md): arrasto da faixa entre cartões.
+
+- [M5-PLACES-01 — ideias locais](engenharia/M5-PLACES-01.md): editor, revisão e armazenamento pessoal.

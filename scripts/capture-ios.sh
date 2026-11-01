@@ -41,6 +41,10 @@ while IFS=$'\t' read -r size device model; do
     # Map tiles are asynchronous; preserve real loading/offline results in the capture.
     sleep 12
     xcrun simctl io "$device" screenshot "$output/ios-${size}-${theme}.png"
+    # Debug-only entry opens the real empty editor; it does not create or save data.
+    xcrun simctl launch --terminate-running-process "$device" dev.arke.app.dev --capture-place-editor
+    sleep 5
+    xcrun simctl io "$device" screenshot "$output/ios-editor-${size}-${theme}.png"
   done
   xcrun simctl shutdown "$device"
 done < "$output/selected.tsv"

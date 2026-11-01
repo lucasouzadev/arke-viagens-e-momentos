@@ -1,5 +1,7 @@
 # HANDOFF — Continuidade entre agents
 
+**M5-PLACES-01 em andamento:** editor nativo de nome/endereço/nota, revisão, confirmação e cancelamento, ideias locais e exclusão confirmada. Sem geocoding/Pin/conta/rede nova. Testes e capturas pendentes; contrato em docs/engenharia/M5-PLACES-01.md. Sem merge/release.
+
 **M5-HANDLE-01 verificado:** puxador vertical contínuo e encaixe nos três estados, com seletor por toque e ações acessíveis. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41310026574), fonte `f2e8f67496c6b6c21657f6295209f71371f76800`. Três testes UI e três unitários por plataforma aprovados; lint 0/8; oito PNGs padrão/compacto claro/escuro inspecionados. iOS corrigido após falha de retorno; repetição Android superou download inválido do SDK. Detalhes e limites em [contrato](../engenharia/M5-HANDLE-01.md). Gestos testados nos aparelhos padrão; leitores de tela, fonte ampliada e landscape/tablet pendentes. Próximo: contrato do fluxo de adicionar lugar. Sem merge/release. Registros anteriores abaixo são históricos.
 
 

@@ -28,18 +28,65 @@ final class HeaderNavigationTests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
     }
 
-    func testAddPlaceNoticeCanBeOpenedAndClosed() {
+    func testAddPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
         let app = XCUIApplication()
         app.launch()
-        let add = app.buttons["home.addPlace"]
-        XCTAssertTrue(add.waitForExistence(timeout: 15))
-        add.tap()
-        let notice = app.alerts["Adicionar lugar"]
-        XCTAssertTrue(notice.waitForExistence(timeout: 5))
-        notice.buttons["Entendi"].tap()
-        XCTAssertFalse(notice.exists)
-        XCTAssertTrue(app.buttons["home.contextMenu"].exists)
+        let addButton = app.buttons["home.addPlace"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 15))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
+        waitForExpectations(timeout: 5)
+        addButton.tap()
+        app.buttons["place.review"].tap()
+        XCTAssertTrue(app.staticTexts["Informe o nome do lugar."].exists)
+        let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
+        name.tap()
+        name.typeText("Rascunho de teste")
+        if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
+        app.buttons["place.review"].tap()
+        XCTAssertTrue(app.staticTexts["Informe um endereço ou referência."].exists)
+        app.buttons["place.cancel"].tap()
+        app.buttons["Continuar editando"].tap()
+        XCTAssertEqual(name.value as? String, "Rascunho de teste")
+        app.buttons["place.cancel"].tap()
+        app.buttons["Descartar"].tap()
+        XCTAssertTrue(app.buttons["home.contextMenu"].waitForExistence(timeout: 5))
     }
+
+    func testSaveReviewReopenAndConfirmedDelete() {
+        let app = XCUIApplication()
+        app.launch()
+        let addButton = app.buttons["home.addPlace"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 15))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
+        waitForExpectations(timeout: 5)
+        addButton.tap()
+        let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
+        name.tap()
+        name.typeText("Museu de teste")
+        let address = app.descendants(matching: .any).matching(identifier: "place.address").firstMatch
+        address.tap()
+        address.typeText("Rua de teste, 100")
+        if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
+        app.buttons["place.review"].tap()
+        XCTAssertTrue(app.staticTexts["Museu de teste"].exists)
+        app.buttons["place.edit"].tap()
+        XCTAssertEqual(name.value as? String, "Museu de teste")
+        app.buttons["place.review"].tap()
+        app.buttons["place.save"].tap()
+        XCTAssertTrue(app.staticTexts["place.savedNotice"].waitForExistence(timeout: 10))
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Museu de teste"].waitForExistence(timeout: 15))
+        let delete = app.buttons["Excluir Museu de teste"]
+        delete.tap()
+        app.alerts["Excluir ideia?"].buttons["Cancelar"].tap()
+        XCTAssertTrue(app.staticTexts["Museu de teste"].exists)
+        delete.tap()
+        app.alerts["Excluir ideia?"].buttons["Excluir"].tap()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Museu de teste"])
+        waitForExpectations(timeout: 10)
+    }
+
     func testPanelDragSnapsAndBodyScrollDoesNotResize() {
         let app = XCUIApplication()
         app.launch()
