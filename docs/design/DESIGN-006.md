@@ -1,6 +1,6 @@
 # DESIGN-006 — Guia comum de UI/UX iOS e Android
 
-Status: direção aprovada explicitamente no chat em 01/11/2026; implementação/verificação em M5-PARITY-01. Aplica-se a todas as próximas telas e componentes. Natividade preserva tecnologia/semântica, mas não é motivo para mudar posição, hierarquia ou espaçamento de ações equivalentes.
+Status: direção aprovada explicitamente no chat em 01/11/2026; implementação verificada em M5-PARITY-01, disponível para revisão no PR #2. Aplica-se a todas as próximas telas e componentes. Natividade preserva tecnologia/semântica, mas não é motivo para mudar posição, hierarquia ou espaçamento de ações equivalentes.
 
 ## Regras comuns
 
@@ -32,6 +32,8 @@ Valores de distância equivalentes em pt no iOS e dp no Android; texto em pontos
 | Line-height de corpo / auxiliar | aproximadamente 24 / 20 |
 
 Alturas são mínimos, não limites. Textos longos e fontes ampliadas podem crescer; corpo rola e CTA permanece alcançável. Não truncar dados ou reduzir fonte para caber. Alça nativa iOS e indicador Compose compartilham posição/área reservada; pequeno detalhe do desenho do sistema é permitido.
+
+A fração do sheet é uma intenção visual sobre a área disponível, não uma tradução literal entre APIs. No Compose a altura é aplicada ao conteúdo (90% mais alça/insets), preservando a âncora inferior do modal; no SwiftUI usa-se detent de 94%. Não limitar a janela/âncora externa para obter essa altura. Conferir a margem superior e as barras do sistema nas capturas.
 
 ## Critério de revisão
 
