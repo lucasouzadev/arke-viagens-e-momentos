@@ -31,3 +31,5 @@
 **Ajuste aprovado em 01/11/2026:** os dois cartões não têm contorno desenhado nem sombra acrescentada para simular borda. A separação vem das superfícies nativas e do espaçamento, com sensação de borda infinita. Preservar o arredondamento e a estrutura atual. Não confundir com remover separadores internos de conteúdo.
 
 Dois cartões ocupam quase toda a viewport, separados por pequeno intervalo/puxador. O estado equilibrado é inicial. Arraste **apenas o puxador** para alternar proporção; rolar o conteúdo nunca redimensiona. Respeitar barras/áreas seguras do sistema.
+
+**Composição tonal aprovada em 01/11/2026:** o fundo e o cartão inferior devem ter tons distintos em claro/escuro. iOS: systemGroupedBackground no fundo e secondarySystemGroupedBackground no cartão. Android: surfaceContainerLow no fundo e surface no cartão, sem elevação/sombra. Cores semânticas acompanham o tema; não adicionar outras cores de marca. Remover contorno não significa igualar preenchimentos.

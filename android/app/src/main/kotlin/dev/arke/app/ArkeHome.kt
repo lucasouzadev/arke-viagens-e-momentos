@@ -36,7 +36,7 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 fun ArkeHome() {
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(
             Modifier.safeDrawingPadding().imePadding().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

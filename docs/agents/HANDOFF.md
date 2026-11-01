@@ -1,5 +1,8 @@
 # HANDOFF — Continuidade entre agents
 
+
+**M5-TONES-01 em validação:** diferenciação de fundo/cartão por cores semânticas nas duas plataformas, autorizada no chat. Sem contornos/sombras ou mudanças de layout. Contrato: docs/engenharia/M5-TONES-01.md.
+
 **Função:** protocolo e registro do **último handoff conhecido**. O progresso canônico de milestones fica em [STATUS](../STATUS.md); a ordem de execução fica em [ROADMAP](../ROADMAP.md). Esses três documentos têm responsabilidades distintas.
 
 ## Regras para qualquer handoff

@@ -1,5 +1,8 @@
 # STATUS — Estado verificável do Arke
 
+
+**M5-TONES-01 em validação:** diferenciação de fundo/cartão por cores semânticas nas duas plataformas, autorizada no chat. Sem contornos/sombras ou mudanças de layout. Contrato: docs/engenharia/M5-TONES-01.md.
+
 **Atualizado em:** 01/11/2026. O andamento não substitui decisões de produto.
 
 ## Situação verificada

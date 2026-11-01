@@ -56,7 +56,7 @@ struct HomeView: View {
                         .frame(maxHeight: .infinity)
                     }
                     .padding(20)
-                    .background(.background, in: RoundedRectangle(cornerRadius: 20))
+                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
                 }
             }
         }
