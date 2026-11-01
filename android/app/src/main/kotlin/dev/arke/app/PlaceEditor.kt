@@ -60,7 +60,6 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     )
     ModalBottomSheet(
         onDismissRequest = { if (!saving) cancel() }, sheetState = sheet,
-        modifier = Modifier.fillMaxHeight(0.94f),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = {
             Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
@@ -68,7 +67,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
             }
         },
     ) {
-        Column(Modifier.fillMaxWidth().weight(1f).imePadding().padding(horizontal = 20.dp)) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).imePadding().padding(horizontal = 20.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
                     colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
