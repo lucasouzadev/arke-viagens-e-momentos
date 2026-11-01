@@ -17,8 +17,8 @@ Registros históricos importantes devem ficar em comentários de PR ou arquivos 
 
 ## Última passagem registrada — 31/10/2026
 
-**Tarefa:** M5-BOOTSTRAP-01 · **Branch:** `chore/development-kickoff`.  
-**Base verificada:** `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`.  
+**Tarefa:** M5-BOOTSTRAP-01 · **Branch:** `chore/development-kickoff`.
+**Base verificada:** `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`.
 **PR anterior:** [#1](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/1), integrado em 28/10/2026. PR da fundação ainda a abrir.
 
 ### Autorização e mudanças

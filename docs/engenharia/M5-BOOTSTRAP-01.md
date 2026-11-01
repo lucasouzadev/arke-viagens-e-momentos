@@ -1,8 +1,8 @@
 # M5-BOOTSTRAP-01 — Fundação nativa simultânea
 
-**Milestone:** M5, recorte inicial autorizado por [ADR-009](../decisoes/ADR-009.md).  
-**Estado:** em andamento; validação remota pendente.  
-**Branch:** `chore/development-kickoff`.  
+**Milestone:** M5, recorte inicial autorizado por [ADR-009](../decisoes/ADR-009.md).
+**Estado:** em andamento; validação remota pendente.
+**Branch:** `chore/development-kickoff`.
 **Base verificada:** `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`.
 
 ## Objetivo e escopo
@@ -20,7 +20,7 @@ Sem mapa integrado, dados reais, persistência, conta, backend, segredo, mídia 
 | Android | Kotlin 2.1.20, Compose BOM 2025.04.01, AGP 8.9.2, Gradle 8.11.1, JDK 17, SDK 35 | `:core:test`, `:app:lintDebug`, `:app:assembleDebug` |
 | iOS | SwiftUI, projeto Xcode, iOS 17 mínimo, módulo Swift Package independente | `swift test --package-path ios`; `xcodebuild` para Simulator sem assinatura |
 
-Versões fixadas como baseline inicial compatível, sem alegar que são as mais recentes. [Compatibilidade AGP](https://developer.android.com/build/releases/agp-8-9-0-release-notes), [Compose BOM](https://android-developers.googleblog.com/2025/04/whats-new-in-jetpack-compose-april-25.html). Actions oficiais fixadas por SHA; workflow usa `contents: read`, sem credenciais persistidas, limite de tempo e cancelamento de execução obsoleta.
+Versões fixadas como baseline inicial compatível, sem alegar que são as mais recentes. [Compatibilidade AGP](https://developer.android.com/build/releases/agp-8-9-0-release-notes), [Compose BOM](https://android-developers.googleblog.com/2025/04/whats-new-in-jetpack-compose-april-25.html). Checkout/setup-java oficiais e setup-android da comunidade fixados por SHA; workflow usa `contents: read`, sem credenciais persistidas, limite de tempo e cancelamento de execução obsoleta. A [action de SDK](https://github.com/android-actions/setup-android/tree/be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd) usa licença MIT e Node 24; action.yml/licença revisados. Command-line tools 12266719 fixadas para JDK 17; SDK/build tools 35.
 
 Windows local: JDK 17 disponível em `JAVA_HOME`; o `java` do PATH aponta para Java 8. Gradle Wrapper usa `JAVA_HOME`. SDK Android e Swift/Xcode não encontrados nos locais verificados. A matriz GitHub Actions usa Ubuntu 24.04 e macOS 15. Nenhum binário é publicado pelo workflow.
 
