@@ -11,7 +11,7 @@
 
 ## Cartão inferior — Conteúdo e navegação
 
-**Recorte autorizado em 01/11/2026:** cabeçalho fixo em relação ao scroll do corpo, com “+” à esquerda, nome do contexto central e relógio à direita. Seletor nativo de cinco contextos por toque (lista do sistema no iOS, menu no Android). Seletor compacto de proporção entre cartões até implementar o puxador por arrasto. O “+” abre aviso nativo de preparação; salvar Pin continua fora deste recorte. Ver [M5-HEADER-01](../engenharia/M5-HEADER-01.md).
+**Recorte autorizado em 01/11/2026:** cabeçalho fixo em relação ao scroll do corpo, com “+” à esquerda, nome do contexto central e relógio à direita. Seletor nativo de cinco contextos por toque (lista do sistema no iOS, menu no Android). Faixa de proporção entre cartões, com puxador por arrasto e seletor por toque no recorte M5-HANDLE-01. O “+” abre aviso nativo de preparação; salvar Pin continua fora deste recorte. Ver [M5-HEADER-01](../engenharia/M5-HEADER-01.md).
 
 - Botão de adição, título do contexto e botão de relógio no próprio cabeçalho.
 - **Título selecionado centralizado**, destinos vizinhos parcialmente visíveis.

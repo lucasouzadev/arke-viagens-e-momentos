@@ -147,9 +147,7 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) | Apple Maps iOS, Google Maps Android e capturas reais de simuladores | 8 PNGs originais inspecionados e CI aprovada; mapa Google real bloqueado por chave/projeto; contraste tratado em M5-UI-02 |
 | M5-UI-02, no contrato M5-PREVIEW-01 | Cartões sem contorno e correção de labels no escuro | Implementado/verificado em CI e 8 PNGs; disponível no PR #2, sem merge |
 | [M5-HEADER-01](engenharia/M5-HEADER-01.md) | +/contexto central/relógio, cabeçalho fora do scroll | Implementado no PR #2; testes de toque e oito capturas verificados, sem merge |
+| [M5-TONES-01](engenharia/M5-TONES-01.md) | Fundo/cartão em tons semânticos distintos | CI e oito PNGs verificados no PR #2, sem merge |
+| [M5-HANDLE-01](engenharia/M5-HANDLE-01.md) | Puxador entre cartões | Implementado/verificado: 3 testes UI por plataforma e oito capturas no PR #2, sem merge |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.
-
-| [M5-TONES-01](engenharia/M5-TONES-01.md) | Fundo/cartão em tons semânticos distintos | CI e oito PNGs verificados no PR #2, sem merge |
-
-| [M5-HANDLE-01](engenharia/M5-HANDLE-01.md) | Puxador entre cartões | Implementado; testes e capturas pendentes no PR #2 |

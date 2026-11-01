@@ -1,6 +1,6 @@
 # HANDOFF — Continuidade entre agents
 
-**M5-HANDLE-01 em andamento:** puxador vertical contínuo e encaixe nos três estados; toque e ações acessíveis preservados. Testes de arrasto/scroll e CI/capturas pendentes. Sem merge/release.
+**M5-HANDLE-01 verificado:** puxador vertical contínuo e encaixe nos três estados, com seletor por toque e ações acessíveis. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41310026574), fonte `f2e8f67496c6b6c21657f6295209f71371f76800`. Três testes UI e três unitários por plataforma aprovados; lint 0/8; oito PNGs padrão/compacto claro/escuro inspecionados. iOS corrigido após falha de retorno; repetição Android superou download inválido do SDK. Detalhes e limites em [contrato](../engenharia/M5-HANDLE-01.md). Gestos testados nos aparelhos padrão; leitores de tela, fonte ampliada e landscape/tablet pendentes. Próximo: contrato do fluxo de adicionar lugar. Sem merge/release. Registros anteriores abaixo são históricos.
 
 
 **M5-TONES-01 verificado:** fundo/cartão com tons semânticos distintos nas duas plataformas, sem contorno/sombra ou alteração de layout. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41305472522), fonte `a2e4e0b354ef4d79851779cc7f8040a16812af35`. Builds, testes UI/unitários e lint aprovados; oito PNGs inspecionados. Contrato: [M5-TONES-01](../engenharia/M5-TONES-01.md). Sem merge/release. Próximo: puxador entre cartões.
