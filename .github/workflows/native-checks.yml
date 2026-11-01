@@ -36,7 +36,7 @@ jobs:
       - name: Install Android SDK components
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - name: Unit tests, lint and debug build
-        run: bash gradlew --no-daemon :core:test :app:lintDebug :app:assembleDebug
+        run: bash gradlew --no-daemon :core:test :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Report lint diagnostics
         if: always()
         run: |

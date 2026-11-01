@@ -4,6 +4,8 @@
 
 ## Situação verificada
 
+**Em andamento — [M5-HEADER-01](engenharia/M5-HEADER-01.md):** cabeçalho com +/contexto central/relógio separado do scroll; proporção por toque entre os cartões. “+” abre aviso de preparação, sem salvar Pin. Testes de UI de troca dos cinco contextos, preservação do painel e abrir/fechar aviso preparados; execução real/capturas pendentes. Mesmo PR #2, sem merge.
+
 **M5-UI-02 verificado:** cartões sem contorno no iOS/Android, sem sombras acrescentadas e com superfícies/spacing preservados. Labels escuros usam cores semânticas legíveis nas duas plataformas. [Builds/testes/lint/capturas aprovados](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41273311115), fonte `0683e8e1df10ef5bd2e53f381aa52bb71ed2cebb`; oito PNGs inspecionados. Contrato/gates no início de [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md). Layout inicial aprovado pelo responsável; esta alteração específica segue disponível no PR #2, sem merge.
 
 **Recorte atual:** [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md), oito capturas reais geradas e inspecionadas na [execução aprovada](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41265098608), fonte `4128e2e`. Apple Maps renderizado no iPhone 16/SE, claro/escuro; Android Emulator API 35 executou o fallback sem chave em padrão/compacto, claro/escuro. Google Cloud ainda não existe, portanto mapa real Android continua bloqueado por configuração externa. O baixo contraste encontrado neste recorte anterior foi tratado em M5-UI-02; isso não equivale a aprovação global de acessibilidade.

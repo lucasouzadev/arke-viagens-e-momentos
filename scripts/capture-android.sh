@@ -6,6 +6,7 @@ mkdir -p "$output"
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
+bash android/gradlew -p android --no-daemon :app:connectedDebugAndroidTest
 for size in standard compact; do
   if [ "$size" = compact ]; then
     adb shell wm size 720x1280

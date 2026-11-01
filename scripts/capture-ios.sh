@@ -25,6 +25,12 @@ while IFS=$'\t' read -r size device model; do
   xcrun simctl bootstatus "$device" -b
   xcrun simctl status_bar "$device" override --time '9:41' --batteryState charged --batteryLevel 100
   xcrun simctl install "$device" build/ios/Build/Products/Debug-iphonesimulator/Arke.app
+  if [ "$size" = standard ]; then
+    xcodebuild -project ios/Arke.xcodeproj -scheme Arke -configuration Debug \
+      -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO \
+      -derivedDataPath build/ios -resultBundlePath build/HeaderUI.xcresult \
+      CODE_SIGNING_ALLOWED=NO test
+  fi
   for theme in light dark; do
     xcrun simctl ui "$device" appearance "$theme"
     xcrun simctl launch --terminate-running-process "$device" dev.arke.app.dev

@@ -5,6 +5,8 @@ struct HomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
+    @State private var showingAddPlace = false
+    @ScaledMetric(relativeTo: .headline) private var minimumContentHeight: CGFloat = 160
 
     private var state: HomeState {
         HomeState(
@@ -14,72 +16,126 @@ struct HomeView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Arke").font(.title2.bold())
-                Text("Onde vamos?").font(.largeTitle.bold())
-                Map(initialPosition: .region(MKCoordinateRegion(
-                    center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
-                    span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)
-                ))) {
-                }
-                .mapStyle(.standard)
-                .accessibilityLabel("Mapa Apple. Explore o mundo; localização pessoal desativada.")
-                .frame(height: max(72, (geometry.size.height - 120) * mapFraction))
-                .clipShape(RoundedRectangle(cornerRadius: 20))
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Arke").font(.title2.bold())
+            Text("Onde vamos?").font(.largeTitle.bold())
+            GeometryReader { geometry in
+                VStack(spacing: 8) {
+                    Map(initialPosition: .region(MKCoordinateRegion(
+                        center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+                        span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)
+                    ))) {}
+                        .mapStyle(.standard)
+                        .accessibilityLabel("Mapa Apple. Explore o mundo; localização pessoal desativada.")
+                        .frame(height: mapHeight(in: geometry.size.height))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Menu {
-                            ForEach(TravelContext.allCases, id: \.self) { context in
-                                Button(context.title) {
-                                    var next = state
-                                    next.selectContext(context)
-                                    contextValue = next.context.rawValue
-                                }
-                            }
-                        } label: {
-                            Label(state.context.title, systemImage: "clock")
-                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(Color(uiColor: .label)) : AnyShapeStyle(.tint))
-                                .frame(minHeight: 44)
-                        }
-                        .accessibilityLabel("Trocar contexto. Atual: \(state.context.title)")
+                    panelMenu
 
-                        Menu {
-                            ForEach(PanelDetent.allCases, id: \.self) { detent in
-                                Button(detent.title) {
-                                    var next = state
-                                    next.setDetent(detent)
-                                    detentValue = next.detent.rawValue
-                                }
-                            }
-                        } label: {
-                            Label(state.detent.title, systemImage: "arrow.up.arrow.down")
-                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(Color(uiColor: .label)) : AnyShapeStyle(.tint))
-                                .frame(minHeight: 44)
-                        }
-                        .accessibilityLabel("Ajustar painel. Atual: \(state.detent.title)")
+                    VStack(spacing: 12) {
+                        cardHeader
                         Divider()
-                        Text(state.context == .planning ? "Sua próxima viagem começa com uma ideia" : state.context.title)
-                            .font(.title2.bold())
-                            .accessibilityAddTraits(.isHeader)
-                        Text(state.context == .planning
-                             ? "Em breve, você poderá guardar lugares antes mesmo de criar uma viagem."
-                             : "Este espaço está em desenvolvimento.")
-                        Text("Versão de desenvolvimento · nenhum dado salvo")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 12)
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(state.context == .planning ? "Sua próxima viagem começa com uma ideia" : state.context.title)
+                                    .font(.title2.bold())
+                                    .accessibilityAddTraits(.isHeader)
+                                Text(state.context == .planning
+                                     ? "Em breve, você poderá guardar lugares antes mesmo de criar uma viagem."
+                                     : "Este espaço está em desenvolvimento.")
+                                Text("Versão de desenvolvimento · nenhum dado salvo")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 12)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(maxHeight: .infinity)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(20)
+                    .background(.background, in: RoundedRectangle(cornerRadius: 20))
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.background, in: RoundedRectangle(cornerRadius: 20))
             }
-            .padding(16)
-            .background(Color(uiColor: .systemGroupedBackground))
         }
+        .padding(16)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .alert("Adicionar lugar", isPresented: $showingAddPlace) {
+            Button("Entendi", role: .cancel) {}
+        } message: {
+            Text("O salvamento de lugares ainda está em desenvolvimento. Em breve, você poderá marcar um ponto no mapa e guardar sua ideia de viagem.")
+        }
+    }
+
+    private var cardHeader: some View {
+        HStack(spacing: 8) {
+            Button { showingAddPlace = true } label: {
+                Image(systemName: "plus")
+                    .font(.title3.weight(.medium))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Adicionar lugar")
+            .accessibilityIdentifier("home.addPlace")
+
+            Text(state.context.title)
+                .font(.headline)
+                .foregroundStyle(Color(uiColor: .label))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("home.contextTitle")
+
+            Menu {
+                ForEach(TravelContext.allCases, id: \.self) { context in
+                    Button {
+                        var next = state
+                        next.selectContext(context)
+                        contextValue = next.context.rawValue
+                    } label: {
+                        Label(context.title, systemImage: context == state.context ? "checkmark" : context.symbol)
+                    }
+                }
+            } label: {
+                Image(systemName: "clock")
+                    .font(.title3)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Trocar contexto")
+            .accessibilityValue(state.context.title)
+            .accessibilityIdentifier("home.contextMenu")
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(controlStyle)
+    }
+
+    private var panelMenu: some View {
+        Menu {
+            ForEach(PanelDetent.allCases, id: \.self) { detent in
+                Button(detent.title) {
+                    var next = state
+                    next.setDetent(detent)
+                    detentValue = next.detent.rawValue
+                }
+            }
+        } label: {
+            Label(state.detent.title, systemImage: "chevron.up.chevron.down")
+                .font(.caption)
+                .frame(minHeight: 44)
+        }
+        .foregroundStyle(controlStyle)
+        .accessibilityLabel("Ajustar proporção")
+        .accessibilityValue(state.detent.title)
+        .accessibilityIdentifier("home.panelMenu")
+    }
+
+    private var controlStyle: AnyShapeStyle {
+        colorScheme == .dark ? AnyShapeStyle(Color(uiColor: .label)) : AnyShapeStyle(.tint)
+    }
+
+    private func mapHeight(in height: CGFloat) -> CGFloat {
+        max(64, min(height * mapFraction, height - minimumContentHeight - 60))
     }
 
     private var mapFraction: CGFloat {
@@ -92,6 +148,15 @@ struct HomeView: View {
 }
 
 private extension TravelContext {
+    var symbol: String {
+        switch self {
+        case .planning: "map"
+        case .expenses: "list.bullet.rectangle"
+        case .savings: "target"
+        case .reviews: "star"
+        case .memories: "photo"
+        }
+    }
     var title: String {
         switch self {
         case .planning: "Planejamento"
