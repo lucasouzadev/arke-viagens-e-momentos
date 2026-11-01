@@ -10,6 +10,8 @@
 
 **Gates iniciais:** G-01/02 PASSOU em revisão de escopo; G-03/04/05/06/12 aguardam compilação/capturas; G-07 contraste em correção, leitores de tela NÃO EXECUTADOS; G-08/09/10 NÃO APLICÁVEIS a novos dados/rede/licenças porque nada disso muda, restrições de distribuição anteriores permanecem; G-11 profiling NÃO EXECUTADO; G-13 CI/capturas pendentes; G-14 documentos a atualizar; G-15 confirmado no chat, valor ausente dos arquivos. Risco P3 de apresentação; reversão por correção na branch, mantendo main. Demais limites de M5-PREVIEW-01 continuam.
 
+Primeira verificação de M5-UI-02: [execução](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41272639484), fonte `b9b0a98`, builds/testes/capturas aprovados nas duas plataformas. Oito PNGs inspecionados: contornos removidos em ambos; labels Android escuros corrigidos. No iOS, `.primary` hierárquico ainda herdou o tint azul do menu; substituído por `Color(uiColor: .label)` explícito. Nova captura iOS necessária antes de declarar contraste corrigido.
+
 ---
 
 **Data:** 31/10/2026 · **Estado:** capturas reais geradas e inspecionadas; Google Maps real bloqueado por configuração externa; contraste escuro pendente.

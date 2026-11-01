@@ -40,7 +40,7 @@ struct HomeView: View {
                             }
                         } label: {
                             Label(state.context.title, systemImage: "clock")
-                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
+                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(Color(uiColor: .label)) : AnyShapeStyle(.tint))
                                 .frame(minHeight: 44)
                         }
                         .accessibilityLabel("Trocar contexto. Atual: \(state.context.title)")
@@ -55,7 +55,7 @@ struct HomeView: View {
                             }
                         } label: {
                             Label(state.detent.title, systemImage: "arrow.up.arrow.down")
-                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
+                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(Color(uiColor: .label)) : AnyShapeStyle(.tint))
                                 .frame(minHeight: 44)
                         }
                         .accessibilityLabel("Ajustar painel. Atual: \(state.detent.title)")
