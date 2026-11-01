@@ -72,3 +72,5 @@ Uma tarefa termina somente com escopo/aceite atendidos, documentos e links coere
 | Como aparecerá no app? | [NEWS-MODAL](docs/releases/NEWS-MODAL.md) — futuro, não implementado |
 
 **Paridade obrigatória — 01/11/2026:** [DESIGN-006](docs/design/DESIGN-006.md) orienta as duas plataformas. Alça visível em sheets, Cancelar no topo esquerdo, mesma hierarquia de ações/campos e métricas-base de texto/espaçamento. APIs e materiais continuam nativos; não usar diferenças de plataforma para mudar a organização do fluxo. Revisar pares de capturas antes de avançar.
+
+**Consulta de ideias — 01/11/2026:** [M5-DETAILS-01](docs/engenharia/M5-DETAILS-01.md) delimita detalhes de ideias locais, navegação finita e retorno à home. Sem edição de dados, Pin/geocoding ou persistência nova; exemplos de captura apenas em memória e Debug.
