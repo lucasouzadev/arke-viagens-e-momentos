@@ -8,10 +8,13 @@ final class HeaderNavigationTests: XCTestCase {
         app.launch()
         let clock = app.buttons["home.contextMenu"]
         XCTAssertTrue(clock.waitForExistence(timeout: 15))
+        XCTAssertEqual(app.buttons.matching(identifier: "home.panelMenu").count, 1)
+        if !app.buttons["home.panelMenu"].isHittable { print(app.debugDescription) }
         XCTAssertTrue(app.buttons["home.panelMenu"].isHittable)
         app.buttons["home.panelMenu"].tap()
         app.buttons["Detalhes"].tap()
         for title in ["Gastos", "Cofrinho", "Avaliações", "Memórias", "Planejamento"] {
+            XCTAssertTrue(clock.isHittable)
             clock.tap()
             let option = app.buttons[title].firstMatch
             XCTAssertTrue(option.waitForExistence(timeout: 5))

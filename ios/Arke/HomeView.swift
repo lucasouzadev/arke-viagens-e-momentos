@@ -6,6 +6,8 @@ struct HomeView: View {
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
     @State private var showingAddPlace = false
+    @State private var showingContextPicker = false
+    @State private var showingPanelPicker = false
     @ScaledMetric(relativeTo: .headline) private var minimumContentHeight: CGFloat = 160
 
     private var state: HomeState {
@@ -87,17 +89,7 @@ struct HomeView: View {
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("home.contextTitle")
 
-            Menu {
-                ForEach(TravelContext.allCases, id: \.self) { context in
-                    Button {
-                        var next = state
-                        next.selectContext(context)
-                        contextValue = next.context.rawValue
-                    } label: {
-                        Label(context.title, systemImage: context == state.context ? "checkmark" : context.symbol)
-                    }
-                }
-            } label: {
+            Button { showingContextPicker = true } label: {
                 Image(systemName: "clock")
                     .font(.title3)
                     .frame(width: 44, height: 44)
@@ -106,21 +98,23 @@ struct HomeView: View {
             .accessibilityLabel("Trocar contexto")
             .accessibilityValue(state.context.title)
             .accessibilityIdentifier("home.contextMenu")
+            .confirmationDialog("Contexto atual: \(state.context.title)", isPresented: $showingContextPicker, titleVisibility: .visible) {
+                ForEach(TravelContext.allCases, id: \.self) { context in
+                    Button(context.title + (context == state.context ? " ✓" : "")) {
+                        var next = state
+                        next.selectContext(context)
+                        contextValue = next.context.rawValue
+                    }
+                }
+                Button("Cancelar", role: .cancel) {}
+            }
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
     }
 
     private var panelMenu: some View {
-        Menu {
-            ForEach(PanelDetent.allCases, id: \.self) { detent in
-                Button(detent.title) {
-                    var next = state
-                    next.setDetent(detent)
-                    detentValue = next.detent.rawValue
-                }
-            }
-        } label: {
+        Button { showingPanelPicker = true } label: {
             Label(state.detent.title, systemImage: "chevron.up.chevron.down")
                 .font(.caption)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -131,6 +125,16 @@ struct HomeView: View {
         .accessibilityLabel("Ajustar proporção")
         .accessibilityValue(state.detent.title)
         .accessibilityIdentifier("home.panelMenu")
+        .confirmationDialog("Proporção atual: \(state.detent.title)", isPresented: $showingPanelPicker, titleVisibility: .visible) {
+            ForEach(PanelDetent.allCases, id: \.self) { detent in
+                Button(detent.title + (detent == state.detent ? " ✓" : "")) {
+                    var next = state
+                    next.setDetent(detent)
+                    detentValue = next.detent.rawValue
+                }
+            }
+            Button("Cancelar", role: .cancel) {}
+        }
     }
 
     private var controlStyle: AnyShapeStyle {
@@ -151,15 +155,6 @@ struct HomeView: View {
 }
 
 private extension TravelContext {
-    var symbol: String {
-        switch self {
-        case .planning: "map"
-        case .expenses: "list.bullet.rectangle"
-        case .savings: "target"
-        case .reviews: "star"
-        case .memories: "photo"
-        }
-    }
     var title: String {
         switch self {
         case .planning: "Planejamento"
