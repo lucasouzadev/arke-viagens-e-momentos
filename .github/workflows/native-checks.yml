@@ -83,6 +83,7 @@ jobs:
       - name: Run app in iPhone Simulators and capture screens
         run: bash scripts/capture-ios.sh
       - name: Upload iOS screenshots
+        if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ios-screenshots

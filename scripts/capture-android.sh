@@ -3,10 +3,11 @@ set -euo pipefail
 
 output="$PWD/build/screenshots/android"
 mkdir -p "$output"
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
 bash android/gradlew -p android --no-daemon :app:connectedDebugAndroidTest
+# The instrumentation runner cleans up installed packages after the test suite.
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 for size in standard compact; do
   if [ "$size" = compact ]; then
     adb shell wm size 720x1280

@@ -25,3 +25,9 @@ Escopo: views SwiftUI/Compose, ícones vetoriais simples Android, strings, teste
 Sem nova persistência, GPS, conta, rede, SDK ou chave. Google Maps real continua sem projeto/chave. Risco P2 de foco/overflow; reversão por correção na branch, sem mudar main. Leitores de tela, landscape/tablet e profiling exigem avaliação adicional; não serão declarados aprovados por screenshots.
 
 G-01/02 PASSOU em revisão de escopo; G-03/04/05/06/07/12/13 aguardam implementação e prova; G-08/09/10 NÃO APLICÁVEIS a novos dados/rede/licenças (não há alterações nessas áreas; bloqueios de distribuição anteriores permanecem); G-11 profiling NÃO EXECUTADO; G-14 atualizar ao concluir; G-15 configurado no chat, valor ausente dos arquivos.
+
+## Primeira execução e correções
+
+[Execução inicial](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41274938064), fonte `3cc47d9`: builds e testes unitários aprovados. Android executou os 2 testes de toque sem falhas, mas a limpeza do executor removeu o APK antes de capturar; script corrigido para reinstalar o mesmo build depois dos testes. Lint: 0 erros, 8 avisos (5 anteriores e 3 de versões de dependências de teste/BOM).
+
+iOS executou 2 testes UI: aviso do “+” passou; seletor de proporção falhou na ação de acessibilidade/visibilidade. Controle recebeu área de toque explícita de 44pt em largura disponível, estilo plain e prioridade de camada; a região interativa do mapa ficou limitada à própria forma. Teste continua usando toque nativo e agora exige `isHittable`; sem contorno por coordenadas, skip ou supressão. Em falha futura, script preservará um PNG diagnóstico e continuará retornando erro. Nova execução necessária.

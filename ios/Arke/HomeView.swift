@@ -29,8 +29,9 @@ struct HomeView: View {
                         .accessibilityLabel("Mapa Apple. Explore o mundo; localização pessoal desativada.")
                         .frame(height: mapHeight(in: geometry.size.height))
                         .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .contentShape(RoundedRectangle(cornerRadius: 20))
 
-                    panelMenu
+                    panelMenu.zIndex(1)
 
                     VStack(spacing: 12) {
                         cardHeader
@@ -122,8 +123,10 @@ struct HomeView: View {
         } label: {
             Label(state.detent.title, systemImage: "chevron.up.chevron.down")
                 .font(.caption)
-                .frame(minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
         .accessibilityLabel("Ajustar proporção")
         .accessibilityValue(state.detent.title)
