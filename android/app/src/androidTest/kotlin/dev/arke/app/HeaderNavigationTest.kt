@@ -51,8 +51,8 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
         compose.onNodeWithTag("place.review").performScrollTo().performClick()
         compose.onNodeWithTag("place.save").performScrollTo().performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.recreate()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.onActivity { activity -> androidx.lifecycle.ViewModelProvider(activity)[PlaceIdeasViewModel::class.java].load() }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu de teste").fetchSemanticsNodes().isNotEmpty() }
         val delete = compose.onNodeWithContentDescription("Excluir lugar: Museu de teste")

@@ -44,8 +44,16 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 fun ArkeHome(places: PlaceIdeasViewModel) {
     val placeState by places.state.collectAsState()
     var savedNotice by rememberSaveable { mutableStateOf(false) }
+    var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(placeState, pendingSaveId) {
+        if (pendingSaveId != null && placeState.ready && !placeState.busy && placeState.error == null && placeState.ideas.any { it.id == pendingSaveId }) {
+            showingAddPlace = false
+            savedNotice = true
+            pendingSaveId = null
+        }
+    }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(
             Modifier.safeDrawingPadding().imePadding().padding(16.dp),
@@ -127,8 +135,8 @@ fun ArkeHome(places: PlaceIdeasViewModel) {
     }
     if (showingAddPlace) {
         PlaceEditor(saving = placeState.busy, saveError = placeState.error,
-            onSave = { draft -> places.add(draft) { showingAddPlace = false; savedNotice = true } },
-            onCancel = { showingAddPlace = false })
+            onSave = { draft -> pendingSaveId = draft.id; places.add(draft) },
+            onCancel = { showingAddPlace = false; pendingSaveId = null })
     }
 }
 

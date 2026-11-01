@@ -28,13 +28,12 @@ class PlaceIdeasViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun add(draft: PlaceDraft, onSaved: () -> Unit) {
+    fun add(draft: PlaceDraft) {
         if (!mutableState.value.ready || mutableState.value.busy) return
         mutableState.value = mutableState.value.copy(busy = true)
         viewModelScope.launch {
             try {
                 mutableState.value = PlaceIdeasUiState(ideas = repository.add(draft), ready = true)
-                onSaved()
             } catch (error: CancellationException) { throw error }
             catch (_: Exception) { mutableState.value = mutableState.value.copy(busy = false, error = "Não foi possível salvar. Seu rascunho continua aberto para tentar novamente.") }
         }
