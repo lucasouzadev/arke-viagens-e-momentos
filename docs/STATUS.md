@@ -4,7 +4,7 @@
 
 ## Situação verificada
 
-**Em andamento — [M5-HEADER-01](engenharia/M5-HEADER-01.md):** cabeçalho com +/contexto central/relógio separado do scroll; proporção por toque entre os cartões. “+” abre aviso de preparação, sem salvar Pin. Testes de UI de troca dos cinco contextos, preservação do painel e abrir/fechar aviso preparados; execução real/capturas pendentes. Mesmo PR #2, sem merge.
+**M5-HEADER-01 verificado:** cabeçalho +/contexto central/relógio nas duas plataformas; seletor nativo por toque, preservando painel. “+” abre aviso, sem salvar dados. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41276436997), fonte `b9d7c2864f819e70403e2a6756af83448746c0ef`. Dois testes UI e três unitários por plataforma aprovados, lint 0 erros/8 avisos, oito capturas padrão/compacto claro/escuro inspecionadas. Próxima tarefa: puxador entre cartões. Leitores de tela, fonte ampliada, landscape/tablet e profiling pendentes. Google Maps real sem projeto/chave. Mesmo PR #2 em rascunho, sem merge/release. Contrato em docs/engenharia/M5-HEADER-01.md.
 
 **M5-UI-02 verificado:** cartões sem contorno no iOS/Android, sem sombras acrescentadas e com superfícies/spacing preservados. Labels escuros usam cores semânticas legíveis nas duas plataformas. [Builds/testes/lint/capturas aprovados](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41273311115), fonte `0683e8e1df10ef5bd2e53f381aa52bb71ed2cebb`; oito PNGs inspecionados. Contrato/gates no início de [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md). Layout inicial aprovado pelo responsável; esta alteração específica segue disponível no PR #2, sem merge.
 
@@ -26,15 +26,15 @@
 | M2 | Duas bases nativas iniciadas neste recorte; persistência/mapas e arquitetura de features pendentes |
 | M3 | Contratos de domínio, grupos, permissões e sync continuam propostos |
 | M4 | Workflow de verificação executado e aprovado nas duas plataformas; distribuição fora do escopo |
-| M5 | **Fundação compilada/testada; revisão visual pendente**, autorizada em ADR-009; demais features dependem de tarefas próprias |
+| M5 | **Fundação e cabeçalho compilados/testados; capturas inspecionadas**, autorizada em ADR-009; demais features dependem de tarefas próprias |
 
 ## Verificações e ambiente
 
 Clone limpo da main, histórico e integração do PR #1 verificados. JDK 17 local disponível; Java do PATH aponta para Java 8. SDK Android não encontrado nos locais verificados. Swift/Xcode não disponíveis no Windows. Gradle Wrapper oficial baixado e seu SHA-256 conferido; distribuição possui checksum fixado.
 
-Compilação nativa, testes unitários e lint Android aprovados. Oito screenshots atuais e inspeção estática padrão/compacta claro/escuro executadas; labels escuros corrigidos por cores semânticas em M5-UI-02. E2E de interações, leitores de tela, fonte ampliada, landscape/tablet e profiling **NÃO EXECUTADOS**. Matrizes em [fundação](engenharia/M5-BOOTSTRAP-01.md) e [capturas/mapas](engenharia/M5-PREVIEW-01.md). Guia em [DEVELOPMENT](engenharia/DEVELOPMENT.md).
+Compilação nativa, testes unitários e lint Android aprovados. Oito screenshots atuais e inspeção estática padrão/compacta claro/escuro executadas; labels escuros corrigidos por cores semânticas em M5-UI-02. Interações do cabeçalho verificadas por testes UI; leitores de tela, fonte ampliada, landscape/tablet e profiling **NÃO EXECUTADOS**. Matrizes em [fundação](engenharia/M5-BOOTSTRAP-01.md) e [capturas/mapas](engenharia/M5-PREVIEW-01.md). Guia em [DEVELOPMENT](engenharia/DEVELOPMENT.md).
 
-Lint Android terminou com **0 erros e 5 avisos**: target/dependências anteriores aos mais recentes, regras de extração/backup e ícone de desenvolvimento. Estão detalhados no contrato; não houve supressão. Definir regras de backup/transferência antes de persistir dados e revisar SDK/dependências antes de distribuição.
+Lint Android terminou com **0 erros e 8 avisos**: target/dependências anteriores aos mais recentes, regras de extração/backup e ícone de desenvolvimento, incluindo três avisos de versões de dependências de teste/BOM. Estão detalhados no contrato; não houve supressão. Definir regras de backup/transferência antes de persistir dados e revisar SDK/dependências antes de distribuição.
 
 ## Pendências e próxima ação
 
