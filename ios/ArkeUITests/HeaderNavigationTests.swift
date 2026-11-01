@@ -19,7 +19,9 @@ final class HeaderNavigationTests: XCTestCase {
             let option = app.buttons[title].firstMatch
             XCTAssertTrue(option.waitForExistence(timeout: 5))
             option.tap()
-            XCTAssertEqual(app.staticTexts["home.contextTitle"].label, title)
+            let selectedTitle = NSPredicate(format: "label == %@", title)
+            expectation(for: selectedTitle, evaluatedWith: app.staticTexts["home.contextTitle"])
+            waitForExpectations(timeout: 5)
             XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Detalhes")
         }
         app.buttons["home.panelMenu"].tap()
