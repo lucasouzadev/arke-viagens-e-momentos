@@ -27,15 +27,19 @@ class HeaderNavigationTest {
     @Test fun addPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("home.addPlace").fetchSemanticsNodes().any { !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled) } }
         compose.onNodeWithTag("home.addPlace").performClick()
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        org.junit.Assert.assertTrue(
+            compose.onNodeWithTag("place.cancel").fetchSemanticsNode().boundsInRoot.center.x <
+                compose.onNodeWithTag("place.title").fetchSemanticsNode().boundsInRoot.center.x,
+        )
+        compose.onNodeWithTag("place.review").performClick()
         compose.onNodeWithText("Informe o nome do lugar.").assertExists()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho de teste")
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        compose.onNodeWithTag("place.review").performClick()
         compose.onNodeWithText("Informe um endereço ou referência.").assertExists()
-        compose.onNodeWithTag("place.cancel").performScrollTo().performClick()
+        compose.onNodeWithTag("place.cancel").performClick()
         compose.onNodeWithText("Continuar editando").performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho de teste")
-        compose.onNodeWithTag("place.cancel").performScrollTo().performClick()
+        compose.onNodeWithTag("place.cancel").performClick()
         compose.onNodeWithTag("place.discard").performClick()
         compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
     }
@@ -45,12 +49,12 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("home.addPlace").performClick()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Museu de teste")
         compose.onNodeWithTag("place.address").performScrollTo().performTextReplacement("Rua de teste, 100")
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        compose.onNodeWithTag("place.review").performClick()
         compose.onNodeWithText("Museu de teste").assertExists()
-        compose.onNodeWithTag("place.edit").performScrollTo().performClick()
+        compose.onNodeWithTag("place.edit").performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
-        compose.onNodeWithTag("place.save").performScrollTo().performClick()
+        compose.onNodeWithTag("place.review").performClick()
+        compose.onNodeWithTag("place.save").performClick()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.onActivity { activity -> androidx.lifecycle.ViewModelProvider(activity)[PlaceIdeasViewModel::class.java].load() }

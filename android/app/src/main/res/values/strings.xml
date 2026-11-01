@@ -50,4 +50,7 @@
     <string name="loading_places">Abrindo seus lugares…</string>
     <string name="places_in_planning">Seus lugares estão em Planejamento.</string>
     <string name="view_places">Ver meus lugares</string>
+    <string name="place_section">O lugar que você quer conhecer</string>
+    <string name="check_idea">Confira sua ideia</string>
+    <string name="no_note">Sem nota</string>
 </resources>

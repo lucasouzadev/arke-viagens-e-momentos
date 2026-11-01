@@ -96,3 +96,6 @@ A documentação original não implementou aplicativo. A branch inicial de desen
 - [M5-HANDLE-01 — puxador](engenharia/M5-HANDLE-01.md): arrasto da faixa entre cartões.
 
 - [M5-PLACES-01 — ideias locais](engenharia/M5-PLACES-01.md): editor, revisão e armazenamento pessoal.
+
+- [DESIGN-006 — guia comum de UI/UX](design/DESIGN-006.md): paridade obrigatória entre iOS/Android.
+- [M5-PARITY-01](engenharia/M5-PARITY-01.md): implementação e provas da paridade.

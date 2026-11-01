@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 lightColorScheme(primary = brandBlue, onPrimary = Color.White)
             }
-            MaterialTheme(colorScheme = colors) { ArkeHome(places) }
+            MaterialTheme(colorScheme = colors, typography = ArkeTypography) { ArkeHome(places) }
         }
     }
 }

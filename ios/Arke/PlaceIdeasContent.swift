@@ -8,13 +8,13 @@ struct PlaceIdeasContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if store.ideas.isEmpty {
-                Text("Sua próxima viagem começa com uma ideia").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                Text("Sua próxima viagem começa com uma ideia").arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
                 Text("Guarde os lugares que você quer conhecer, mesmo antes de criar uma viagem.")
             } else {
-                Text("Ideias de lugares").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                Text("Ideias de lugares").arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
                 ForEach(store.ideas) { idea in
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(idea.name).font(.headline)
+                        Text(idea.name).arkeText(.contextTitle)
                         Text(idea.address).foregroundStyle(.secondary)
                         if !idea.note.isEmpty { Text(idea.note) }
                         Button("Excluir lugar", role: .destructive) { deleting = idea }
@@ -27,7 +27,7 @@ struct PlaceIdeasContent: View {
                 }
             }
             Text("Em desenvolvimento · ideias salvas apenas neste aparelho")
-                .font(.footnote).foregroundStyle(.secondary)
+                .arkeText(.caption).foregroundStyle(.secondary)
         }
         .alert("Excluir ideia?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Excluir", role: .destructive) {

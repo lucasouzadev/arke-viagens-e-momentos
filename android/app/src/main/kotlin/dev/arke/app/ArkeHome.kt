@@ -94,6 +94,7 @@ fun ArkeHome(places: PlaceIdeasViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Card(
                         modifier = Modifier.fillMaxWidth().height(mapHeight),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     ) { TravelMap(Modifier.fillMaxSize()) }
@@ -104,10 +105,11 @@ fun ArkeHome(places: PlaceIdeasViewModel) {
 
                     Card(
                         modifier = Modifier.fillMaxWidth().weight(1f),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     ) {
-                        Column(Modifier.padding(16.dp)) {
+                        Column(Modifier.padding(20.dp)) {
                             CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
                             HorizontalDivider(Modifier.padding(vertical = 12.dp))
                             Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {

@@ -70,3 +70,5 @@ Uma tarefa termina somente com escopo/aceite atendidos, documentos e links coere
 | Como especificar uma tarefa? | [TASK-CONTRACT](docs/agents/TASK-CONTRACT.md) |
 | O que mudou para o público? | [CHANGELOG](CHANGELOG.md) · [CHANGELOG-GUIDE](docs/agents/CHANGELOG-GUIDE.md) |
 | Como aparecerá no app? | [NEWS-MODAL](docs/releases/NEWS-MODAL.md) — futuro, não implementado |
+
+**Paridade obrigatória — 01/11/2026:** [DESIGN-006](docs/design/DESIGN-006.md) orienta as duas plataformas. Alça visível em sheets, Cancelar no topo esquerdo, mesma hierarquia de ações/campos e métricas-base de texto/espaçamento. APIs e materiais continuam nativos; não usar diferenças de plataforma para mudar a organização do fluxo. Revisar pares de capturas antes de avançar.

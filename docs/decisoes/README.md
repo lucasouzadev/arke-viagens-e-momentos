@@ -13,5 +13,6 @@ Status **Aceita** significa decisão de produto/arquitetura/documentação, **n�
 - [ADR-009 — Fundação nativa simultânea e compilação no Actions](ADR-009.md)
 - [ADR-010 — Mapas nativos por plataforma e capturas reais](ADR-010.md)
 - [ADR-011 — Primeiro fluxo de ideias locais](ADR-011.md)
+- [ADR-012 — Paridade de UI/UX entre plataformas](ADR-012.md)
 
 Uma alteração que contradiga decisão aceita precisa registrar motivo, alternativas e consequências em novo ADR. **Aprovação de uma regra não aprova propostas anexas ainda pendentes.**

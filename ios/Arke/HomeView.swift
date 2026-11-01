@@ -22,8 +22,8 @@ struct HomeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Arke").font(.title2.bold())
-            Text("Onde vamos?").font(.largeTitle.bold())
+            Text("Arke").arkeText(.appTitle)
+            Text("Onde vamos?").arkeText(.screenTitle)
             GeometryReader { geometry in
                 VStack(spacing: 8) {
                     Map(initialPosition: .region(MKCoordinateRegion(
@@ -45,7 +45,7 @@ struct HomeView: View {
                         Divider()
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
-                                if savedNotice { Text("Lugar salvo neste aparelho.").font(.footnote).accessibilityIdentifier("place.savedNotice") }
+                                if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
                                 if let error = places.error, !showingAddPlace {
                                     Text(error).foregroundStyle(Color(uiColor: .systemRed))
                                     Button("Tentar novamente") { Task { await places.load() } }
@@ -57,7 +57,7 @@ struct HomeView: View {
                                             Task { await places.remove(id: id) }
                                         })
                                     } else {
-                                        Text(state.context.title).font(.title2.bold())
+                                        Text(state.context.title).arkeText(.cardTitle)
                                         Text("Este espaço está em desenvolvimento.")
                                         Text("Seus lugares estão em Planejamento.")
                                         Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
@@ -74,6 +74,7 @@ struct HomeView: View {
                 }
             }
         }
+        .arkeText(.body)
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
         .task {
@@ -96,8 +97,8 @@ struct HomeView: View {
         HStack(spacing: 8) {
             Button { showingAddPlace = true } label: {
                 Image(systemName: "plus")
-                    .font(.title3.weight(.medium))
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 24, weight: .medium))
+                    .frame(width: 48, height: 48)
                     .contentShape(Rectangle())
             }
             .disabled(!places.ready || places.busy)
@@ -105,7 +106,7 @@ struct HomeView: View {
             .accessibilityIdentifier("home.addPlace")
 
             Text(state.context.title)
-                .font(.headline)
+                .arkeText(.contextTitle)
                 .foregroundStyle(Color(uiColor: .label))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -115,8 +116,8 @@ struct HomeView: View {
 
             Button { showingContextPicker = true } label: {
                 Image(systemName: "clock")
-                    .font(.title3)
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 24))
+                    .frame(width: 48, height: 48)
                     .contentShape(Rectangle())
             }
             .accessibilityLabel("Trocar contexto")
@@ -142,7 +143,7 @@ struct HomeView: View {
             VStack(spacing: 4) {
                 Capsule().fill(.secondary).frame(width: 36, height: 4)
                     .accessibilityHidden(true)
-                Text(state.detent.title).font(.caption)
+                Text(state.detent.title).arkeText(.label)
             }
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .contentShape(Rectangle())

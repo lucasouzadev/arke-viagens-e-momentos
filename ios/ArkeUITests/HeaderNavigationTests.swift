@@ -36,6 +36,9 @@ final class HeaderNavigationTests: XCTestCase {
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
         waitForExpectations(timeout: 5)
         addButton.tap()
+        let editorTitle = app.staticTexts["place.title"]
+        XCTAssertTrue(editorTitle.waitForExistence(timeout: 5))
+        XCTAssertLessThan(app.buttons["place.cancel"].frame.midX, editorTitle.frame.midX)
         app.buttons["place.review"].tap()
         XCTAssertTrue(app.staticTexts["Informe o nome do lugar."].exists)
         let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch

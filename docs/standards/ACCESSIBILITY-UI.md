@@ -49,3 +49,5 @@
 - Recomendações nativas Apple e Android complementam critérios WCAG quando a interação não é Web.
 
 Referências: [WCAG 2.2](https://www.w3.org/TR/WCAG22/), [Apple SwiftUI Accessibility](https://developer.apple.com/documentation/swiftui/accessibility-fundamentals), [Android Accessibility](https://developer.android.com/guide/topics/ui/accessibility/apps), [Lei 13.146/2015](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13146.htm).
+
+**Paridade obrigatória — 01/11/2026:** [DESIGN-006](../design/DESIGN-006.md) orienta as duas plataformas. Alça visível em sheets, Cancelar no topo esquerdo, mesma hierarquia de ações/campos e métricas-base de texto/espaçamento. APIs e materiais continuam nativos; não usar diferenças de plataforma para mudar a organização do fluxo. Revisar pares de capturas antes de avançar.
