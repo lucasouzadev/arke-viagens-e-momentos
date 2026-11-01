@@ -103,3 +103,5 @@ A documentação original não implementou aplicativo. A branch inicial de desen
 - [M5-FADE-01](engenharia/M5-FADE-01.md): transição inferior suave dos sheets.
 
 - [M5-DETAILS-01](engenharia/M5-DETAILS-01.md): seleção e leitura de ideias salvas.
+
+- [M5-DETAILS-UI-02](engenharia/M5-DETAILS-UI-02.md): detalhes mais limpos, ícones e informação por toque.

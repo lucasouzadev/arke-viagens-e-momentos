@@ -17,3 +17,13 @@ val ArkeTypography = Typography(
     labelMedium = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
     labelLarge = TextStyle(fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
 )
+
+@androidx.compose.runtime.Composable
+fun arkeSheetColor() = if (androidx.compose.foundation.isSystemInDarkTheme())
+    androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh
+else androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLowest
+
+@androidx.compose.runtime.Composable
+fun arkeInsetColor() = if (androidx.compose.foundation.isSystemInDarkTheme())
+    androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLowest
+else androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLow

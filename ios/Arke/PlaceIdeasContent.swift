@@ -60,6 +60,7 @@ struct PlaceDetails: View {
     let ideas: [PlaceIdea]
     let onClose: () -> Void
     @State private var selectedID: String
+    @State private var showingInfo = false
 
     init(ideas: [PlaceIdea], initialID: String, onClose: @escaping () -> Void) {
         self.ideas = ideas
@@ -68,29 +69,53 @@ struct PlaceDetails: View {
     }
 
     private var index: Int? { ideas.firstIndex { $0.id == selectedID } }
-    private var actionInk: Color { colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue }
+    private var ink: Color { Color(uiColor: .label) }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
+            HStack(spacing: 8) {
                 Button(action: onClose) {
-                    Text("Fechar").arkeText(.button)
-                        .frame(width: 88, height: 48, alignment: .leading).contentShape(Rectangle())
-                }.accessibilityIdentifier("detail.close")
-                Text("Detalhes do lugar").arkeText(.contextTitle)
-                    .foregroundStyle(Color(uiColor: .label))
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("detail.title")
-                Color.clear.frame(width: 88, height: 1).accessibilityHidden(true)
+                    Image(systemName: "xmark").font(.system(size: 20, weight: .medium))
+                        .frame(width: 48, height: 48).contentShape(Rectangle())
+                }.accessibilityLabel("Fechar").accessibilityIdentifier("detail.close")
+                VStack(spacing: 0) {
+                    Text("Seus lugares").arkeText(.contextTitle).accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("detail.title")
+                    if let index {
+                        Text("\(index + 1) / \(ideas.count)").arkeText(.caption).foregroundStyle(.secondary)
+                            .accessibilityLabel("Lugar \(index + 1) de \(ideas.count)")
+                            .accessibilityIdentifier("detail.position")
+                    }
+                }.frame(maxWidth: .infinity)
+                Button { showingInfo = true } label: {
+                    Image(systemName: "info.circle").font(.system(size: 22))
+                        .frame(width: 48, height: 48).contentShape(Rectangle())
+                }
+                .accessibilityLabel("Informações sobre este lugar").accessibilityIdentifier("detail.info")
+                .popover(isPresented: $showingInfo) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Sobre este lugar").arkeText(.contextTitle)
+                        Text("Esta ideia fica só neste aparelho, sem backup. Desinstalar o app pode apagá-la. O endereço ainda não aparece no mapa.")
+                            .arkeText(.body).accessibilityIdentifier("detail.infoText")
+                        Button { showingInfo = false } label: {
+                            Text("Entendi").arkeText(.button).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }.accessibilityIdentifier("detail.infoDismiss")
+                    }
+                    .foregroundStyle(ink).frame(width: 240, alignment: .leading).padding(20)
+                    .presentationCompactAdaptation(.popover)
+                }
             }.padding(.top, 24)
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 20) {
                     if let index {
                         let idea = ideas[index]
-                        section("Nome do lugar", value: idea.name, title: true, identifier: "detail.name")
-                        section("Endereço ou referência", value: idea.address, identifier: "detail.address")
-                        section("Nota opcional", value: idea.note.isEmpty ? "Sem nota" : idea.note, identifier: "detail.note")
+                        Text(idea.name).arkeText(.screenTitle).accessibilityAddTraits(.isHeader)
+                            .accessibilityIdentifier("detail.name")
+                        contentRow(icon: "mappin", value: idea.address, label: "Endereço", identifier: "detail.address")
+                        if !idea.note.isEmpty {
+                            contentRow(icon: "text.alignleft", value: idea.note, label: "Nota", identifier: "detail.note")
+                        }
                     } else {
                         Text("Este lugar não está mais disponível.").arkeText(.body)
                     }
@@ -104,39 +129,34 @@ struct PlaceDetails: View {
                     LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom).frame(height: 32)
                 }.allowsHitTesting(false).accessibilityHidden(true)
             }
-            VStack(spacing: 12) {
-                if let index {
-                    Text("Lugar \(index + 1) de \(ideas.count)").arkeText(.caption).accessibilityIdentifier("detail.position")
-                }
-                HStack(spacing: 16) {
-                    navigation("Anterior", offset: -1, enabled: (index ?? 0) > 0, id: "detail.previous")
-                    navigation("Próximo", offset: 1, enabled: index.map { $0 + 1 < ideas.count } ?? false, id: "detail.next")
-                }
-                Text("Ideia salva neste aparelho. O endereço ainda não está associado ao mapa.")
-                    .arkeText(.caption).foregroundStyle(Color(uiColor: .label))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.padding(.bottom, 16)
+            HStack(spacing: 16) {
+                navigation("Anterior", offset: -1, enabled: (index ?? 0) > 0, id: "detail.previous", primary: false)
+                navigation("Próximo", offset: 1, enabled: index.map { $0 + 1 < ideas.count } ?? false, id: "detail.next", primary: true)
+            }.padding(.top, 16).padding(.bottom, 16)
         }
-        .buttonStyle(.plain).foregroundStyle(actionInk).padding(.horizontal, 20)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .buttonStyle(.plain).foregroundStyle(ink).padding(.horizontal, 20)
+        .background(ArkeUI.sheetSurface(colorScheme))
         .presentationDetents([.fraction(0.94)]).presentationDragIndicator(.visible)
-        .presentationCornerRadius(28).presentationBackground(Color(uiColor: .systemGroupedBackground))
+        .presentationCornerRadius(28).presentationBackground(ArkeUI.sheetSurface(colorScheme))
     }
 
-    private func section(_ label: String, value: String, title: Bool = false, identifier: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label).arkeText(.label)
-            Text(value).arkeText(title ? .cardTitle : .body).accessibilityIdentifier(identifier)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(16)
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-        }.foregroundStyle(Color(uiColor: .label))
+    private func contentRow(icon: String, value: String, label: String, identifier: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon).font(.system(size: 20)).frame(width: 24).accessibilityHidden(true)
+            Text(value).arkeText(.body).accessibilityLabel("\(label): \(value)")
+                .accessibilityIdentifier(identifier).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 12))
     }
 
-    private func navigation(_ title: String, offset: Int, enabled: Bool, id: String) -> some View {
+    private func navigation(_ title: String, offset: Int, enabled: Bool, id: String, primary: Bool) -> some View {
         Button {
             if let index, ideas.indices.contains(index + offset) { selectedID = ideas[index + offset].id }
         } label: {
-            Text(title).arkeText(.button).frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
+            Text(title).arkeText(.button).foregroundStyle(primary ? .white : ink)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(primary ? ArkeUI.blue : ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 12))
+                .contentShape(Rectangle())
         }.disabled(!enabled).opacity(enabled ? 1 : 0.4).accessibilityIdentifier(id)
     }
 }
@@ -144,7 +164,7 @@ struct PlaceDetails: View {
 #if DEBUG
 enum DetailCapture {
     static let ideas = [
-        PlaceIdea(draft: PlaceDraft(id: "capture-garden", name: "Jardim das descobertas", address: "Entrada principal, perto da praça central", note: "Reservar uma manhã para caminhar, conhecer os jardins e fazer uma pausa com calma. Esta é uma ideia de demonstração, sem ponto marcado no mapa.")),
+        PlaceIdea(draft: PlaceDraft(id: "capture-garden", name: "Jardim das descobertas", address: "Entrada principal, perto da praça central", note: "Chegar pela manhã, caminhar pelos jardins e reservar um tempo para um café.")),
         PlaceIdea(draft: PlaceDraft(id: "capture-museum", name: "Museu dos caminhos", address: "Avenida das ideias, 100"))
     ]
 }

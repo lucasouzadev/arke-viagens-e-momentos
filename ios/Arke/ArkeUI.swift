@@ -1,6 +1,12 @@
 import SwiftUI
 
 enum ArkeUI {
+    static func sheetSurface(_ scheme: ColorScheme) -> Color {
+        Color(uiColor: scheme == .dark ? .secondarySystemGroupedBackground : .systemBackground)
+    }
+    static func insetSurface(_ scheme: ColorScheme) -> Color {
+        Color(uiColor: scheme == .dark ? .systemBackground : .secondarySystemBackground)
+    }
     static let margin: CGFloat = 20
     static let controlHeight: CGFloat = 48
     static let fieldRadius: CGFloat = 12

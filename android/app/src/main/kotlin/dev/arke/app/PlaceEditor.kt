@@ -50,7 +50,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     var confirmingDiscard by remember { mutableStateOf(false) }
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
-    val sheetColor = MaterialTheme.colorScheme.surfaceContainerLow
+    val sheetColor = arkeSheetColor()
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     fun cancel() {
@@ -162,7 +162,7 @@ private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit,
             keyboardOptions = KeyboardOptions(capitalization = if (maxLines == 1) KeyboardCapitalization.Words else KeyboardCapitalization.Sentences, imeAction = if (maxLines == 1) ImeAction.Next else ImeAction.Default),
             keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
             modifier = Modifier.fillMaxWidth().heightIn(min = minHeight)
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(12.dp))
+                .background(arkeInsetColor(), RoundedCornerShape(12.dp))
                 .padding(16.dp).testTag(tag).semantics { contentDescription = label },
         )
     }
@@ -173,7 +173,7 @@ private fun PlaceSummary(label: String, value: String, minHeight: Dp) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium)
         Text(value, style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(12.dp)).padding(16.dp))
+            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).background(arkeInsetColor(), RoundedCornerShape(12.dp)).padding(16.dp))
     }
 }
 

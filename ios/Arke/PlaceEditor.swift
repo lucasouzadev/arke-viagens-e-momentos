@@ -88,7 +88,7 @@ struct PlaceEditor: View {
                 .buttonStyle(.plain).foregroundStyle(ink).padding(.bottom, 16)
             }
             .padding(.horizontal, ArkeUI.margin)
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(ArkeUI.sheetSurface(colorScheme))
             .toolbar(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
@@ -107,7 +107,7 @@ struct PlaceEditor: View {
         .presentationDetents([.fraction(0.94)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
-        .presentationBackground(Color(uiColor: .systemGroupedBackground))
+        .presentationBackground(ArkeUI.sheetSurface(colorScheme))
         .interactiveDismissDisabled(!draft.isEmpty || saving)
     }
 
@@ -125,7 +125,7 @@ struct PlaceEditor: View {
                 .submitLabel(focus == .name ? .next : .return)
                 .onSubmit { if focus == .name { field = .address } }
                 .padding(16).frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
+                .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
                 .disabled(saving).accessibilityLabel(title).accessibilityIdentifier(identifier)
         }
     }
@@ -135,7 +135,7 @@ struct PlaceEditor: View {
             Text(title).arkeText(.label)
             Text(value).arkeText(.body)
                 .padding(16).frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
+                .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
         }
     }
 

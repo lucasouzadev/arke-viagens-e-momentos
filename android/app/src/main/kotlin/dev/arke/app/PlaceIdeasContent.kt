@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -76,10 +77,11 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onDelete: (String) -> Unit) {
 @Composable
 fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit) {
     var selectedID by rememberSaveable(initialID) { mutableStateOf(initialID) }
+    var showingInfo by remember { mutableStateOf(false) }
     val index = ideas.indexOfFirst { it.id == selectedID }
-    val sheetColor = MaterialTheme.colorScheme.surfaceContainerLow
-    val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
-    val buttonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
+    val sheetColor = arkeSheetColor()
+    val insetColor = arkeInsetColor()
+    val ink = MaterialTheme.colorScheme.onSurface
     ModalBottomSheet(
         onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = sheetColor, tonalElevation = 0.dp,
@@ -92,13 +94,32 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
     ) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).padding(horizontal = 20.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onClose, colors = buttonColors, contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier.width(88.dp).heightIn(min = 48.dp).testTag("detail.close")) {
-                    Text(stringResource(R.string.close_details), Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                IconButton(onClick = onClose, modifier = Modifier.size(48.dp).testTag("detail.close")) {
+                    Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_details), tint = ink)
                 }
-                Text(stringResource(R.string.place_details), Modifier.weight(1f).testTag("detail.title").semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                Spacer(Modifier.width(88.dp))
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.detail_header), Modifier.testTag("detail.title").semantics { heading() },
+                        style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                    if (index >= 0) {
+                        val positionLabel = stringResource(R.string.place_position, index + 1, ideas.size)
+                        Text(stringResource(R.string.place_position_compact, index + 1, ideas.size),
+                            Modifier.testTag("detail.position").semantics { liveRegion = LiveRegionMode.Polite; contentDescription = positionLabel },
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Box {
+                    IconButton(onClick = { showingInfo = true }, modifier = Modifier.size(48.dp).testTag("detail.info")) {
+                        Icon(painterResource(R.drawable.ic_info), stringResource(R.string.detail_info_label), tint = ink)
+                    }
+                    DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
+                        Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(stringResource(R.string.detail_info_title), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.place_detail_notice), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("detail.infoText"))
+                            TextButton(onClick = { showingInfo = false }, colors = ButtonDefaults.textButtonColors(contentColor = ink),
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("detail.infoDismiss")) { Text(stringResource(R.string.detail_info_dismiss)) }
+                        }
+                    }
+                }
             }
             key(selectedID) {
                 Column(Modifier.fillMaxWidth().weight(1f).drawWithContent {
@@ -106,46 +127,44 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                     drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
                         startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f), endY = size.height))
                 }.verticalScroll(rememberScrollState()).testTag("detail.body").padding(top = 24.dp, bottom = 48.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     if (index >= 0) {
                         val idea = ideas[index]
-                        DetailSection(stringResource(R.string.place_name), idea.name, "detail.name", true)
-                        DetailSection(stringResource(R.string.place_address), idea.address, "detail.address")
-                        DetailSection(stringResource(R.string.place_note), idea.note.ifEmpty { stringResource(R.string.no_note) }, "detail.note")
+                        Text(idea.name, style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.testTag("detail.name").semantics { heading() })
+                        DetailContentRow(idea.address, R.drawable.ic_pin, stringResource(R.string.place_address), "detail.address")
+                        if (idea.note.isNotEmpty()) DetailContentRow(idea.note, R.drawable.ic_note, stringResource(R.string.place_note), "detail.note")
                     } else Text(stringResource(R.string.place_unavailable))
                 }
             }
-            Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (index >= 0) Text(stringResource(R.string.place_position, index + 1, ideas.size),
-                    Modifier.fillMaxWidth().testTag("detail.position").semantics { liveRegion = LiveRegionMode.Polite },
-                    style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    TextButton(onClick = { if (index > 0) selectedID = ideas[index - 1].id }, enabled = index > 0, colors = buttonColors,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.previous")) { Text(stringResource(R.string.previous_place)) }
-                    TextButton(onClick = { if (index >= 0 && index + 1 < ideas.size) selectedID = ideas[index + 1].id },
-                        enabled = index >= 0 && index + 1 < ideas.size, colors = buttonColors,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.next")) { Text(stringResource(R.string.next_place)) }
+            Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Button(onClick = { if (index > 0) selectedID = ideas[index - 1].id }, enabled = index > 0,
+                    colors = ButtonDefaults.buttonColors(containerColor = insetColor, contentColor = ink),
+                    shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.previous")) {
+                    Text(stringResource(R.string.previous_place))
                 }
-                Text(stringResource(R.string.place_detail_notice), style = MaterialTheme.typography.bodySmall)
+                Button(onClick = { if (index >= 0 && index + 1 < ideas.size) selectedID = ideas[index + 1].id },
+                    enabled = index >= 0 && index + 1 < ideas.size, shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.next")) { Text(stringResource(R.string.next_place)) }
             }
         }
     }
 }
 
 @Composable
-private fun DetailSection(label: String, value: String, tag: String, title: Boolean = false) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
-        Text(value, style = if (title) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(12.dp))
-                .padding(16.dp).testTag(tag))
+private fun DetailContentRow(value: String, icon: Int, label: String, tag: String) {
+    Row(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(12.dp)).padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(24.dp))
+        Text(value, style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f).testTag(tag).semantics { contentDescription = "$label: $value" })
     }
 }
 
 internal fun detailCaptureIdeas(): List<PlaceIdea> {
     check(BuildConfig.DEBUG)
     return listOf(
-        PlaceIdea.from(PlaceDraft(id = "capture-garden", name = "Jardim das descobertas", address = "Entrada principal, perto da praça central", note = "Reservar uma manhã para caminhar, conhecer os jardins e fazer uma pausa com calma. Esta é uma ideia de demonstração, sem ponto marcado no mapa.")),
+        PlaceIdea.from(PlaceDraft(id = "capture-garden", name = "Jardim das descobertas", address = "Entrada principal, perto da praça central", note = "Chegar pela manhã, caminhar pelos jardins e reservar um tempo para um café.")),
         PlaceIdea.from(PlaceDraft(id = "capture-museum", name = "Museu dos caminhos", address = "Avenida das ideias, 100")),
     )
 }
