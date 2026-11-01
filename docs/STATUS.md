@@ -1,6 +1,6 @@
 # STATUS — Estado verificável do Arke
 
-**M5-PLACES-01 em andamento:** editor nativo de nome/endereço/nota, revisão, confirmação e cancelamento, ideias locais e exclusão confirmada. Sem geocoding/Pin/conta/rede nova. Testes e capturas pendentes; contrato em docs/engenharia/M5-PLACES-01.md. Sem merge/release.
+**M5-PLACES-01 verificado:** adicionar/revisar/corrigir/cancelar, ideias pessoais gravadas no aparelho e exclusão confirmada. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41326580725), fonte `e54cc6fde18f0851d4f3bc70a6546c81baf43914`. iOS: 9 core + 4 UI; Android: 6 core + 4 UI + 2 repositório; lint 0/8; 16 PNGs inspecionados. Sem geocoding/Pin/conta/rede nova; sem backup nesta etapa. Regras/limites e testes não executados no [contrato](engenharia/M5-PLACES-01.md). Próximo: contrato de seleção/detalhes e futura associação ao mapa. Mesma branch/PR #2 em rascunho, sem merge/release. Registros anteriores são históricos.
 
 **M5-HANDLE-01 verificado:** puxador vertical contínuo e encaixe nos três estados, com seletor por toque e ações acessíveis. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41310026574), fonte `f2e8f67496c6b6c21657f6295209f71371f76800`. Três testes UI e três unitários por plataforma aprovados; lint 0/8; oito PNGs padrão/compacto claro/escuro inspecionados. iOS corrigido após falha de retorno; repetição Android superou download inválido do SDK. Detalhes e limites em [contrato](engenharia/M5-HANDLE-01.md). Gestos testados nos aparelhos padrão; leitores de tela, fonte ampliada e landscape/tablet pendentes. Próximo: contrato do fluxo de adicionar lugar. Sem merge/release. Registros anteriores abaixo são históricos.
 
@@ -30,7 +30,7 @@
 | --- | --- |
 | M0 | Pacote documental integrado via PR #1; isso não aprova todas as propostas anexas |
 | M1 | Estrutura aprovada preservada; detalhes de interação, azul final e validação visual pendentes |
-| M2 | Duas bases nativas iniciadas neste recorte; persistência/mapas e arquitetura de features pendentes |
+| M2 | Bases nativas e coleção de ideias escritas locais verificadas; Pin geográfico, persistência de viagens/grupos e sync pendentes |
 | M3 | Contratos de domínio, grupos, permissões e sync continuam propostos |
 | M4 | Workflow de verificação executado e aprovado nas duas plataformas; distribuição fora do escopo |
 | M5 | **Fundação e cabeçalho compilados/testados; capturas inspecionadas**, autorizada em ADR-009; demais features dependem de tarefas próprias |

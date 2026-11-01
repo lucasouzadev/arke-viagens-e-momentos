@@ -4,7 +4,7 @@
 
 O Arke é um projeto aberto de planejamento de viagens solo e em grupo. Pins, roteiros, gastos, metas de economia, avaliações e memórias compõem uma única experiência centrada no mapa.
 
-> **Estado atual nesta branch:** fundação iOS/Android em desenvolvimento, com SwiftUI, Compose e verificação no GitHub Actions. Apple Maps inicial integrado; Google Maps preparado, aguardando configuração privada. Oito capturas reais foram geradas em simuladores. Recursos de viagem e revisão de acessibilidade continuam pendentes. Nenhuma versão está disponível para instalar. [Fundação](docs/decisoes/ADR-009.md) · [Mapas e capturas](docs/decisoes/ADR-010.md).
+> **Estado atual nesta branch:** fundação iOS/Android em desenvolvimento, com SwiftUI, Compose e verificação no GitHub Actions. Apple Maps inicial integrado; Google Maps preparado, aguardando configuração privada. Puxador e fluxo de ideias locais preparados, com editor, revisão e exclusão confirmada; [evidências e limites](docs/engenharia/M5-PLACES-01.md). Capturas reais de home e editor são geradas em simuladores. Recursos de viagem e revisão de acessibilidade continuam pendentes. Nenhuma versão está disponível para instalar. [Fundação](docs/decisoes/ADR-009.md) · [Mapas e capturas](docs/decisoes/ADR-010.md).
 
 ## Princípios aprovados
 
@@ -19,7 +19,7 @@ O Arke é um projeto aberto de planejamento de viagens solo e em grupo. Pins, ro
 
 ## Novidades do projeto
 
-Começamos a preparar as bases iOS e Android e a tela inicial. Os recursos de viagem continuam em desenvolvimento. **Ainda não existe uma versão para instalar.**
+Preparamos as bases iOS e Android, a tela de dois cartões e o primeiro fluxo de ideias de lugares escritas, guardadas apenas no aparelho e sem backup nesta etapa. Os recursos de viagem continuam em desenvolvimento. **Ainda não existe uma versão para instalar.**
 
 Para desenvolver ou compilar, veja o [guia de desenvolvimento](docs/engenharia/DEVELOPMENT.md) e o [contrato da primeira tarefa](docs/engenharia/M5-BOOTSTRAP-01.md).
 

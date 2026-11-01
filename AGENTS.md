@@ -4,6 +4,8 @@
 
 > **Recorte seguinte autorizado:** [ADR-010](docs/decisoes/ADR-010.md) e [M5-PREVIEW-01](docs/engenharia/M5-PREVIEW-01.md) autorizam Apple Maps/Google Maps sem GPS e capturas reais em simuladores. Somente PNGs de evidência podem ser enviados pelo Actions; sem binários de distribuição. Google Cloud/chave Android ainda indisponíveis, sem criação automática de conta/faturamento.
 
+> **Continuidade de fluxos — 01/11/2026:** [M5-PLACES-01](docs/engenharia/M5-PLACES-01.md) e [ADR-011](docs/decisoes/ADR-011.md) delimitam editor/revisão/cancelamento, ideias escritas pessoais no aparelho e exclusão confirmada. Sem Pin geográfico, geocoding, GPS, conta, grupo, sync ou rede nova. Persistência local não aprova os contratos M3. Manter arquivos de dados existentes em reversões; sem merge/release automático.
+
 Este arquivo é o ponto de entrada obrigatório para agents de documentação, design, iOS, Android, backend, revisão e CI. Não substitui as especificações; indica **onde encontrar a fonte de verdade** e o que pode ser alterado.
 
 ## 0. Comece sempre aqui

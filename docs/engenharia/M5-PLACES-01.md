@@ -1,6 +1,6 @@
 # M5-PLACES-01 — Adicionar, revisar e guardar ideias de lugares
 
-Data: 01/11/2026. Estado: em andamento. M5, branch chore/development-kickoff, PR #2.
+Data: 01/11/2026. Estado: implementado e verificado no PR #2, sem merge. M5, branch chore/development-kickoff, PR #2.
 
 Autorização: responsável autorizou os próximos fluxos após a entrega do puxador. Escopo adotado: primeiro fluxo completo de adicionar lugar, revisão, voltar para editar, cancelamento com confirmação, coleção pessoal local e exclusão confirmada. A preferência opcional apresentada no chat foi nome/endereço escrito/nota e armazenamento no aparelho, para funcionar nas duas plataformas sem chave Google. Esse padrão mínimo não aprova schema M3, contas, compartilhamento, sync ou Pin geográfico.
 
@@ -25,3 +25,17 @@ Execução 41323904156, fonte a54c4ee: Android aprovou build, seis testes core, 
 A execução 41323904156 terminou aprovada nas duas plataformas: iOS 9 testes core + 4 UI; Android 6 core + 4 UI + 2 repositório. Capturas iOS confirmaram prompts nativos excessivamente claros; prompts recebem UIColor.label explícito, mantendo os mesmos rótulos acessíveis, para leitura em claro/escuro. O reforço de gravação/contraste posterior continua exigindo nova verificação.
 
 A confirmação de exclusão limpa a mensagem de salvamento anterior, evitando que o estado vazio mantenha um aviso antigo. Os testes de exclusão verificam também a ausência desse aviso.
+
+## Verificação final
+
+[CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41326580725), fonte `e54cc6fde18f0851d4f3bc70a6546c81baf43914`. Builds aprovados; Swift executou 9 testes core e 4 UI sem falhas. Android executou 6 testes core e 6 instrumentados (4 UI e 2 de repositório) sem falhas. Lint: 0 erros/8 avisos, sem supressão. O aviso anterior de backup foi resolvido por regras explícitas; Lifecycle acrescenta aviso de versão, e dois recursos antigos sem uso foram removidos. Demais avisos: SDK/dependências e ícone de desenvolvimento.
+
+Fluxos verificados: campos obrigatórios/whitespace e limites Unicode, revisão/volta para corrigir, confirmação ao descartar e manter edição, gravar e recarregar, cancelamento de exclusão e exclusão confirmada, ausência do aviso antigo após excluir, regressão de contexto/painel/drag. iOS fecha/reabre processo e encontra ideia; Android recria Activity e relê repositório, e teste separado abre outra instância do repositório. Repositórios verificam retry idempotente, remoção, arquivo inválido/versão desconhecida preservados. Somente dados sintéticos nos testes; nenhuma ideia de usuário real foi criada pelo agente.
+
+Dezesseis PNGs originais inspecionados: home/editor vazio, padrão/compacto e claro/escuro, nas duas plataformas. iPhone 16 1179×2556, SE 3 750×1334; Android API 35 1080×2400 e 720×1280. Rótulos e controles do editor legíveis nos dois temas; cores/forma dos cartões preservadas. Capturas não demonstram formulário preenchido/revisão; estes estados foram exercitados pelos testes UI padrão. iOS abre editor vazio por entrada exclusiva Debug; Android toca o + a partir do XML de acessibilidade observado. Nada é salvo pelas rotinas de captura.
+
+G-01/02/03/04 PASSOU: contrato/diff nativo, separação modelo/IO/views, lint/build e decisão de escopo revisados. G-05 PASSOU para fluxos acima. G-06 PASSOU somente na inspeção das quatro viewports/temas e recriação Activity; fonte 200%, landscape/tablet e IME físico Android NÃO EXECUTADOS. iOS digitação/fechamento do teclado exercitados no aparelho padrão. G-07 PASSOU na revisão de rótulos/alternativas e inspeção visual, sem alegar auditoria global de contraste; VoiceOver/TalkBack reais NÃO EXECUTADOS. G-08/09 PASSOU para revisão técnica de sandbox, backup, minimização, ausência de rede/credenciais e ameaças descritas; backup/restauração reais, aparelho físico e revisão jurídica de distribuição NÃO EXECUTADOS. G-10 PASSOU no round-trip, deduplicação de retry e preservação de snapshot inválido; falha física de disco e perda abrupta de energia NÃO EXECUTADOS. G-11 profiling NÃO EXECUTADO. G-12 PASSOU conforme CI. G-13 PASSOU para desenvolvimento/capturas sem distribuição, com reversão preservando snapshots; nenhum release/merge. G-14 PASSOU com docs/PR reconciliados. G-15 PASSOU na revisão do diff sem valor privado em artefatos.
+
+Risco residual P2: configurações não exercitadas, recuperação após desinstalar e coleção muito grande sem profiling. Nenhum P0/P1 identificado neste recorte; isso não é aprovação de distribuição nem certificação. Próximo: contrato de seleção/detalhes de lugar e futura associação ao mapa, sem criar Google Cloud/chave/faturamento automaticamente.
+
+Referências de armazenamento: [Android Auto Backup](https://developer.android.com/identity/data/autobackup), [Apple exclusão de backup](https://developer.apple.com/documentation/foundation/urlresourcekey/isexcludedfrombackupkey), [Apple proteção de arquivo](https://developer.apple.com/documentation/foundation/nsdata/writingoptions/completefileprotectionuntilfirstuserauthentication). Controle configurado/revisado não equivale a auditoria física de backup.

@@ -10,7 +10,7 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 - Diferenciamos os tons do fundo e do cartão para preservar sua forma nos modos claro e escuro.
 
-- Organizamos o cabeçalho com adicionar lugar, contexto central e relógio; o salvamento de lugares continua em desenvolvimento.
+- Organizamos o cabeçalho com adicionar lugar, contexto central e relógio.
 
 - Retiramos os contornos dos dois cartões para deixar a tela mais contínua.
 - Ajustamos os textos dos controles no modo escuro para melhorar a leitura.

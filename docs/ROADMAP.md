@@ -149,6 +149,6 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-HEADER-01](engenharia/M5-HEADER-01.md) | +/contexto central/relógio, cabeçalho fora do scroll | Implementado no PR #2; testes de toque e oito capturas verificados, sem merge |
 | [M5-TONES-01](engenharia/M5-TONES-01.md) | Fundo/cartão em tons semânticos distintos | CI e oito PNGs verificados no PR #2, sem merge |
 | [M5-HANDLE-01](engenharia/M5-HANDLE-01.md) | Puxador entre cartões | Implementado/verificado: 3 testes UI por plataforma e oito capturas no PR #2, sem merge |
-| [M5-PLACES-01](engenharia/M5-PLACES-01.md) | Adicionar/revisar ideias locais e excluir com confirmação | Em implementação e validação no PR #2 |
+| [M5-PLACES-01](engenharia/M5-PLACES-01.md) | Adicionar/revisar ideias locais e excluir com confirmação | Implementado/verificado: 8 testes UI, persistência local e 16 capturas no PR #2, sem merge |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.
