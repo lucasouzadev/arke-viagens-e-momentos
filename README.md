@@ -4,7 +4,7 @@
 
 O Arke é um projeto aberto de planejamento de viagens solo e em grupo. Pins, roteiros, gastos, metas de economia, avaliações e memórias compõem uma única experiência centrada no mapa.
 
-> **Estado atual:** projeto **documentation-first**. Não há app, backend, CI de build, distribuição ou integração financeira nesta entrega.
+> **Estado atual nesta branch:** fundação iOS/Android em desenvolvimento, com SwiftUI, Compose e workflow de compilação no GitHub Actions. Mapas e recursos de viagem ainda não estão implementados. Nenhuma versão está disponível para instalar. [Autorização e limites](docs/decisoes/ADR-009.md).
 
 ## Princípios aprovados
 
@@ -15,11 +15,13 @@ O Arke é um projeto aberto de planejamento de viagens solo e em grupo. Pins, ro
 - **Pins independentes de viagens**; uma Trip pode ser solo ou compartilhada.
 - **iOS nativo em SwiftUI, Android nativo em Compose**, sem framework cross-platform para UI.
 - **Uma única cor de marca:** azul opaco; fundos, superfícies, textos e aparência Light/Dark seguem o dispositivo. HEX candidato em [THEME-001](docs/brand/THEME-001.md).
-- **Documentação antes do código**, até nova autorização.
+- **Documentação antes do código**, com início delimitado das bases nativas autorizado em [ADR-009](docs/decisoes/ADR-009.md).
 
 ## Novidades do projeto
 
-Estamos organizando as funções de viagens, os dois cartões e como as informações serão apresentadas, antes de desenvolver o aplicativo. **Ainda não existe uma versão para instalar.**
+Começamos a preparar as bases iOS e Android e a tela inicial. Os recursos de viagem continuam em desenvolvimento. **Ainda não existe uma versão para instalar.**
+
+Para desenvolver ou compilar, veja o [guia de desenvolvimento](docs/engenharia/DEVELOPMENT.md) e o [contrato da primeira tarefa](docs/engenharia/M5-BOOTSTRAP-01.md).
 
 Veja o [**CHANGELOG — Novidades do Arke**](CHANGELOG.md), escrito sem linguagem técnica. Quando houver aplicativo disponível, as novidades de cada versão também poderão aparecer em um modal dentro dele (ainda não implementado).
 

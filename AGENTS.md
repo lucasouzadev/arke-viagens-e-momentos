@@ -1,5 +1,7 @@
 # AGENTS.md — Regras centrais do Arke
 
+> **Exceção de fase — 31/10/2026:** o responsável autorizou iniciar ambas as bases nativas e compilar no GitHub Actions. [ADR-009](docs/decisoes/ADR-009.md) e [M5-BOOTSTRAP-01](docs/engenharia/M5-BOOTSTRAP-01.md) autorizam somente a fundação inicial, testes e builds de verificação. As restrições documentation-first abaixo continuam para o restante não autorizado; não bloquear novamente esta tarefa por instruções históricas. Sem merge, assinatura de distribuição ou release automático.
+
 Este arquivo é o ponto de entrada obrigatório para agents de documentação, design, iOS, Android, backend, revisão e CI. Não substitui as especificações; indica **onde encontrar a fonte de verdade** e o que pode ser alterado.
 
 ## 0. Comece sempre aqui

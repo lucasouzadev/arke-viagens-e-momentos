@@ -1,70 +1,38 @@
 # STATUS — Estado verificável do Arke
 
-**Atualizado em:** 27/10/2026. **Documento de controle** (não substitui decisões em ADR nem planejamento em ROADMAP).
+**Atualizado em:** 31/10/2026. O andamento não substitui decisões de produto.
 
-## Visão rápida
+## Situação verificada
 
-- **Fase:** documentação antes de implementação ([ADR-005](decisoes/ADR-005.md)).
-- **Branch de trabalho documental:** `docs/design-004-ux-flows`.
-- **Revisão remota:** [PR #1](https://github.com/lucasouzadev/Arke---Viagens-e-momentos/pull/1), aberto; merge **não confirmado**.
-- **Código nativo de app:** não iniciado neste repositório.
-- **CI, TestFlight, APK, backend e deploy:** não configurados nesta fase.
-- **Decisões aceitas:** duas bases nativas, dois cartões, Pin independente, Cofrinho informativo, documentation-first, uma cor azul opaca e tema do dispositivo.
-- **Ainda propostas:** física detalhada, identidade final, stamps, grupos, finanças, permissões, fornecedor de mapa, modelo de dados final.
-- **Governança M0 em revisão:** [prompt universal](agents/PROMPT-OBRIGATORIO.md), [gates de qualidade](agents/QUALITY-GATES.md), [salvaguardas](agents/SAFEGUARDS.md), [modelo de risco](agents/THREAT-MODEL.md), arquitetura, acessibilidade, segurança e jurídico.
-- **Canário:** tratamento confirmado no chat; literal **não armazenado** no GitHub. O padrão pode ser levado a futuras sessões pelas preferências pessoais de cada agent, sob controle do responsável; não é possível validar perfis externos apenas pelo repositório.
-- **Verificações reais do conjunto M0:** texto, coerência de links e escopo documental; nenhum teste de segurança real, conformidade jurídica ou app nativo foi executado.
+- O PR documental [#1](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/1) foi integrado em **28/10/2026**, commit `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`. Os registros anteriores de PR aberto estavam desatualizados.
+- O responsável autorizou iniciar **ambas as bases nativas** e compilar no **GitHub Actions**: [ADR-009](decisoes/ADR-009.md).
+- Branch: `chore/development-kickoff`; tarefa [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md), em andamento, sem merge desta implementação.
+- Projetos SwiftUI e Compose preparados com home inicial de dois cartões, menus dos cinco contextos e três proporções de painel. Mapas são espaços identificados como em desenvolvimento.
+- Testes de estado e workflow de compilação preparados; execução remota ainda pendente. **Código escrito não equivale a app validado.**
+- Sem mapa integrado, Pins, carrossel, gestos do relógio, viagem persistida, contas, grupos, backend, publicação, TestFlight ou release.
 
-## Milestones — status, não previsão
+## Marcos
 
-| Marco | Estado | Evidência / restrição |
-| --- | --- | --- |
-| M0 — governança agents e documentação | **em revisão** | `AGENTS.md`, ROADMAP unificado, workflow, handoff/status e changelog propostos neste PR |
-| M0 — baselines interdisciplinares | **em revisão** | prompt obrigatório, G-01..G-15, threat model, arquitetura, acessibilidade, segurança e jurídico na mesma branch |
-| M1 — contratos de UI | **planejado** | DESIGN-001/002/003 aprovados em conceito; DESIGN-004/005 propostos |
-| M2 — arquitetura nativa | **planejado** | direções SwiftUI/Compose documentadas; sem código |
-| M3 — domínio de viagens | **planejado** | entidades, grupo e finanças em proposta |
-| M3 — contratos de dados (propostos) | **em revisão documental** | Pin/Place/Trip, permissão granular e sync/offline especificados; nenhum backend ativo |
-| M4 — qualidade/distribuição | **planejado** | quality-gates especificados; sem workflows executáveis |
-| M5 — implementação | **bloqueado** | requer autorização explícita, contratos e ferramentas escolhidos |
+| Marco | Estado verificável |
+| --- | --- |
+| M0 | Pacote documental integrado via PR #1; isso não aprova todas as propostas anexas |
+| M1 | Estrutura aprovada preservada; detalhes de interação, azul final e validação visual pendentes |
+| M2 | Duas bases nativas iniciadas neste recorte; persistência/mapas e arquitetura de features pendentes |
+| M3 | Contratos de domínio, grupos, permissões e sync continuam propostos |
+| M4 | Workflow de verificação preparado; execução remota pendente; distribuição fora do escopo |
+| M5 | **Fundação em andamento**, autorizada em ADR-009; demais features dependem de tarefas próprias |
 
-## Auditoria de cobertura documental — 27/10/2026
+## Verificações e ambiente
 
-**Conclusão:** a fundação documental necessária para organizar agents **está preparada na branch e disponível para revisão**. Não há necessidade de inventar novos documentos gerais antes de resolver as decisões listadas abaixo. **Isto não é certificação de segurança, conformidade ou prontidão de aplicativo.**
+Clone limpo da main, histórico e integração do PR #1 verificados. JDK 17 local disponível; Java do PATH aponta para Java 8. SDK Android não encontrado nos locais verificados. Swift/Xcode não disponíveis no Windows. Gradle Wrapper oficial baixado e seu SHA-256 conferido; distribuição possui checksum fixado.
 
-| Frente | Cobertura atual | O que falta |
-| --- | --- | --- |
-| M0 — agentes e qualidade | AGENTS, prompt obrigatório, ROADMAP único, WORKFLOW, HANDOFF, STATUS, G-01..G-15, salvaguardas | **revisar e integrar PR #1** |
-| Produto e UX | Visão, cinco contextos, dois cartões, DESIGN-001 a 005, contrato M1 | validar detalhes propostos em dispositivos e aprovar estados/gestos |
-| Identidade | BRAND/THEME/STAMPS, um azul opaco e tema do dispositivo | escolher tom exato, ícones/assets e direitos |
-| Natividade | estratégia SwiftUI/MapKit + Compose/Android, fronteiras candidatas | decidir fornecedor de mapas Android e módulos definitivos |
-| Dados e grupo | M3-DATA-CONTRACT, PERMISSIONS, SYNC-OFFLINE e GROUP/FINANCE | decidir autenticação, papéis, retenção, convites e conflitos |
-| Segurança/jurídico | baseline OWASP, LGPD/LBI, análise de ameaças e licenças | revisão concreta por contexto antes de processar dados/lançar |
-| Qualidade e release | matriz QA, E2E futuro, estratégia CI/TestFlight/APK e novidades | implementação/testes reais **somente após autorização** |
+Compilação nativa, testes, screenshots, E2E, leitores de tela e profiling **ainda não aprovados**. A matriz detalhada G-01..G-15 fica no [contrato](engenharia/M5-BOOTSTRAP-01.md). Guia em [DEVELOPMENT](engenharia/DEVELOPMENT.md).
 
-### Decisões que desbloqueiam a próxima etapa
+## Pendências e próxima ação
 
-1. **Aprovação e merge do PR documental**, após revisão das propostas, sem tratar tudo como aceito por associação.
-2. **Design:** tom do azul, detalhes do relógio/carrossel e assets.
-3. **Domínio:** contas, convite, papéis, o que é pessoal versus compartilhado, exclusão/retenção e sincronização.
-4. **Infra e negócio:** provedor de mapas Android, política de offline, moedas/finanças e licença final de código/marca.
+1. Abrir PR da fundação, executar os dois jobs e corrigir falhas reais antes de declarar compilação aprovada.
+2. Revisar a home em iOS/Android, claro/escuro, tamanhos distintos, fonte ampliada e VoiceOver/TalkBack.
+3. Escolher provedor de mapa Android e aprovar o primeiro recorte de Pin, persistência/privacidade e interações.
+4. Resolver licença final, marca e requisitos de distribuição antes de lançamento. Nenhuma licença foi presumida.
 
-Não confundir **“documentos existentes”** com **“decisões aprovadas”**. O Arke pode parar de produzir novos documentos gerais enquanto revisamos os existentes.
-
-## Próxima decisão necessária
-
-Revisar o **pacote documental M0** e o conteúdo aberto no [PR #1](https://github.com/lucasouzadev/Arke---Viagens-e-momentos/pull/1). **Não** declarar aprovado todo conteúdo do PR pelo simples fato de M0 ter sido solicitado.
-
-## Impedimentos
-
-- Identidade gráfica e HEX definitivo de azul por validar.
-- Participantes e políticas de compartilhamento não definidos.
-- Mapa Android/provedor, offline e sync não decididos.
-- App não deve ser iniciado ainda.
-- Atualizações públicas de app só após release verificável.
-
-## Auditoria da última mudança
-
-Revisão documental e verificação de links internos são aplicáveis. Testes de interface, simulador, Maestro/E2E, segurança operacional de builds e publicação de releases **não foram executados**. Ver [HANDOFF](agents/HANDOFF.md).
-
-**Manutenção:** o agent que avançar um milestone ou fizer handoff deve atualizar esta página na mesma alteração, com fatos e links — nunca estados otimistas.
+Não há merge automático nem aprovação geral de M1–M4. Continuidade em [HANDOFF](agents/HANDOFF.md); planejamento em [ROADMAP](ROADMAP.md).

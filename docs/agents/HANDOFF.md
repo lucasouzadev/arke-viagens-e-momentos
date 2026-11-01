@@ -15,38 +15,30 @@ Todo agent que encerrar uma tarefa, suspender por impedimento ou transferir resp
 
 Registros históricos importantes devem ficar em comentários de PR ou arquivos de histórico próprios, não em cópias paralelas de STATUS. Este documento mantém **a passagem mais recente relevante**.
 
-## Última passagem registrada — 27/10/2026
+## Última passagem registrada — 31/10/2026
 
-**De:** documentação de produto e design para M0 Agent Foundation.  
-**Branch de integração documental:** `docs/design-004-ux-flows`  
-**PR:** [#1](https://github.com/lucasouzadev/Arke---Viagens-e-momentos/pull/1) — aberto, sem merge confirmado.  
-**Escopo:** documentação apenas; sem app, builds, CI, backend ou credenciais.
+**Tarefa:** M5-BOOTSTRAP-01 · **Branch:** `chore/development-kickoff`.  
+**Base verificada:** `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`.  
+**PR anterior:** [#1](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/1), integrado em 28/10/2026. PR da fundação ainda a abrir.
 
-### Fonte de verdade encontrada
+### Autorização e mudanças
 
-- ADR-001 a 008 aprovados como **direções**, não implementação; o ADR-008 não informa o nome de tratamento.
-- DESIGN-004/005, GROUP-001, FINANCE-001, STAMPS e detalhes visuais seguem como **propostas**.
-- Cor de marca: **um azul sólido**; tonalidade exata candidata, não aprovada. Tema automático por dispositivo.
-- M0 deve substituir o ROADMAP existente por uma estrutura **única** em `docs/ROADMAP.md`; **não** criar `ROADMAP-V2.md`.
-- M0 foi ampliado com **PROMPT-OBRIGATORIO / QUALITY-GATES / SAFEGUARDS / THREAT-MODEL** e quatro standards: arquitetura, acessibilidade, segurança e jurídico. São direções documentais, sem testes nativos ou certificação.
-- Canário obrigatório foi solicitado para **toda resposta em chat**; o tratamento foi confirmado no chat e deve poder ser recuperado de preferências pessoais privadas da ferramenta. Nunca gravar o valor em código/artefatos; não presumir que contas distintas compartilhem configurações. Ver [CANARY](CANARY.md).
-- M3 recebeu propostas de [modelo de dados](../arquitetura/M3-DATA-CONTRACT.md), [permissões](../arquitetura/PERMISSIONS.md) e [sync/offline](../arquitetura/SYNC-OFFLINE.md). Nenhum schema/backend implementado.
+O responsável autorizou iniciar iOS/Android juntos e compilar no GitHub Actions. [ADR-009](../decisoes/ADR-009.md) documenta somente este recorte; não aprova propostas antigas por associação.
 
-### Revisão de completude documental
+- `ios/`: projeto Xcode/SwiftUI, pacote de estado independente e testes XCTest.
+- `android/`: Gradle Wrapper com checksum, app Compose, núcleo Kotlin e testes.
+- `.github/workflows/native-checks.yml`: testes/build Android em Ubuntu e testes Swift/build Simulator em macOS, sem assinatura de distribuição, secrets ou upload de binários.
+- Home com dois cartões e menus nativos; mapas e demais funções explicitamente em desenvolvimento. Sem dados de usuário, GPS, persistência ou backend.
+- README, CONTRIBUTING, AGENTS, prompt, índice, ADRs, ROADMAP, STATUS e CHANGELOG reconciliados com o recorte. [Guia](../engenharia/DEVELOPMENT.md) e [contrato/gates](../engenharia/M5-BOOTSTRAP-01.md).
 
-A cobertura principal de governança, UX/UI, dados, segurança, jurídico e qualidade já está presente no PR, conforme [STATUS](../STATUS.md#auditoria-de-cobertura-documental--27102026). Não há autorização de merge nem de implementação; o melhor próximo passo é **revisar decisões**, não gerar variantes dos mesmos documentos.
+### Evidências e limites
 
-O canário pode usar preferências pessoais persistentes e privadas do agente; o valor não fica no repositório. Não assumir que um serviço compartilha essa configuração com outro.
+Histórico Git e merge #1 verificados; JDK 17 disponível; SDK Android/Swift/Xcode não encontrados neste Windows. Checksum oficial do Wrapper verificado. Compilação/testes remotos, avaliação visual e E2E ainda pendentes; não declarar PASSOU por existir workflow.
 
-### Próximo passo após este PR
+Canário configurado por instrução explícita na conversa atual, com valor ausente do repositório e desta passagem. Nenhum perfil pessoal da ferramenta foi alterado.
 
-1. Revisar `AGENTS.md`, `docs/agents/PROMPT-OBRIGATORIO.md`, `QUALITY-GATES.md`, `SAFEGUARDS.md`, os quatro arquivos em `docs/standards/`, `docs/ROADMAP.md`, `docs/STATUS.md` e o restante dos protocolos no mesmo PR.
-2. Revisar `CHANGELOG.md` como texto público de progresso, sem alegar release de app, e o contrato do modal futuro.
-3. Confrontar diferenças entre main/branch; revisar e **só mesclar mediante aprovação**.
-4. Depois da aprovação, selecionar primeira tarefa documental M0 aberta para execução, mantendo NATIVE/BUILD bloqueados.
+### Riscos, recuperação e próxima ação exata
 
-### Verificações desta fase
+Risco P2: fundação ainda sem validação de compilação/dispositivo. Nenhuma alteração de produção ou migração. Manter main inalterada e corrigir na branch; não pular testes para obter sucesso.
 
-Leitura e coerência de documentação/linkage; **sem compilação Swift/Kotlin, sem execução em iOS/Android, sem testes E2E ou publicação de aplicativo**.
-
-> Ao concluir trabalho futuro, substituir esta seção pela passagem atualizada, mantendo os modelos e o link para a história do PR.
+Publicar PR da fundação, aguardar os dois jobs do workflow, corrigir falhas e registrar URLs/resultados. Em seguida validar UI e decidir mapa Android antes de implementar Pins. Sem merge, release, assinatura ou aprovação automática de decisões abertas. Nenhuma edição concorrente identificada.

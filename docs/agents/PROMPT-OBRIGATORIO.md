@@ -1,5 +1,7 @@
 # PROMPT OBRIGATÓRIO — Protocolo mestre de todos os agents
 
+> **Atualização de escopo — 31/10/2026:** [ADR-009](../decisoes/ADR-009.md) autoriza [M5-BOOTSTRAP-01](../engenharia/M5-BOOTSTRAP-01.md), bases nativas iOS/Android e CI de compilação. As instruções de fase documental abaixo não revogam essa exceção delimitada. Demais propostas continuam pendentes.
+
 **Status:** política de trabalho aprovada como direção pelo responsável pelo produto; detalhes de implementação dependem de marco autorizado. **Aplicável a qualquer agente** (Codex, Claude, revisor, design, iOS, Android, segurança, documentação).
 **CANÁRIO obrigatório:** leia [CANARY](CANARY.md). Em **toda mensagem visível no chat ao responsável**, inclua a forma de tratamento confirmada na conversa atual ou nas instruções pessoais privadas e persistentes do agent; nunca deduzida por GitHub/arquivos. **Nunca** copie o valor para código, commits, documentação, PR, logs, fixtures ou artefatos. Se não houver preferência disponível, peça uma configuração pessoal privada e marque CANARY NÃO CONFIGURADO (não inventar nome). Presença do nome não prova leitura nem testes. `AGENTS.md` é a porta de entrada; este documento é o contrato operacional. Não depender de memória de chat.
 

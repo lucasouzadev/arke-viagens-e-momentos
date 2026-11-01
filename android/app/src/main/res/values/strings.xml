@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Arke</string>
+    <string name="tagline">Onde vamos?</string>
+    <string name="map_pending">Mapa em preparação</string>
+    <string name="map_pending_detail">A integração do mapa Android está em desenvolvimento.</string>
+    <string name="planning">Planejamento</string>
+    <string name="expenses">Gastos</string>
+    <string name="savings">Cofrinho</string>
+    <string name="reviews">Avaliações</string>
+    <string name="memories">Memórias</string>
+    <string name="explore">Explorar</string>
+    <string name="balanced">Equilibrado</string>
+    <string name="details">Detalhes</string>
+    <string name="change_context">Trocar contexto. Atual: %1$s</string>
+    <string name="change_panel">Ajustar painel. Atual: %1$s</string>
+    <string name="empty_title">Sua próxima viagem começa com uma ideia</string>
+    <string name="empty_detail">Em breve, você poderá guardar lugares antes mesmo de criar uma viagem.</string>
+    <string name="context_pending">Este espaço está em desenvolvimento.</string>
+    <string name="development_notice">Versão de desenvolvimento · nenhum dado salvo</string>
+</resources>

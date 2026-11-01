@@ -1,0 +1,28 @@
+package dev.arke.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            // Candidate from ADR-006; pending visual approval, not final identity.
+            val brandBlue = Color(0xFF4C728A)
+            val colors = if (isSystemInDarkTheme()) {
+                darkColorScheme(primary = brandBlue, onPrimary = Color.White)
+            } else {
+                lightColorScheme(primary = brandBlue, onPrimary = Color.White)
+            }
+            MaterialTheme(colorScheme = colors) { ArkeHome() }
+        }
+    }
+}

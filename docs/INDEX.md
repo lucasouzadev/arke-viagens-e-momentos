@@ -4,6 +4,8 @@
 
 ## Estados
 
+**Atualização — 31/10/2026:** as classificações históricas abaixo não aprovam propostas por associação. [ADR-009](decisoes/ADR-009.md) autoriza somente a fundação nativa e compilação; [contrato](engenharia/M5-BOOTSTRAP-01.md) e [guia de desenvolvimento](engenharia/DEVELOPMENT.md).
+
 - **Aprovado:** direção explicitamente aceita.
 - **Proposto:** ainda depende de decisão.
 - **Em revisão:** documento enviado para PR, não necessariamente integrado.
@@ -83,4 +85,4 @@
 
 **ADRs aceitos e decisões explícitas** → especificações aprovadas → propostas → tarefas/roadmap → STATUS factual → HANDOFF contextual. README e CHANGELOG comunicam o projeto e **não devem impor comportamento técnico novo**.
 
-Nenhuma funcionalidade de app, CI, release ou modal foi implementada com esta documentação.
+A documentação original não implementou aplicativo. A branch inicial de desenvolvimento acrescenta bases nativas e workflow de verificação, ainda sujeitos às evidências de [STATUS](STATUS.md). Sem release ou modal implementado.

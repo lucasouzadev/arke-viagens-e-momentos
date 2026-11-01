@@ -1,6 +1,14 @@
 # Novidades do Arke
 
-Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no aplicativo. **O Arke ainda está em planejamento e não foi lançado.** As notas abaixo falam da organização do projeto — não são funcionalidades disponíveis para instalar.
+Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no aplicativo. **O Arke está em desenvolvimento e não foi lançado.** As notas abaixo não são funcionalidades disponíveis para instalar.
+
+## Projeto em desenvolvimento — 31 de outubro de 2026
+
+- Começamos a preparar o aplicativo para iPhone e Android ao mesmo tempo.
+- Criamos a primeira estrutura da tela com mapa e informações em dois cartões; os recursos ainda estão em desenvolvimento.
+- Preparamos verificações automáticas para acompanhar a construção das duas versões.
+
+> Esta é uma etapa inicial de desenvolvimento. Mapas e recursos de viagem ainda não estão disponíveis; não há versão para instalar.
 
 ## Projeto em desenvolvimento — 27 de outubro de 2026
 

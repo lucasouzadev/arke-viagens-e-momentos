@@ -1,6 +1,6 @@
 # Contribuindo com o Arke
 
-O Arke é um projeto **documentation-first**. Nesta fase, contribuições devem trabalhar especificações, conteúdo público, pesquisa e revisão, **sem código Swift/Kotlin, backend ou CI de app** até autorização.
+O Arke iniciou uma fundação nativa delimitada: iOS/Android, testes e compilação de verificação conforme [ADR-009](docs/decisoes/ADR-009.md). Contribuições fora desse recorte continuam dependendo de especificação e autorização. Consulte o [guia de desenvolvimento](docs/engenharia/DEVELOPMENT.md). Backend, distribuição e aprovação das demais propostas não fazem parte desta autorização.
 
 ## Antes de abrir uma alteração
 

@@ -10,5 +10,6 @@ Status **Aceita** significa decisão de produto/arquitetura/documentação, **n�
 - [ADR-006 — Uma única cor e tema automático](ADR-006.md)
 - [ADR-007 — Roadmap único, agents e changelog público](ADR-007.md)
 - [ADR-008 — Canário somente no chat, sem publicação do nome](ADR-008.md)
+- [ADR-009 — Fundação nativa simultânea e compilação no Actions](ADR-009.md)
 
 Uma alteração que contradiga decisão aceita precisa registrar motivo, alternativas e consequências em novo ADR. **Aprovação de uma regra não aprova propostas anexas ainda pendentes.**
