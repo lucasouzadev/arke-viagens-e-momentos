@@ -26,7 +26,7 @@
     <string name="place_name">Nome do lugar</string>
     <string name="place_address">Endereço ou referência</string>
     <string name="place_note">Nota opcional</string>
-    <string name="place_local_notice">Esta ideia ficará apenas neste aparelho. O endereço não será pesquisado nem marcado no mapa nesta etapa.</string>
+    <string name="place_local_notice">Esta ideia ficará apenas neste aparelho, sem backup. Desinstalar o app pode removê-la. O endereço não será pesquisado nem marcado no mapa nesta etapa.</string>
     <string name="edit_information">Editar informações</string>
     <string name="saving">Salvando…</string>
     <string name="save_on_device">Salvar neste aparelho</string>

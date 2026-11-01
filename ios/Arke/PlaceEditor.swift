@@ -23,7 +23,7 @@ struct PlaceEditor: View {
                         if !draft.normalized.note.isEmpty { Text(draft.normalized.note) }
                     }
                     Section {
-                        Text("Esta ideia ficará apenas neste aparelho. O endereço não será pesquisado nem marcado no mapa nesta etapa.")
+                        Text("Esta ideia ficará apenas neste aparelho, sem backup. Desinstalar o app pode removê-la. O endereço não será pesquisado nem marcado no mapa nesta etapa.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     Button("Editar informações") { reviewing = false }
