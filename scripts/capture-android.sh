@@ -61,6 +61,21 @@ if any(n.get('package') == 'android' for n in nodes):
 if not any('Nome do lugar' in n.get('text', '') for n in nodes):
     raise SystemExit('Place editor is not visible')
 PYEDITOR
+    # Debug-only examples are held in memory, never written into the user's collection.
+    adb shell am force-stop dev.arke.app.dev
+    adb shell am start -W -n dev.arke.app.dev/dev.arke.app.MainActivity --ez capturePlaceDetails true
+    sleep 3
+    adb shell uiautomator dump /sdcard/arke-details.xml
+    adb pull /sdcard/arke-details.xml "$output/android-details-${size}-${theme}.xml"
+    adb exec-out screencap -p > "$output/android-details-${size}-${theme}.png"
+    python3 - "$output/android-details-${size}-${theme}.xml" <<'PYDETAILS'
+import sys, xml.etree.ElementTree as ET
+nodes = list(ET.parse(sys.argv[1]).iter('node'))
+if any(n.get('package') == 'android' for n in nodes):
+    raise SystemExit('Unexpected system dialog covers details')
+if not any(n.get('text') == 'Jardim das descobertas' for n in nodes):
+    raise SystemExit('Place details are not visible')
+PYDETAILS
   done
 done
 adb shell wm size reset

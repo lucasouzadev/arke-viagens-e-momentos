@@ -4,6 +4,8 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 ## Projeto em desenvolvimento — 1 de novembro de 2026
 
+- Preparamos a leitura dos detalhes de lugares salvos, com navegação entre ideias e retorno à tela anterior.
+
 - Suavizamos a passagem do conteúdo para os botões dos sheets, com um degradê discreto no iPhone e Android.
 
 - Unificamos o guia de interface: alça nos sheets, Cancelar no topo esquerdo, campos e ações com a mesma organização no iPhone e Android.

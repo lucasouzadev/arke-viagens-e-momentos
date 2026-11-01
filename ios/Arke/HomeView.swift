@@ -7,6 +7,7 @@ struct HomeView: View {
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
     @GestureState private var panelTranslation: CGFloat = 0
     @State private var showingAddPlace = false
+    @State private var showingDetailPreview = false
     @State private var savedNotice = false
     @StateObject private var places = PlaceIdeasStore()
     @State private var showingContextPicker = false
@@ -81,8 +82,14 @@ struct HomeView: View {
             await places.load()
             #if DEBUG
             if places.ready && ProcessInfo.processInfo.arguments.contains("--capture-place-editor") { showingAddPlace = true }
+            if ProcessInfo.processInfo.arguments.contains("--capture-place-details") { showingDetailPreview = true }
             #endif
         }
+        #if DEBUG
+        .sheet(isPresented: $showingDetailPreview) {
+            PlaceDetails(ideas: DetailCapture.ideas, initialID: DetailCapture.ideas[0].id, onClose: { showingDetailPreview = false })
+        }
+        #endif
         .sheet(isPresented: $showingAddPlace) {
             PlaceEditor(saving: places.busy, saveError: places.error, onSave: { draft in
                 Task {

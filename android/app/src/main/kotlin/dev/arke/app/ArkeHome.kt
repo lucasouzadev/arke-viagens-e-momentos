@@ -41,12 +41,16 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 )
 
 @Composable
-fun ArkeHome(places: PlaceIdeasViewModel) {
+fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
     val placeState by places.state.collectAsState()
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
+    var showingDetailPreview by rememberSaveable { mutableStateOf(captureDetails) }
+    LaunchedEffect(captureDetails) {
+        if (BuildConfig.DEBUG && captureDetails) showingDetailPreview = true
+    }
     LaunchedEffect(placeState, pendingSaveId) {
         if (pendingSaveId != null && placeState.ready && !placeState.busy && placeState.error == null && placeState.ideas.any { it.id == pendingSaveId }) {
             showingAddPlace = false
@@ -134,6 +138,10 @@ fun ArkeHome(places: PlaceIdeasViewModel) {
                 }
             }
         }
+    }
+    if (BuildConfig.DEBUG && showingDetailPreview) {
+        val examples = remember { detailCaptureIdeas() }
+        PlaceDetails(examples, examples.first().id, onClose = { showingDetailPreview = false })
     }
     if (showingAddPlace) {
         PlaceEditor(saving = placeState.busy, saveError = placeState.error,

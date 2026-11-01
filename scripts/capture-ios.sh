@@ -45,6 +45,10 @@ while IFS=$'\t' read -r size device model; do
     xcrun simctl launch --terminate-running-process "$device" dev.arke.app.dev --capture-place-editor
     sleep 5
     xcrun simctl io "$device" screenshot "$output/ios-editor-${size}-${theme}.png"
+    # Synthetic read-only examples in memory; no disk seeding or cleanup.
+    xcrun simctl launch --terminate-running-process "$device" dev.arke.app.dev --capture-place-details
+    sleep 5
+    xcrun simctl io "$device" screenshot "$output/ios-details-${size}-${theme}.png"
   done
   xcrun simctl shutdown "$device"
 done < "$output/selected.tsv"

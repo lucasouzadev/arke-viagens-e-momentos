@@ -101,3 +101,5 @@ A documentação original não implementou aplicativo. A branch inicial de desen
 - [M5-PARITY-01](engenharia/M5-PARITY-01.md): implementação e provas da paridade.
 
 - [M5-FADE-01](engenharia/M5-FADE-01.md): transição inferior suave dos sheets.
+
+- [M5-DETAILS-01](engenharia/M5-DETAILS-01.md): seleção e leitura de ideias salvas.

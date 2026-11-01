@@ -59,6 +59,12 @@ class HeaderNavigationTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.onActivity { activity -> androidx.lifecycle.ViewModelProvider(activity)[PlaceIdeasViewModel::class.java].load() }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu de teste").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("Ver detalhes de Museu de teste").performScrollTo().performClick()
+        compose.onNodeWithTag("detail.name").assertTextEquals("Museu de teste")
+        compose.onNodeWithTag("detail.address").assertTextEquals("Rua de teste, 100")
+        compose.onNodeWithTag("detail.previous").assertIsNotEnabled()
+        compose.onNodeWithTag("detail.next").assertIsNotEnabled()
+        compose.onNodeWithTag("detail.close").performClick()
         val delete = compose.onNodeWithContentDescription("Excluir lugar: Museu de teste")
         delete.performScrollTo().performClick()
         compose.onNodeWithText("Cancelar").performClick()
@@ -84,6 +90,25 @@ class HeaderNavigationTest {
         handle.performClick()
         compose.onNodeWithTag("detent.BALANCED").performClick()
         handle.assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
+    }
+
+    @Test fun detailsHaveFiniteNavigationAndSurviveRecreation() {
+        compose.activityRule.scenario.onActivity { it.intent.putExtra("capturePlaceDetails", true) }
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("detail.position").assertTextEquals("Lugar 1 de 2")
+        compose.onNodeWithTag("detail.previous").assertIsNotEnabled()
+        compose.onNodeWithTag("detail.next").performClick()
+        compose.onNodeWithTag("detail.name").assertTextEquals("Museu dos caminhos")
+        compose.onNodeWithTag("detail.position").assertTextEquals("Lugar 2 de 2")
+        compose.onNodeWithTag("detail.next").assertIsNotEnabled()
+        compose.onNodeWithTag("detail.note").assertTextEquals("Sem nota")
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithTag("detail.name").assertTextEquals("Museu dos caminhos")
+        compose.onNodeWithTag("detail.previous").performClick()
+        compose.onNodeWithTag("detail.name").assertTextEquals("Jardim das descobertas")
+        compose.onNodeWithTag("detail.close").performClick()
+        compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
+        compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
     }
 
 }
