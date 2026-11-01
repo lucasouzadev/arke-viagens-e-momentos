@@ -37,6 +37,11 @@ jobs:
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - name: Unit tests, lint and debug build
         run: bash gradlew --no-daemon :core:test :app:lintDebug :app:assembleDebug
+      - name: Report lint diagnostics
+        if: always()
+        run: |
+          report=app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt
+          if [ -f "$report" ]; then cat "$report"; fi
 
   ios:
     runs-on: macos-15
