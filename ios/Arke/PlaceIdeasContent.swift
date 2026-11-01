@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PlaceIdeasContent: View {
     @ObservedObject var store: PlaceIdeasStore
+    let onDelete: (String) -> Void
     @State private var deleting: PlaceIdea?
 
     var body: some View {
@@ -30,7 +31,7 @@ struct PlaceIdeasContent: View {
         }
         .alert("Excluir ideia?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Excluir", role: .destructive) {
-                if let id = deleting?.id { Task { await store.remove(id: id) } }
+                if let id = deleting?.id { onDelete(id) }
                 deleting = nil
             }
             Button("Cancelar", role: .cancel) { deleting = nil }

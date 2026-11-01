@@ -62,6 +62,7 @@ class HeaderNavigationTest {
         delete.performScrollTo().performClick()
         compose.onNodeWithTag("place.confirmDelete").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu de teste").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("place.savedNotice").assertDoesNotExist()
     }
 
     @Test fun handleDragsSnapAndBodyScrollDoesNotResize() {

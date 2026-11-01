@@ -117,7 +117,7 @@ fun ArkeHome(places: PlaceIdeasViewModel) {
                                     TextButton(onClick = places::load) { Text(stringResource(R.string.retry)) }
                                 }
                                 if (placeState.ready) {
-                                    if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState, places::remove)
+                                    if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         Text(stringResource(state.context.title()), style = MaterialTheme.typography.titleLarge)
                                         Text(stringResource(R.string.context_pending))

@@ -52,7 +52,10 @@ struct HomeView: View {
                                 }
                                 if places.ready {
                                     if state.context == .planning {
-                                        PlaceIdeasContent(store: places)
+                                        PlaceIdeasContent(store: places, onDelete: { id in
+                                            savedNotice = false
+                                            Task { await places.remove(id: id) }
+                                        })
                                     } else {
                                         Text(state.context.title).font(.title2.bold())
                                         Text("Este espaço está em desenvolvimento.")

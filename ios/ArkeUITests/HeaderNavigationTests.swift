@@ -85,6 +85,7 @@ final class HeaderNavigationTests: XCTestCase {
         app.alerts["Excluir ideia?"].buttons["Excluir"].tap()
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Museu de teste"])
         waitForExpectations(timeout: 10)
+        XCTAssertFalse(app.staticTexts["place.savedNotice"].exists)
     }
 
     func testPanelDragSnapsAndBodyScrollDoesNotResize() {
