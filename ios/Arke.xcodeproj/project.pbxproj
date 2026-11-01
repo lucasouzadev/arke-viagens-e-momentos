@@ -104,6 +104,7 @@
                 SWIFT_VERSION = 5.0;
                 SWIFT_OPTIMIZATION_LEVEL = "-Onone";
                 DEBUG_INFORMATION_FORMAT = dwarf;
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
             };
         };
         F00000000000000000000004 = {
