@@ -35,7 +35,7 @@ struct HomeView: View {
                         .contentShape(RoundedRectangle(cornerRadius: 20))
 
                     panelMenu
-                        .simultaneousGesture(panelDrag(in: geometry.size.height))
+                        .highPriorityGesture(panelDrag(in: geometry.size.height))
                         .zIndex(1)
 
                     VStack(spacing: 12) {

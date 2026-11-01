@@ -30,8 +30,7 @@ while IFS=$'\t' read -r size device model; do
       -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO \
       -derivedDataPath build/ios -resultBundlePath build/HeaderUI.xcresult \
       CODE_SIGNING_ALLOWED=NO test; then
-      xcrun simctl launch --terminate-running-process "$device" dev.arke.app.dev
-      sleep 5
+      # Preserve the actual failure state rather than relaunching into the initial UI.
       xcrun simctl io "$device" screenshot "$output/ios-ui-test-failure.png"
       exit 1
     fi
