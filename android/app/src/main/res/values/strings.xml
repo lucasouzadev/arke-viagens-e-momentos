@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name">Arke</string>
     <string name="add_place">Adicionar lugar</string>
-    <string name="understood">Entendi</string>
-    <string name="add_place_pending">O salvamento de lugares ainda está em desenvolvimento. Em breve, você poderá marcar um ponto no mapa e guardar sua ideia de viagem.</string>
     <string name="tagline">Onde vamos?</string>
     <string name="map_pending">Mapa em preparação</string>
     <string name="map_pending_detail">O Google Maps ainda não está disponível nesta versão.</string>

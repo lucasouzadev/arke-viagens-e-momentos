@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PlaceEditor: View {
+    @Environment(\.colorScheme) private var colorScheme
     let saving: Bool
     let saveError: String?
     let onSave: (PlaceDraft) -> Void
@@ -46,7 +47,7 @@ struct PlaceEditor: View {
                             .accessibilityIdentifier("place.note")
                     }
                     if submitted, let issue = draft.issue {
-                        Text(issue.message).foregroundStyle(.red).accessibilityIdentifier("place.validation")
+                        Label(issue.message, systemImage: "exclamationmark.circle").foregroundStyle(Color(uiColor: .label)).accessibilityIdentifier("place.validation")
                     }
                     Section {
                         Button("Revisar lugar") {
@@ -59,7 +60,7 @@ struct PlaceEditor: View {
                     }
                 }
                 if let saveError {
-                    Text(saveError).foregroundStyle(.red).accessibilityIdentifier("place.saveError")
+                    Label(saveError, systemImage: "exclamationmark.circle").foregroundStyle(Color(uiColor: .label)).accessibilityIdentifier("place.saveError")
                 }
             }
             .disabled(saving)
@@ -86,6 +87,7 @@ struct PlaceEditor: View {
                 Text("As informações deste rascunho ainda não foram salvas.")
             }
         }
+        .tint(colorScheme == .dark ? Color(uiColor: .label) : Color(red: 76 / 255, green: 114 / 255, blue: 138 / 255))
         .interactiveDismissDisabled(!draft.isEmpty || saving)
     }
 }

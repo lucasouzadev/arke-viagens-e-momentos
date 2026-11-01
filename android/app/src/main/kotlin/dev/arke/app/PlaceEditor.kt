@@ -1,5 +1,6 @@
 package dev.arke.app
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +29,13 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     var reviewing by rememberSaveable { mutableStateOf(false) }
     var submitted by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by remember { mutableStateOf(false) }
+    val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
+    val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
+    val fieldColors = TextFieldDefaults.colors(
+        focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+        cursorColor = MaterialTheme.colorScheme.onSurface,
+        focusedIndicatorColor = MaterialTheme.colorScheme.onSurface,
+    )
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     fun cancel() {
@@ -49,7 +57,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     stringResource(if (reviewing) R.string.review_place else R.string.add_place),
                     Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
                 )
-                TextButton(onClick = { cancel() }, enabled = !saving, modifier = Modifier.testTag("place.cancel")) {
+                TextButton(colors = textButtonColors, onClick = { cancel() }, enabled = !saving, modifier = Modifier.testTag("place.cancel")) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -58,7 +66,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 Text(draft.normalized().address)
                 if (draft.normalized().note.isNotEmpty()) Text(draft.normalized().note)
                 Text(stringResource(R.string.place_local_notice), style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { reviewing = false }, enabled = !saving, modifier = Modifier.testTag("place.edit")) {
+                TextButton(colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving, modifier = Modifier.testTag("place.edit")) {
                     Text(stringResource(R.string.edit_information))
                 }
                 Button(onClick = { onSave(draft.normalized()) }, enabled = !saving, modifier = Modifier.fillMaxWidth().testTag("place.save")) {
@@ -66,16 +74,19 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 }
             } else {
                 TextField(
+                    colors = fieldColors,
                     value = draft.name, onValueChange = { draft = draft.copy(name = it) },
                     label = { Text(stringResource(R.string.place_name)) }, singleLine = true, enabled = !saving,
                     modifier = Modifier.fillMaxWidth().testTag("place.name"),
                 )
                 TextField(
+                    colors = fieldColors,
                     value = draft.address, onValueChange = { draft = draft.copy(address = it) },
                     label = { Text(stringResource(R.string.place_address)) }, minLines = 2, maxLines = 4, enabled = !saving,
                     modifier = Modifier.fillMaxWidth().testTag("place.address"),
                 )
                 TextField(
+                    colors = fieldColors,
                     value = draft.note, onValueChange = { draft = draft.copy(note = it) },
                     label = { Text(stringResource(R.string.place_note)) }, minLines = 3, maxLines = 6, enabled = !saving,
                     modifier = Modifier.fillMaxWidth().testTag("place.note"),
@@ -97,8 +108,8 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
             onDismissRequest = { confirmingDiscard = false },
             title = { Text(stringResource(R.string.discard_draft_title)) },
             text = { Text(stringResource(R.string.discard_draft_detail)) },
-            confirmButton = { TextButton(onClick = onCancel, modifier = Modifier.testTag("place.discard")) { Text(stringResource(R.string.discard)) } },
-            dismissButton = { TextButton(onClick = { confirmingDiscard = false }) { Text(stringResource(R.string.keep_editing)) } },
+            confirmButton = { TextButton(colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error), onClick = onCancel, modifier = Modifier.testTag("place.discard")) { Text(stringResource(R.string.discard)) } },
+            dismissButton = { TextButton(colors = textButtonColors, onClick = { confirmingDiscard = false }) { Text(stringResource(R.string.keep_editing)) } },
         )
     }
 }

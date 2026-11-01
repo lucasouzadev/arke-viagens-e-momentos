@@ -60,7 +60,13 @@ class PlaceIdeasRepository(context: Context) {
         val bytes = JSONObject().put("version", 1).put("ideas", array).toString().toByteArray(Charsets.UTF_8)
         check(bytes.size <= 4_194_304)
         val stream = file.startWrite()
-        try { stream.write(bytes); file.finishWrite(stream) }
+        try {
+            stream.write(bytes)
+            stream.flush()
+            stream.fd.sync()
+            file.finishWrite(stream)
+            check(read() == ideas) { "Write verification failed" }
+        }
         catch (error: Exception) { file.failWrite(stream); throw error }
     }
 }
