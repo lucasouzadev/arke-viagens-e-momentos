@@ -1,8 +1,10 @@
 # STATUS — Estado verificável do Arke
 
-**Atualizado em:** 31/10/2026. O andamento não substitui decisões de produto.
+**Atualizado em:** 01/11/2026. O andamento não substitui decisões de produto.
 
 ## Situação verificada
+
+**Em andamento — M5-UI-02:** layout inicial aprovado pelo responsável, com pedido de cartões sem contorno. Strokes removidos no iOS; Android usa Card sem borda/elevação. Labels escuros passam a usar texto semântico conforme THEME-001 para corrigir contraste. Novos builds/capturas ainda pendentes. Contrato no início de [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md).
 
 **Recorte atual:** [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md), oito capturas reais geradas e inspecionadas na [execução aprovada](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41265098608), fonte `4128e2e`. Apple Maps renderizado no iPhone 16/SE, claro/escuro; Android Emulator API 35 executou o fallback sem chave em padrão/compacto, claro/escuro. Google Cloud ainda não existe, portanto mapa real Android continua bloqueado por configuração externa. Contraste dos textos azuis no modo escuro requer correção; não declarar aprovação visual final.
 

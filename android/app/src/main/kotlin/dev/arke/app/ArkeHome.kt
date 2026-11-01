@@ -1,6 +1,7 @@
 package dev.arke.app
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -39,10 +40,18 @@ fun ArkeHome() {
                 PanelDetent.BALANCED -> 0.45f
                 PanelDetent.DETAILS -> 0.25f
             }
-            OutlinedCard(Modifier.fillMaxWidth().weight(mapWeight)) {
+            Card(
+                modifier = Modifier.fillMaxWidth().weight(mapWeight),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
                 TravelMap(Modifier.fillMaxSize())
             }
-            OutlinedCard(Modifier.fillMaxWidth().weight(1f - mapWeight)) {
+            Card(
+                modifier = Modifier.fillMaxWidth().weight(1f - mapWeight),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
                 Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
                     ContextMenu(state.context) { state = state.selectContext(it) }
                     DetentMenu(state.detent) { state = state.setDetent(it) }
@@ -68,6 +77,9 @@ private fun ContextMenu(selected: TravelContext, onSelect: (TravelContext) -> Un
     Box {
         TextButton(
             onClick = { expanded = true },
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+            ),
             modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = description },
         ) { Text(stringResource(selected.title())) }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -88,6 +100,9 @@ private fun DetentMenu(selected: PanelDetent, onSelect: (PanelDetent) -> Unit) {
     Box {
         TextButton(
             onClick = { expanded = true },
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+            ),
             modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = description },
         ) { Text(stringResource(selected.title())) }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {

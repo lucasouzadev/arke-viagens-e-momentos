@@ -26,4 +26,6 @@
 
 ## Composição
 
+**Ajuste aprovado em 01/11/2026:** os dois cartões não têm contorno desenhado nem sombra acrescentada para simular borda. A separação vem das superfícies nativas e do espaçamento, com sensação de borda infinita. Preservar o arredondamento e a estrutura atual. Não confundir com remover separadores internos de conteúdo.
+
 Dois cartões ocupam quase toda a viewport, separados por pequeno intervalo/puxador. O estado equilibrado é inicial. Arraste **apenas o puxador** para alternar proporção; rolar o conteúdo nunca redimensiona. Respeitar barras/áreas seguras do sistema.

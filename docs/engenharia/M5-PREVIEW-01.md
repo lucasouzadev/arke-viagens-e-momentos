@@ -1,5 +1,17 @@
 # M5-PREVIEW-01 — Mapas por plataforma e capturas reais
 
+## Ajuste M5-UI-02 — 01/11/2026
+
+**Autorização:** responsável aprovou o layout inicial e pediu retirar o contorno dos dois cartões para uma sensação de borda infinita. Prosseguir com o refinamento visual, sem aprovar outras propostas por associação.
+
+**Escopo:** remover os strokes SwiftUI e substituir OutlinedCard por Card sem border/elevação no Compose, preservando superfícies, espaçamentos, arredondamento, mapa e navegação. Corrigir o contraste já identificado dos labels no escuro usando texto semântico nativo, conforme THEME-001, sem escolher novo azul. Arquivos: `ios/Arke/HomeView.swift`, `android/app/src/main/kotlin/dev/arke/app/ArkeHome.kt`, DESIGN-001/STATUS/HANDOFF/ROADMAP/CHANGELOG e este contrato. Sem dados, backend, permissões, credenciais, merge ou release.
+
+**Aceite:** ambos os cartões sem contorno/sombra; contraste dos controles escuros corrigido; builds/lint/testes existentes mantidos; oito capturas padrão/compacto claro/escuro inspecionadas. Nenhum teste unitário novo para uma alteração de apresentação.
+
+**Gates iniciais:** G-01/02 PASSOU em revisão de escopo; G-03/04/05/06/12 aguardam compilação/capturas; G-07 contraste em correção, leitores de tela NÃO EXECUTADOS; G-08/09/10 NÃO APLICÁVEIS a novos dados/rede/licenças porque nada disso muda, restrições de distribuição anteriores permanecem; G-11 profiling NÃO EXECUTADO; G-13 CI/capturas pendentes; G-14 documentos a atualizar; G-15 confirmado no chat, valor ausente dos arquivos. Risco P3 de apresentação; reversão por correção na branch, mantendo main. Demais limites de M5-PREVIEW-01 continuam.
+
+---
+
 **Data:** 31/10/2026 · **Estado:** capturas reais geradas e inspecionadas; Google Maps real bloqueado por configuração externa; contraste escuro pendente.
 **Branch/PR:** `chore/development-kickoff`, PR #2.
 **Autorização:** pedido no chat para executar simuladores, mostrar o app e usar Apple Maps no iOS e Google Maps no Android; [ADR-010](../decisoes/ADR-010.md).

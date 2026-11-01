@@ -2,6 +2,7 @@ import SwiftUI
 import MapKit
 
 struct HomeView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
 
@@ -26,7 +27,6 @@ struct HomeView: View {
                 .accessibilityLabel("Mapa Apple. Explore o mundo; localização pessoal desativada.")
                 .frame(height: max(72, (geometry.size.height - 120) * mapFraction))
                 .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(uiColor: .separator)))
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
@@ -40,6 +40,7 @@ struct HomeView: View {
                             }
                         } label: {
                             Label(state.context.title, systemImage: "clock")
+                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
                                 .frame(minHeight: 44)
                         }
                         .accessibilityLabel("Trocar contexto. Atual: \(state.context.title)")
@@ -54,6 +55,7 @@ struct HomeView: View {
                             }
                         } label: {
                             Label(state.detent.title, systemImage: "arrow.up.arrow.down")
+                                .foregroundStyle(colorScheme == .dark ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
                                 .frame(minHeight: 44)
                         }
                         .accessibilityLabel("Ajustar painel. Atual: \(state.detent.title)")
@@ -74,7 +76,6 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.background, in: RoundedRectangle(cornerRadius: 20))
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(uiColor: .separator)))
             }
             .padding(16)
             .background(Color(uiColor: .systemGroupedBackground))

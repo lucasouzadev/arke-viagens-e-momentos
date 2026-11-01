@@ -15,7 +15,9 @@ Todo agent que encerrar uma tarefa, suspender por impedimento ou transferir resp
 
 Registros históricos importantes devem ficar em comentários de PR ou arquivos de histórico próprios, não em cópias paralelas de STATUS. Este documento mantém **a passagem mais recente relevante**.
 
-## Última passagem registrada — 31/10/2026
+## Última passagem registrada — 01/11/2026
+
+**M5-UI-02 em andamento:** responsável aprovou layout inicial e pediu remover contornos dos cartões. Duas views nativas alteradas, sem mudar mapa/estado/spacing; labels escuros usam cor semântica para corrigir contraste documentado. Mesma branch/PR #2, main inalterada. Próximo passo: CI, baixar e inspecionar novas capturas, registrar evidências. Ver contrato no início de [M5-PREVIEW-01](../engenharia/M5-PREVIEW-01.md). Histórico anterior abaixo.
 
 **Atualização M5-PREVIEW-01:** mesma branch/PR, [execução aprovada](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41265098608), fonte `4128e2e`. MapKit inicial renderizado no iPhone 16 e SE; Google Maps Compose 6.4.1 compilado, fallback sem chave executado em Pixel 6 Emulator API 35/padrão/compacto. Oito PNGs originais claro/escuro baixados e inspecionados, sem launcher/splash/crash; atribuição Apple preservada. O responsável ainda não tem Google Cloud; não criar conta, faturamento ou secret. Ver [contrato/matriz](../engenharia/M5-PREVIEW-01.md) e [ADR-010](../decisoes/ADR-010.md). Próximo passo: corrigir contraste do azul em textos no escuro (aprox. 3,62:1 em superfície Android), validar leitores de tela e interações; Google real continua dependendo da configuração externa. Nenhum merge/release. O histórico da fundação abaixo corresponde ao recorte anterior.
 

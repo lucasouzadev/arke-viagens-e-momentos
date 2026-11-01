@@ -2,6 +2,13 @@
 
 Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no aplicativo. **O Arke está em desenvolvimento e não foi lançado.** As notas abaixo não são funcionalidades disponíveis para instalar.
 
+## Projeto em desenvolvimento — 1 de novembro de 2026
+
+- Retiramos os contornos dos dois cartões para deixar a tela mais contínua.
+- Ajustamos os textos dos controles no modo escuro para melhorar a leitura.
+
+> Ajustes na versão em desenvolvimento; nenhuma versão foi lançada.
+
 ## Projeto em desenvolvimento — 31 de outubro de 2026
 
 - Escolhemos Apple Maps para iPhone e Google Maps para Android; a configuração Android ainda está pendente.
