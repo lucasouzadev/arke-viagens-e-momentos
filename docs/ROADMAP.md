@@ -153,3 +153,5 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-PARITY-01](engenharia/M5-PARITY-01.md) | Guia comum, paridade de home/sheets | Em revisão; CI e 16 PNGs verificados; obrigatório nos próximos fluxos |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.
+
+| [M5-FADE-01](engenharia/M5-FADE-01.md) | Transição inferior suave dos sheets | Em validação no PR #2 |

@@ -16,6 +16,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -47,6 +50,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     var confirmingDiscard by remember { mutableStateOf(false) }
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
+    val sheetColor = MaterialTheme.colorScheme.surfaceContainerLow
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     fun cancel() {
@@ -60,6 +64,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     )
     ModalBottomSheet(
         onDismissRequest = { if (!saving) cancel() }, sheetState = sheet,
+        containerColor = sheetColor, tonalElevation = 0.dp,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = {
             Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
@@ -82,7 +87,17 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 Spacer(Modifier.width(88.dp))
             }
             Column(
-                Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).testTag("place.fields").padding(vertical = 24.dp),
+                Modifier.fillMaxWidth().weight(1f)
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, sheetColor),
+                            startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f),
+                            endY = size.height,
+                        ))
+                    }
+                    .verticalScroll(rememberScrollState()).testTag("place.fields")
+                    .padding(top = 24.dp, bottom = 48.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(stringResource(if (reviewing) R.string.check_idea else R.string.place_section), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)

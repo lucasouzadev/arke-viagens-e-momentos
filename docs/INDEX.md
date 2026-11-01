@@ -99,3 +99,5 @@ A documentação original não implementou aplicativo. A branch inicial de desen
 
 - [DESIGN-006 — guia comum de UI/UX](design/DESIGN-006.md): paridade obrigatória entre iOS/Android.
 - [M5-PARITY-01](engenharia/M5-PARITY-01.md): implementação e provas da paridade.
+
+- [M5-FADE-01](engenharia/M5-FADE-01.md): transição inferior suave dos sheets.

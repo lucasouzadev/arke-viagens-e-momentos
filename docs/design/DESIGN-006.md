@@ -6,6 +6,7 @@ Status: direção aprovada explicitamente no chat em 01/11/2026; implementação
 
 - Mesma ordem, rótulos, grupos de conteúdo, posição de ações e estados por fluxo.
 - Sheet: apresentação grande, próxima de 94% da área disponível, alça visível central; cabeçalho fixo com Cancelar à esquerda, título central e coluna direita reservada para equilíbrio. Corpo rolável independente; ações no rodapé fixo acima do teclado/safe area.
+- Limite inferior do corpo rolável: fade decorativo de 32 pt/dp até a superfície do sheet, sem barra sólida, contorno ou sombra atrás das ações. Padding final de 48 permite revelar integralmente o último campo/texto acima da transição; efeito não bloqueia toque/foco. Mesmo tratamento no editor/revisão dos dois sistemas e nos dois temas. [M5-FADE-01](../engenharia/M5-FADE-01.md).
 - Confirmação de descarte usa alerta central nos dois sistemas, com opção de continuar editando e confirmação destrutiva explícita.
 - Editor e revisão usam a mesma estrutura. Rótulos persistentes acima dos campos; Nome, Endereço/referência e Nota nessa ordem. Revisar/Salvar é ação primária preenchida; Editar informações é secundária acima de Salvar. Avisos/erros nas mesmas zonas, sem deslocar Cancelar.
 - Campos e cartões têm preenchimento neutro distinto do fundo, sem contorno desenhado ou sombra decorativa. Só um azul de marca. Texto de ações no escuro usa semântica legível.

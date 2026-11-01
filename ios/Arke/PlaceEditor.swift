@@ -54,9 +54,17 @@ struct PlaceEditor: View {
                         }
                     }
                     .foregroundStyle(ink).frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 24)
+                    .padding(.top, 24).padding(.bottom, 48)
                 }
                 .scrollDismissesKeyboard(.interactively).accessibilityIdentifier("place.fields")
+                .mask {
+                    VStack(spacing: 0) {
+                        Rectangle()
+                        LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom)
+                            .frame(height: 32)
+                    }
+                    .allowsHitTesting(false).accessibilityHidden(true)
+                }
                 VStack(spacing: 12) {
                     if reviewing {
                         Button { reviewing = false } label: {
