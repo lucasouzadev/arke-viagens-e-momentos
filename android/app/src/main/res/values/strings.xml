@@ -2,7 +2,8 @@
     <string name="app_name">Arke</string>
     <string name="tagline">Onde vamos?</string>
     <string name="map_pending">Mapa em preparação</string>
-    <string name="map_pending_detail">A integração do mapa Android está em desenvolvimento.</string>
+    <string name="map_pending_detail">O Google Maps ainda não está disponível nesta versão.</string>
+    <string name="map_description">Mapa Google. Explore o mundo; localização pessoal desativada.</string>
     <string name="planning">Planejamento</string>
     <string name="expenses">Gastos</string>
     <string name="savings">Cofrinho</string>

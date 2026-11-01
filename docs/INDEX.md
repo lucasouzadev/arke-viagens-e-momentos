@@ -4,6 +4,8 @@
 
 ## Estados
 
+[M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) registra mapas por plataforma e capturas em simuladores; [ADR-010](decisoes/ADR-010.md) aprova Apple Maps/Google Maps. Google Cloud/chave Android ainda pendentes.
+
 **Atualização — 31/10/2026:** as classificações históricas abaixo não aprovam propostas por associação. [ADR-009](decisoes/ADR-009.md) autoriza somente a fundação nativa e compilação; [contrato](engenharia/M5-BOOTSTRAP-01.md) e [guia de desenvolvimento](engenharia/DEVELOPMENT.md).
 
 - **Aprovado:** direção explicitamente aceita.

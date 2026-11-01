@@ -4,6 +4,8 @@
 
 ## Situação verificada
 
+**Recorte atual:** [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) em andamento. O responsável escolheu Apple Maps no iOS e Google Maps no Android e pediu capturas reais em simuladores ([ADR-010](decisoes/ADR-010.md)). MapKit inicial e integração Google com fallback sem chave preparados; execução/capturas pendentes. Projeto Google Cloud ainda não existe, portanto mapa real Android depende dessa configuração externa.
+
 - O PR documental [#1](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/1) foi integrado em **28/10/2026**, commit `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`. Os registros anteriores de PR aberto estavam desatualizados.
 - O responsável autorizou iniciar **ambas as bases nativas** e compilar no **GitHub Actions**: [ADR-009](decisoes/ADR-009.md).
 - Branch: `chore/development-kickoff`; tarefa [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md), com builds/testes aprovados, revisão visual pendente e sem merge desta implementação. [PR #2](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/2), em rascunho.
@@ -34,7 +36,7 @@ Lint Android terminou com **0 erros e 5 avisos**: target/dependências anteriore
 
 1. Revisar o PR #2, as evidências de CI e os avisos de manutenção do lint; manter rascunho até a revisão visual.
 2. Revisar a home em iOS/Android, claro/escuro, tamanhos distintos, fonte ampliada e VoiceOver/TalkBack.
-3. Escolher provedor de mapa Android e aprovar o primeiro recorte de Pin, persistência/privacidade e interações.
+3. Configurar Google Cloud/Maps Android somente com decisão do responsável; provedor já escolhido em ADR-010. Aprovar o primeiro recorte de Pin, persistência/privacidade e interações.
 4. Resolver licença final, marca e requisitos de distribuição antes de lançamento. Nenhuma licença foi presumida.
 
 Não há merge automático nem aprovação geral de M1–M4. Continuidade em [HANDOFF](agents/HANDOFF.md); planejamento em [ROADMAP](ROADMAP.md).

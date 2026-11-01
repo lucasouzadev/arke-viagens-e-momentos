@@ -42,6 +42,25 @@ jobs:
         run: |
           report=app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt
           if [ -f "$report" ]; then cat "$report"; fi
+      - name: Enable KVM for Android Emulator
+        run: sudo chmod 666 /dev/kvm
+      - name: Run app in Android Emulator and capture screens
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2, Apache-2.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash scripts/capture-android.sh
+      - name: Upload Android screenshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: android-screenshots
+          path: build/screenshots/android/*.png
+          if-no-files-found: error
+          retention-days: 7
 
   ios:
     runs-on: macos-15
@@ -61,3 +80,12 @@ jobs:
           xcodebuild -project ios/Arke.xcodeproj -scheme Arke
           -configuration Debug -destination 'generic/platform=iOS Simulator'
           -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO build
+      - name: Run app in iPhone Simulators and capture screens
+        run: bash scripts/capture-ios.sh
+      - name: Upload iOS screenshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-screenshots
+          path: build/screenshots/ios/*.png
+          if-no-files-found: error
+          retention-days: 7

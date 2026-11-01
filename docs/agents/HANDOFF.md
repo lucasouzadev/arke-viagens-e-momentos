@@ -17,6 +17,8 @@ Registros históricos importantes devem ficar em comentários de PR ou arquivos 
 
 ## Última passagem registrada — 31/10/2026
 
+**Atualização em andamento:** M5-PREVIEW-01 autorizado no chat, mesma branch/PR. Apple Maps/MapKit inicial e Google Maps Compose 6.4.1 com fallback sem chave preparados. O responsável ainda não tem projeto Google Cloud; não criar conta, faturamento ou secret. Workflow ampliado para abrir simuladores e gerar PNGs claro/escuro em telas padrão/compacta; capturas ainda pendentes. Ver [contrato](../engenharia/M5-PREVIEW-01.md) e [ADR-010](../decisoes/ADR-010.md). Próxima ação: executar CI, baixar PNGs, inspecionar e entregar imagens reais no chat.
+
 **Tarefa:** M5-BOOTSTRAP-01 · **Branch:** `chore/development-kickoff`.
 **Base verificada:** `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`.
 **PR anterior:** [#1](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/1), integrado em 28/10/2026. [PR #2](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/2) da fundação em rascunho, sem merge.

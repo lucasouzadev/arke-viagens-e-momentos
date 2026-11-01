@@ -40,4 +40,8 @@ Runners padrão são gratuitos em repositórios públicos conforme [documentaç�
 
 ## Pendências antes da primeira feature
 
+Mapas escolhidos em [ADR-010](../decisoes/ADR-010.md): Apple Maps no iOS e Google Maps no Android. No Android, configurar futuramente `ARKE_MAPS_API_KEY` como propriedade Gradle privada ou variável de ambiente; não adicionar à `gradle.properties` versionada e não enviar em chat. Restringir ao package `dev.arke.app.dev`, SHA-1 do certificado de desenvolvimento e somente Maps SDK for Android. Sem chave, o app exibe o fallback e não monta o SDK. O responsável ainda não possui projeto Google Cloud; não criar/faturar automaticamente.
+
+O workflow agora inclui captura em iPhone Simulator e Android Emulator, com PNGs retidos por 7 dias. Capturas demonstram a tela real e não substituem testes completos de acessibilidade/fluxo. Nenhum APK/IPA é publicado.
+
 Decidir provedor Android, revisar contratos mínimos de Pin, privacidade/persistência e comportamento do mapa. Aprovar o azul e testar as telas em claro/escuro, landscape, fonte ampliada e leitores de tela. Grupos, finanças, sincronização e publicação exigem tarefas próprias.

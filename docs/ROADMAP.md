@@ -144,5 +144,6 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | Tarefa | Entrega | Estado |
 | --- | --- | --- |
 | [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md) | Bases SwiftUI/Compose, home inicial, testes e CI | Builds/testes aprovados; revisão visual/acessibilidade pendentes no PR #2 |
+| [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) | Apple Maps iOS, Google Maps Android e capturas reais de simuladores | Em andamento; sem chave/projeto Google Cloud, mapa real Android bloqueado; capturas pendentes |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.

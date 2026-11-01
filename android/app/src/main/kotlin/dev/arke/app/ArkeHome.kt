@@ -40,11 +40,7 @@ fun ArkeHome() {
                 PanelDetent.DETAILS -> 0.25f
             }
             OutlinedCard(Modifier.fillMaxWidth().weight(mapWeight)) {
-                Column(Modifier.padding(20.dp).verticalScroll(rememberScrollState())) {
-                    Text(stringResource(R.string.map_pending), style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    Text(stringResource(R.string.map_pending_detail))
-                }
+                TravelMap(Modifier.fillMaxSize())
             }
             OutlinedCard(Modifier.fillMaxWidth().weight(1f - mapWeight)) {
                 Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {

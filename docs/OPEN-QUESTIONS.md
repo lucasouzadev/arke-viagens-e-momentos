@@ -41,7 +41,7 @@
 
 ## Engenharia e direitos
 
-- Fornecedor de mapas Android, custos, credenciais e offline.
+- Fornecedor escolhido em [ADR-010](decisoes/ADR-010.md): Apple Maps no iOS e Google Maps no Android. Projeto Google Cloud, chave restrita, custos e offline seguem pendentes; nenhuma conta/faturamento ativados.
 - Termos, privacidade e LGPD para dados de grupo e localização.
 - Licenças de código e direitos de marca/assets.
 - Identificadores Apple/Android e releases apenas após iniciar código.

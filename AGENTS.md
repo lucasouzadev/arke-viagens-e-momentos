@@ -2,6 +2,8 @@
 
 > **Exceção de fase — 31/10/2026:** o responsável autorizou iniciar ambas as bases nativas e compilar no GitHub Actions. [ADR-009](docs/decisoes/ADR-009.md) e [M5-BOOTSTRAP-01](docs/engenharia/M5-BOOTSTRAP-01.md) autorizam somente a fundação inicial, testes e builds de verificação. As restrições documentation-first abaixo continuam para o restante não autorizado; não bloquear novamente esta tarefa por instruções históricas. Sem merge, assinatura de distribuição ou release automático.
 
+> **Recorte seguinte autorizado:** [ADR-010](docs/decisoes/ADR-010.md) e [M5-PREVIEW-01](docs/engenharia/M5-PREVIEW-01.md) autorizam Apple Maps/Google Maps sem GPS e capturas reais em simuladores. Somente PNGs de evidência podem ser enviados pelo Actions; sem binários de distribuição. Google Cloud/chave Android ainda indisponíveis, sem criação automática de conta/faturamento.
+
 Este arquivo é o ponto de entrada obrigatório para agents de documentação, design, iOS, Android, backend, revisão e CI. Não substitui as especificações; indica **onde encontrar a fonte de verdade** e o que pode ser alterado.
 
 ## 0. Comece sempre aqui

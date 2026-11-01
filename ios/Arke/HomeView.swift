@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 
 struct HomeView: View {
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
@@ -16,17 +17,15 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Arke").font(.title2.bold())
                 Text("Onde vamos?").font(.largeTitle.bold())
-                // Map integration is intentionally deferred in both shells.
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Mapa em preparação").font(.headline)
-                        Text("A integração do mapa iOS está em desenvolvimento.")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(20)
+                Map(initialPosition: .region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+                    span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)
+                ))) {
                 }
+                .mapStyle(.standard)
+                .accessibilityLabel("Mapa Apple. Explore o mundo; localização pessoal desativada.")
                 .frame(height: max(72, (geometry.size.height - 120) * mapFraction))
-                .background(.background, in: RoundedRectangle(cornerRadius: 20))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(uiColor: .separator)))
 
                 ScrollView {
