@@ -15,3 +15,5 @@ G-01/02 PASSOU na revisão do escopo aprovado. G-03/04/05/06/07/12 aguardam diff
 Primeira execução: 41307389121, fonte 2ce0166. Android aprovou testes, mas as quatro capturas foram REJEITADAS na inspeção por diálogo de ANR do Pixel Launcher sobre o app. Captura agora valida o XML da janela e falha se houver diálogo do sistema ou ausência do Arke; PNG bruto fica disponível para diagnóstico mesmo em falha. Nenhum aviso é fechado automaticamente e falhas do app não são suprimidas. Nova execução necessária para evidência limpa.
 
 Segunda execução 41308104680, fonte cae021d: Android passou os três testes UI e a validação das capturas sem diálogo; iOS passou os testes de cabeçalho/aviso, mas o novo teste falhou antes de arrastar por buscar a opção ativa sem seu sufixo ✓. Consulta agora aceita explicitamente rótulo selecionado ou não selecionado, sem alterar expectativas de gesto. Lint Android: 0 erros/9 avisos; investigar aviso adicional na revisão final.
+
+Aviso adicional do lint identificado: nome do parâmetro Modifier em DetentMenu. Renomeado conforme a convenção Compose, sem supressão ou alteração funcional.

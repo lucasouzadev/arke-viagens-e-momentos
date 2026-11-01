@@ -168,7 +168,7 @@ private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit
 }
 
 @Composable
-private fun DetentMenu(selected: PanelDetent, dragModifier: Modifier, onSelect: (PanelDetent) -> Unit) {
+private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (PanelDetent) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val description = stringResource(R.string.change_panel, stringResource(selected.title()))
     val moreMap = stringResource(R.string.more_map)
@@ -179,7 +179,7 @@ private fun DetentMenu(selected: PanelDetent, dragModifier: Modifier, onSelect: 
             colors = ButtonDefaults.textButtonColors(
                 contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
             ),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).then(dragModifier).testTag("home.panelMenu").semantics {
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).then(modifier).testTag("home.panelMenu").semantics {
                 contentDescription = description
                 customActions = listOf(
                     CustomAccessibilityAction(moreMap) { onSelect(PanelDetent.entries[maxOf(0, selected.ordinal - 1)]); true },
