@@ -25,7 +25,7 @@ final class HeaderNavigationTests: XCTestCase {
             XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Detalhes")
         }
         app.buttons["home.panelMenu"].tap()
-        app.buttons["Equilibrado"].tap()
+        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
     }
 
     func testAddPlaceNoticeCanBeOpenedAndClosed() {
@@ -46,7 +46,7 @@ final class HeaderNavigationTests: XCTestCase {
         let handle = app.buttons["home.panelMenu"]
         XCTAssertTrue(handle.waitForExistence(timeout: 15))
         handle.tap()
-        app.buttons["Equilibrado"].tap()
+        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
         let distance = app.frame.height * 0.35
         var start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -distance)))
@@ -62,7 +62,7 @@ final class HeaderNavigationTests: XCTestCase {
         expectation(for: NSPredicate(format: "value == %@", "Explorar"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
         handle.tap()
-        app.buttons["Equilibrado"].tap()
+        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
         expectation(for: NSPredicate(format: "value == %@", "Equilibrado"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
     }
