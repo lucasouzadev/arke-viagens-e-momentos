@@ -304,6 +304,53 @@ final class HeaderNavigationTests: XCTestCase {
         app.buttons["Descartar"].tap()
     }
 
+    func testLocationRequiresTapAndAllowsDeniedRetry() {
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .location)
+        app.launch()
+        let locate = app.buttons["home.location"]
+        XCTAssertTrue(locate.waitForExistence(timeout: 15))
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertFalse(springboard.alerts.firstMatch.exists)
+        locate.tap()
+        let permission = springboard.alerts.firstMatch
+        XCTAssertTrue(permission.waitForExistence(timeout: 10))
+        let deny = permission.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Don")).firstMatch
+        XCTAssertTrue(deny.exists)
+        deny.tap()
+        XCTAssertTrue(locate.isHittable)
+        locate.tap()
+        XCTAssertTrue(app.alerts["Minha localização"].waitForExistence(timeout: 5))
+        app.alerts["Minha localização"].buttons["Entendi"].tap()
+        XCTAssertTrue(app.buttons["home.contextMenu"].isHittable)
+        app.terminate()
+        app.resetAuthorizationStatus(for: .location)
+    }
+
+    func testLocationCentersOnSimulatedPosition() {
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .location)
+        app.launch()
+        let locate = app.buttons["home.location"]
+        XCTAssertTrue(locate.waitForExistence(timeout: 15))
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertFalse(springboard.alerts.firstMatch.exists)
+        locate.tap()
+        let permission = springboard.alerts.firstMatch
+        XCTAssertTrue(permission.waitForExistence(timeout: 10))
+        let allow = permission.buttons["Allow Once"]
+        XCTAssertTrue(allow.exists)
+        allow.tap()
+        expectation(for: NSPredicate(format: "value == %@", "Localização disponível"), evaluatedWith: locate)
+        waitForExpectations(timeout: 20)
+        XCTAssertFalse(app.alerts["Minha localização"].exists)
+        let locationCapture = XCTAttachment(screenshot: app.screenshot())
+        locationCapture.lifetime = .keepAlways
+        add(locationCapture)
+        app.terminate()
+        app.resetAuthorizationStatus(for: .location)
+    }
+
     private func tapEditorAction(_ identifier: String, app: XCUIApplication) {
         let button = app.buttons[identifier]
         for _ in 0..<6 {

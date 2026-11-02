@@ -44,6 +44,8 @@ struct HomeView: View {
                                 Image(systemName: "location.fill").frame(width: 48, height: 48)
                                     .background(.regularMaterial, in: Circle())
                             }.padding(12).accessibilityLabel("Minha localização")
+                                .accessibilityIdentifier("home.location")
+                                .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
                         }
                         .onReceive(location.$coordinate) { coordinate in
                             if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
