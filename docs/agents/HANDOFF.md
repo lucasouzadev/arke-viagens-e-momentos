@@ -1,6 +1,6 @@
 # HANDOFF — Continuidade entre agents
 
-**M5-TESTFLIGHT-01 em andamento:** primeira assinatura/upload beta autorizada no chat após confirmação dos seis secrets no environment ios-testflight. Workflow separado Xcode 26.3, sem PR secrets/IPA artifact. Disparo inicial por commit marcado [testflight] na própria branch, depois manual; sem merge ou publicação em lojas. Registrar resultado real de validação/upload e processamento Apple separadamente. [Contrato](../engenharia/M5-TESTFLIGHT-01.md).
+**M5-TESTFLIGHT-01 bloqueado na proteção do ambiente:** [run 41482415419 / febaa9c](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41482415419) recusou branch chore/development-kickoff antes do runner. Solicitado ao responsável permitir somente essa branch no environment ios-testflight, preservando demais proteções. Sem assinatura/acesso real aos secrets/compilação Release/upload executados. Após confirmação, repetir job ou commit explicitamente marcado [testflight]; sem merge. Scripts Bash e oito cenários do validador passaram localmente; primeiro workflow inválido por contexto runner.temp corrigido. [Contrato](../engenharia/M5-TESTFLIGHT-01.md). PR #2 está aberto, marcado pronto para revisão pelo estado remoto observado; não alterar esse estado automaticamente.
 
 **APK disponível:** run 41453817438 / ea8f264 passou ambas as plataformas; artifact debug baixado e SHA256 registrado em STATUS. Instalação física ainda não executada. UI-02 passou checks nativos; novos PNGs ainda aguardam inspeção. Entradas seguintes são histórico.
 

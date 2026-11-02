@@ -1,6 +1,6 @@
 # STATUS — Estado verificável do Arke
 
-**M5-TESTFLIGHT-01 em andamento:** responsável confirmou seis secrets no environment e autorizou primeira build beta. Workflow separado com Xcode 26.3, assinatura manual validada, upload e limpeza; execução ainda pendente. Sem merge/publicação em lojas. [Contrato](engenharia/M5-TESTFLIGHT-01.md).
+**M5-TESTFLIGHT-01 bloqueado na proteção do ambiente:** responsável confirmou seis secrets e autorizou primeira beta. Workflow preparado com Xcode 26.3, assinatura manual, validação, upload e limpeza; scripts/fixtures locais passaram, credenciais reais não acessadas. [Run 41482415419 / febaa9c](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41482415419) recusou a branch chore/development-kickoff antes de iniciar runner. Solicitada inclusão dessa branch em Deployment branches and tags do environment ios-testflight, mantendo demais proteções. Release/assinatura/upload NÃO EXECUTADOS; sem merge/publicação em lojas. [Contrato](engenharia/M5-TESTFLIGHT-01.md).
 
 **APK gerado:** [CI ea8f264 aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41453817438), artifact arke-android-debug-apk baixado. SHA256 APK: d5f73c2ddd530b03daebb20b8face3e8b330f3a249988d6ce7298973969af584. Instalação física não executada. Fonte inclui M5-EDITOR-UI-02 com checks nativos aprovados; inspeção dos novos PNGs ainda pendente. Registros anteriores abaixo são históricos.
 

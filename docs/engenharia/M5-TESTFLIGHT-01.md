@@ -2,6 +2,10 @@
 
 Status: em andamento. Marco M5, 02/11/2026. Autorização explícita no chat para tentar a primeira build TestFlight, com configuração privada confirmada. Branch chore/development-kickoff, PR #2; sem merge.
 
+Execução inicial: ebf2914 / run 41482289903 recusado por uso de runner.temp no contexto env do job; corrigido em febaa9c inicializando pelo GITHUB_ENV dentro do step. Sintaxe Bash validada; plists/JSON/Python parseados. Validador de profile testado com fixture válida e sete variantes inválidas (equipe, validade, dispositivo, enterprise, UUID, bundle e desenvolvimento), todas com resultado esperado. Nenhuma credencial real lida localmente. Primeiro teste de fixtures em temp do sandbox falhou por permissão; repetição em scratch do workspace passou.
+
+**Bloqueio externo confirmado:** [run 41482415419](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41482415419), fonte febaa9c, workflow reconhecido mas runner não iniciado: `Branch "chore/development-kickoff" is not allowed to deploy to ios-testflight due to environment protection rules.` Logo assinatura, acesso aos secrets, compilação Release, validação e upload NÃO EXECUTADOS. Solicitado ao responsável permitir somente essa branch em Deployment branches and tags, mantendo demais proteções. Não contornar ambiente, copiar secrets ou fazer merge. Repetir após confirmação.
+
 Objetivo: assinar Release com.travel.arke / equipe ZRVX9VFFJW, exportar IPA e enviar ao App Store Connect para TestFlight. Entregar também o APK debug já validado. Sem publicação em lojas, convites, alteração dos fluxos/dados ou Google Cloud.
 
 Arquivos autorizados: workflow separado, scripts de assinatura/validação, projeto iOS e recursos mínimos exigidos pelo upload (ícone provisório e manifesto de privacidade), documentação operacional. Não alterar identidade final da marca. Referências: AGENTS, M5-DEVICE-01, DISTRIBUICAO, SECURITY-PRIVACY, SAFEGUARDS, QUALITY-GATES.
