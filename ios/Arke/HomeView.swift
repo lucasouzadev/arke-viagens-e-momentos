@@ -294,14 +294,19 @@ private final class ForegroundLocation: NSObject, ObservableObject, CLLocationMa
         @unknown default: message = "Localização indisponível. Você pode continuar explorando o mapa."
         }
     }
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        guard requested else { return }
-        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways { manager.requestLocation() }
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Task { @MainActor [weak self] in
+            guard let self, self.requested else { return }
+            if self.manager.authorizationStatus == .authorizedWhenInUse || self.manager.authorizationStatus == .authorizedAlways { self.manager.requestLocation() }
+        }
     }
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        coordinate = locations.last?.coordinate; requested = false
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        let coordinate = locations.last?.coordinate
+        Task { @MainActor [weak self] in self?.coordinate = coordinate; self?.requested = false }
     }
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        message = "Não foi possível obter sua posição agora. Tente novamente."; requested = false
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Task { @MainActor [weak self] in
+            self?.message = "Não foi possível obter sua posição agora. Tente novamente."; self?.requested = false
+        }
     }
 }

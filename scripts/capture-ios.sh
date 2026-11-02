@@ -4,7 +4,7 @@ set -euo pipefail
 output="$PWD/build/screenshots/ios"
 mkdir -p "$output"
 if [ -n "${ARKE_SIMULATOR_MAJOR:-}" ]; then
-  runtime=$(xcrun simctl list runtimes --json | python3 -c 'import json,os,sys; runtimes=[r for r in json.load(sys.stdin)["runtimes"] if r.get("isAvailable") and r.get("version", "").split(".")[0] == os.environ["ARKE_SIMULATOR_MAJOR"]]; assert runtimes, "Requested iOS runtime unavailable"; print(runtimes[-1]["identifier"])')
+  runtime=$(xcrun simctl list runtimes --json | python3 -c 'import json,os,sys; runtimes=[r for r in json.load(sys.stdin)["runtimes"] if r.get("isAvailable") and ".SimRuntime.iOS-" in r.get("identifier", "") and r.get("version", "").split(".")[0] == os.environ["ARKE_SIMULATOR_MAJOR"]]; assert runtimes, "Requested iOS runtime unavailable"; print(runtimes[-1]["identifier"])')
   xcrun simctl create "iPhone SE (3rd generation) QA" com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation "$runtime"
 fi
 xcrun simctl list devices available --json > "$output/devices.json"
