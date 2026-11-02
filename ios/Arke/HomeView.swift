@@ -162,7 +162,11 @@ struct HomeView: View {
                             Text(context.title).tag(context.rawValue).accessibilityIdentifier("context." + context.rawValue)
                         }
                     }.pickerStyle(.wheel).accessibilityIdentifier("home.contextWheel")
-                    Button("Concluído") { showingContextPicker = false }.padding(.bottom, 20)
+                    Button { showingContextPicker = false } label: {
+                        Text("Concluído").arkeText(.button).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(ArkeUI.blue, in: Capsule()).contentShape(Rectangle())
+                    }.buttonStyle(.plain).padding(.horizontal, 20).padding(.bottom, 20)
                 }.presentationDetents([.height(320)]).presentationDragIndicator(.visible)
             }
         }
