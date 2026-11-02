@@ -34,6 +34,7 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
           swift test --package-path ios
+          python3 -m unittest discover -s scripts/tests -p 'test_apple_upload.py'
           plutil -lint ios/Arke/PrivacyInfo.xcprivacy
       - name: Prepare private signing material
         env:
