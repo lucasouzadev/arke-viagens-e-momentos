@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.testTag
@@ -54,23 +56,28 @@ fun ArkeFloatingSheet(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss, sheetState = sheetState,
-        containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface, tonalElevation = 0.dp,
-        shape = RectangleShape,
+        onDismissRequest = onDismiss, sheetState = sheetState, modifier = Modifier.testTag("$tagPrefix.dismiss.card"),
+        containerColor = arkeSheetColor(), contentColor = MaterialTheme.colorScheme.onSurface, tonalElevation = 0.dp,
+        shape = RoundedCornerShape(36.dp),
         dragHandle = {
             val dismissLabel = stringResource(dev.arke.app.R.string.sheet_dismiss)
             TextButton(onClick = onDismiss, enabled = enabled,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("$tagPrefix.dismiss").semantics { contentDescription = dismissLabel },
             ) {
-                Box(Modifier.size(64.dp, 16.dp).background(arkeSheetColor(), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
-                }
+                BottomSheetDefaults.DragHandle()
+
             }
         },
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp)) {
-            Column(modifier.fillMaxWidth().clip(RoundedCornerShape(36.dp)).background(arkeSheetColor())
-                .testTag("$tagPrefix.dismiss.card"), content = content)
-        }
+        Column(modifier.fillMaxWidth(), content = content)
     }
 }
+
+@Composable
+fun Modifier.arkeScrollEdges(surface: Color = MaterialTheme.colorScheme.surface): Modifier = this.then(
+    Modifier.drawWithContent {
+        drawContent()
+        drawRect(Brush.verticalGradient(listOf(surface, Color.Transparent), 0f, 12.dp.toPx()))
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent, surface), (size.height - 24.dp.toPx()).coerceAtLeast(0f), size.height))
+    }
+)

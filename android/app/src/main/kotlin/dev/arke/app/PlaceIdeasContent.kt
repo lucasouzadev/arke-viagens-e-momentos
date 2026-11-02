@@ -52,14 +52,14 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
     }
     DisposableEffect(Unit) { onDispose { onDetailsVisibilityChanged(false) } }
     if (state.ideas.isEmpty()) {
-        Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.titleLarge)
+        Text("Qual lugar você quer conhecer?", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(12.dp))
-        Text(stringResource(R.string.empty_detail))
+        Text("Toque em + para guardar uma ideia.")
     } else {
-        Text(stringResource(R.string.local_ideas), style = MaterialTheme.typography.titleLarge)
         state.ideas.forEach { idea ->
             key(idea.id) {
                 Spacer(Modifier.height(16.dp))
+                Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(24.dp)).padding(16.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                     IconButton(onClick = { pendingUpdate = null; pendingRequest = null; editing = idea }, enabled = state.ready && !state.busy,
@@ -74,19 +74,18 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                     colors = ButtonDefaults.textButtonColors(contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary),
                     contentPadding = PaddingValues(0.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) {
-                    Text(stringResource(R.string.view_place_details), Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                    Text("Abrir ↗", Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                 }
                 val deleteLabel = stringResource(R.string.delete_place) + ": " + idea.name
                 TextButton(
                     onClick = { deleting = idea }, enabled = !state.busy,
                     modifier = Modifier.testTag("place.delete.${idea.id}").semantics { contentDescription = deleteLabel },
-                ) { Text(stringResource(R.string.delete_place), color = MaterialTheme.colorScheme.error) }
-                HorizontalDivider()
+                ) { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) }
+                }
             }
         }
     }
     Spacer(Modifier.height(24.dp))
-    Text(stringResource(R.string.development_notice), style = MaterialTheme.typography.bodySmall)
     selectedID?.let { id -> PlaceDetails(state.ideas, id, onClose = { selectedID = null }) }
     editing?.let { original ->
         PlaceEditor(initialIdea = original, saving = state.busy, saveError = if (pendingUpdate != null) state.error else null,
@@ -151,6 +150,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
             key(selectedID) {
                 Column(Modifier.fillMaxWidth().weight(1f, fill = false).drawWithContent {
                     drawContent()
+                    drawRect(Brush.verticalGradient(listOf(sheetColor, Color.Transparent), 0f, 12.dp.toPx()))
                     drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
                         startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f), endY = size.height))
                 }.verticalScroll(rememberScrollState()).testTag("detail.body").padding(top = 24.dp, bottom = 48.dp),

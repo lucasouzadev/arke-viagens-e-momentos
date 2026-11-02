@@ -68,38 +68,44 @@ struct ArkeFloatingSheet<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             Button(action: onDismiss) {
-                Capsule().fill(Color(uiColor: .secondaryLabel)).frame(width: 36, height: 4)
-                    .frame(width: 64, height: 16)
-                    .background(ArkeUI.sheetSurface(colorScheme), in: Capsule())
-                    .frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).disabled(!enabled)
-            .accessibilityLabel("Recolher painel").accessibilityHint("Volta à tela anterior.")
-            .accessibilityIdentifier(dismissIdentifier)
+                Capsule().fill(.secondary).frame(width: 36, height: 4)
+                    .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain).disabled(!enabled)
+                .accessibilityLabel("Recolher painel").accessibilityIdentifier(dismissIdentifier)
             content
-                .background(ArkeUI.sheetSurface(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 36))
-                .accessibilityElement(children: .contain)
-                .accessibilityIdentifier(dismissIdentifier + ".card")
         }
-        .padding(.horizontal, 12).padding(.bottom, 12)
-        .presentationBackground(.clear).presentationDragIndicator(.hidden)
-        .presentationCornerRadius(0)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(dismissIdentifier + ".card")
+            .presentationBackground(ArkeUI.sheetSurface(colorScheme))
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(36)
     }
 }
+
 
 private struct ArkeRecedingSurface: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let presented: Bool
     func body(content: Content) -> some View {
-        content
-            .clipShape(RoundedRectangle(cornerRadius: presented ? 28 : 0))
-            .scaleEffect(presented ? 0.96 : 1, anchor: .top)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: presented)
-            .background(Color(uiColor: .systemGroupedBackground))
+        content // The native presentation owns recession and safe areas.
     }
 }
 
 extension View {
     func arkeReceding(presented: Bool) -> some View { modifier(ArkeRecedingSurface(presented: presented)) }
+}
+
+struct ArkeScrollEdges: ViewModifier {
+    func body(content: Content) -> some View {
+        content.scrollIndicators(.hidden).mask {
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .white], startPoint: .top, endPoint: .bottom).frame(height: 12)
+                Rectangle()
+                LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom).frame(height: 24)
+            }.allowsHitTesting(false).accessibilityHidden(true)
+        }
+    }
+}
+extension View {
+    func arkeScrollEdges() -> some View { modifier(ArkeScrollEdges()) }
 }

@@ -1,11 +1,15 @@
 import SwiftUI
 import MapKit
+import CoreLocation
 
 struct HomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
-    @GestureState private var panelTranslation: CGFloat = 0
+    @StateObject private var location = ForegroundLocation()
+    @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)))
+    @State private var panelHeight: CGFloat?
+    @State private var panelOrigin: CGFloat?
     @State private var showingAddPlace = false
     @State private var showingDetailPreview = false
     @State private var showingEditPreview = false
@@ -29,15 +33,22 @@ struct HomeView: View {
             Text("Onde vamos?").arkeText(.screenTitle)
             GeometryReader { geometry in
                 VStack(spacing: 8) {
-                    Map(initialPosition: .region(MKCoordinateRegion(
-                        center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
-                        span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)
-                    ))) {}
+                    Map(position: $camera) { UserAnnotation() }
                         .mapStyle(.standard)
-                        .accessibilityLabel("Mapa Apple. Explore o mundo; localização pessoal desativada.")
-                        .frame(height: clampedMapHeight(mapHeight(in: geometry.size.height) + panelTranslation, in: geometry.size.height))
+                        .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
+                        .frame(height: geometry.size.height)
+                        .frame(height: panelHeight ?? mapHeight(in: geometry.size.height), alignment: .center).clipped()
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .contentShape(RoundedRectangle(cornerRadius: 20))
+                        .overlay(alignment: .bottomTrailing) {
+                            Button { location.request() } label: {
+                                Image(systemName: "location.fill").frame(width: 48, height: 48)
+                                    .background(.regularMaterial, in: Circle())
+                            }.padding(12).accessibilityLabel("Minha localização")
+                        }
+                        .onReceive(location.$coordinate) { coordinate in
+                            if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
+                        }
 
                     panelMenu
                         .highPriorityGesture(panelDrag(in: geometry.size.height))
@@ -69,7 +80,7 @@ struct HomeView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .frame(maxHeight: .infinity)
+                        .frame(maxHeight: .infinity).arkeScrollEdges()
                         .accessibilityIdentifier("home.contentBody")
                     }
                     .padding(20)
@@ -77,6 +88,9 @@ struct HomeView: View {
                 }
             }
         }
+        .alert("Minha localização", isPresented: Binding(get: { location.message != nil }, set: { if !$0 { location.message = nil } })) {
+            Button("Entendi", role: .cancel) { location.message = nil }
+        } message: { Text(location.message ?? "") }
         .arkeText(.body)
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
@@ -138,15 +152,16 @@ struct HomeView: View {
             .accessibilityLabel("Trocar contexto")
             .accessibilityValue(state.context.title)
             .accessibilityIdentifier("home.contextMenu")
-            .confirmationDialog("Contexto atual: \(state.context.title)", isPresented: $showingContextPicker, titleVisibility: .visible) {
-                ForEach(TravelContext.allCases, id: \.self) { context in
-                    Button(context.title + (context == state.context ? " ✓" : "")) {
-                        var next = state
-                        next.selectContext(context)
-                        contextValue = next.context.rawValue
-                    }
-                }
-                Button("Cancelar", role: .cancel) {}
+            .sheet(isPresented: $showingContextPicker) {
+                VStack(spacing: 12) {
+                    Text("Escolha o contexto").arkeText(.contextTitle).padding(.top, 20)
+                    Picker("Contexto", selection: $contextValue) {
+                        ForEach(TravelContext.allCases, id: \.self) { context in
+                            Text(context.title).tag(context.rawValue).accessibilityIdentifier("context." + context.rawValue)
+                        }
+                    }.pickerStyle(.wheel).accessibilityIdentifier("home.contextWheel")
+                    Button("Concluído") { showingContextPicker = false }.padding(.bottom, 20)
+                }.presentationDetents([.height(320)]).presentationDragIndicator(.visible)
             }
         }
         .buttonStyle(.plain)
@@ -196,15 +211,20 @@ struct HomeView: View {
 
     private func panelDrag(in height: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 10, coordinateSpace: .global)
-            .updating($panelTranslation) { value, translation, _ in
-                translation = value.translation.height
+            .onChanged { value in
+                if panelOrigin == nil { panelOrigin = mapHeight(in: height) }
+                panelHeight = clampedMapHeight((panelOrigin ?? mapHeight(in: height)) + value.translation.height, in: height)
             }
             .onEnded { value in
-                let target = clampedMapHeight(mapHeight(in: height) + value.translation.height, in: height)
+                let target = clampedMapHeight((panelOrigin ?? mapHeight(in: height)) + value.translation.height, in: height)
                 let closest = PanelDetent.allCases.min {
                     abs(mapHeight(for: $0, in: height) - target) < abs(mapHeight(for: $1, in: height) - target)
                 }
-                if let closest { detentValue = closest.rawValue }
+                var transaction = Transaction(); transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    if let closest { detentValue = closest.rawValue }
+                    panelHeight = nil; panelOrigin = nil
+                }
             }
     }
 
@@ -253,5 +273,33 @@ private extension PanelDetent {
         case .balanced: "Equilibrado"
         case .details: "Detalhes"
         }
+    }
+}
+
+@MainActor
+private final class ForegroundLocation: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published var coordinate: CLLocationCoordinate2D?
+    @Published var message: String?
+    private let manager = CLLocationManager()
+    private var requested = false
+    override init() { super.init(); manager.delegate = self; manager.desiredAccuracy = kCLLocationAccuracyHundredMeters }
+    func request() {
+        requested = true
+        switch manager.authorizationStatus {
+        case .notDetermined: manager.requestWhenInUseAuthorization()
+        case .authorizedWhenInUse, .authorizedAlways: manager.requestLocation()
+        case .denied, .restricted: message = "Permita a localização nos Ajustes para mostrar sua posição. Você pode continuar explorando o mapa."
+        @unknown default: message = "Localização indisponível. Você pode continuar explorando o mapa."
+        }
+    }
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        guard requested else { return }
+        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways { manager.requestLocation() }
+    }
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        coordinate = locations.last?.coordinate; requested = false
+    }
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        message = "Não foi possível obter sua posição agora. Tente novamente."; requested = false
     }
 }

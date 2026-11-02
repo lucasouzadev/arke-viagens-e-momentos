@@ -18,9 +18,10 @@ final class HeaderNavigationTests: XCTestCase {
             waitForExpectations(timeout: 5)
             XCTAssertTrue(clock.isHittable)
             clock.tap()
-            let option = app.buttons[title].firstMatch
-            XCTAssertTrue(option.waitForExistence(timeout: 5))
-            option.tap()
+            let wheel = app.pickerWheels.firstMatch
+            XCTAssertTrue(wheel.waitForExistence(timeout: 5))
+            wheel.adjust(toPickerWheelValue: title)
+            app.buttons["Concluído"].tap()
             let selectedTitle = NSPredicate(format: "label == %@", title)
             expectation(for: selectedTitle, evaluatedWith: app.staticTexts["home.contextTitle"])
             waitForExpectations(timeout: 5)
@@ -44,13 +45,13 @@ final class HeaderNavigationTests: XCTestCase {
         app.buttons["place.info"].tap()
         XCTAssertTrue(app.staticTexts["place.infoText"].waitForExistence(timeout: 5))
         app.buttons["place.infoDismiss"].tap()
-        app.buttons["place.review"].tap()
+        tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Informe o nome do lugar."].exists)
         let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
         name.tap()
         name.typeText("Rascunho de teste")
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
-        app.buttons["place.review"].tap()
+        tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Informe um endereço ou referência."].exists)
         app.buttons["place.dismiss"].tap()
         app.buttons["Continuar editando"].tap()
@@ -75,12 +76,12 @@ final class HeaderNavigationTests: XCTestCase {
         address.tap()
         address.typeText("Rua de teste, 100")
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
-        app.buttons["place.review"].tap()
+        tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Museu de teste"].exists)
-        app.buttons["place.edit"].tap()
+        tapEditorAction("place.edit", app: app)
         XCTAssertEqual(name.value as? String, "Museu de teste")
-        app.buttons["place.review"].tap()
-        app.buttons["place.save"].tap()
+        tapEditorAction("place.review", app: app)
+        tapEditorAction("place.save", app: app)
         XCTAssertTrue(app.staticTexts["place.savedNotice"].waitForExistence(timeout: 10))
         app.terminate()
         app.launch()
@@ -119,13 +120,13 @@ final class HeaderNavigationTests: XCTestCase {
         replaceText(in: name, with: "Museu atualizado", app: app)
         replaceText(in: address, with: "Nova entrada, 200", app: app)
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
-        app.buttons["place.review"].tap()
+        tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Museu atualizado"].exists)
-        app.buttons["place.edit"].tap()
+        tapEditorAction("place.edit", app: app)
         XCTAssertEqual(name.value as? String, "Museu atualizado")
-        app.buttons["place.review"].tap()
+        tapEditorAction("place.review", app: app)
         XCTAssertEqual(app.buttons["place.save"].label, "Salvar alterações")
-        app.buttons["place.save"].tap()
+        tapEditorAction("place.save", app: app)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["place.title"])
         waitForExpectations(timeout: 10)
         app.terminate()
@@ -225,10 +226,10 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["detail.position"].exists)
         let card = app.otherElements["detail.dismiss.card"]
         XCTAssertTrue(card.exists)
-        XCTAssertGreaterThan(card.frame.minX, app.frame.minX)
-        XCTAssertLessThan(card.frame.maxX, app.frame.maxX)
+        XCTAssertGreaterThanOrEqual(card.frame.minX, app.frame.minX)
+        XCTAssertLessThanOrEqual(card.frame.maxX, app.frame.maxX)
         XCTAssertLessThan(card.frame.maxY, app.frame.maxY)
-        XCTAssertLessThanOrEqual(app.buttons["detail.dismiss"].frame.maxY, card.frame.minY + 1)
+        XCTAssertGreaterThanOrEqual(app.buttons["detail.dismiss"].frame.minY, card.frame.minY)
         XCTAssertLessThan(app.staticTexts["detail.title"].frame.minX, app.buttons["detail.info"].frame.minX)
         XCTAssertEqual(app.staticTexts["detail.title"].frame.midX, card.frame.midX, accuracy: 1)
         XCTAssertEqual(app.staticTexts["detail.name"].frame.minX, app.staticTexts["detail.address"].frame.minX, accuracy: 1)
@@ -266,7 +267,21 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
     }
 
+    private func tapEditorAction(_ identifier: String, app: XCUIApplication) {
+        let button = app.buttons[identifier]
+        for _ in 0..<6 {
+            if button.isHittable { break }
+            app.scrollViews["place.fields"].swipeUp()
+        }
+        XCTAssertTrue(button.isHittable)
+        button.tap()
+    }
+
     private func replaceText(in field: XCUIElement, with value: String, app: XCUIApplication) {
+        for _ in 0..<6 {
+            if field.isHittable { break }
+            app.scrollViews["place.fields"].swipeDown()
+        }
         field.tap()
         // Each fixture is one paragraph; use the system paragraph-selection gesture.
         field.tap(withNumberOfTaps: 3, numberOfTouches: 1)

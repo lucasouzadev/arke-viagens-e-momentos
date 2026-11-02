@@ -16,7 +16,7 @@ class HeaderNavigationTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     private fun reviewPlaceAndWaitForKeyboard() {
-        compose.onNodeWithTag("place.review").performClick()
+        compose.onNodeWithTag("place.review").performScrollTo().performClick()
         // IME/layout work is outside Compose's test clock. Wait before the next physical tap.
         compose.waitUntil(10_000) {
             var keyboardVisible = true
@@ -45,7 +45,9 @@ class HeaderNavigationTest {
         val contexts = listOf("EXPENSES" to "Gastos", "SAVINGS" to "Cofrinho", "REVIEWS" to "Avaliações", "MEMORIES" to "Memórias", "PLANNING" to "Planejamento")
         for ((id, title) in contexts) {
             compose.onNodeWithTag("home.contextMenu").performClick()
-            compose.onNodeWithTag("context.$id").assertIsDisplayed().performClick()
+            compose.onNodeWithTag("context.$id").performScrollTo().performClick()
+            compose.waitForIdle()
+            compose.onNodeWithText("Concluído").performClick()
             compose.onNodeWithTag("home.contextTitle").assertTextEquals(title)
             compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Detalhes")
         }
@@ -61,10 +63,10 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("place.info").performClick()
         compose.onNodeWithTag("place.infoText").assertIsDisplayed()
         compose.onNodeWithTag("place.infoDismiss").performClick()
-        compose.onNodeWithTag("place.review").performClick()
+        compose.onNodeWithTag("place.review").performScrollTo().performClick()
         compose.onNodeWithText("Informe o nome do lugar.").assertExists()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho de teste")
-        compose.onNodeWithTag("place.review").performClick()
+        compose.onNodeWithTag("place.review").performScrollTo().performClick()
         compose.onNodeWithText("Informe um endereço ou referência.").assertExists()
         compose.onNodeWithTag("place.dismiss").performClick()
         compose.onNodeWithText("Continuar editando").performClick()
@@ -83,8 +85,8 @@ class HeaderNavigationTest {
         compose.onNodeWithText("Museu de teste").assertExists()
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
-        compose.onNodeWithTag("place.review").performClick()
-        compose.onNodeWithTag("place.save").performClick()
+        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        compose.onNodeWithTag("place.save").performScrollTo().performClick()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.onActivity { activity -> androidx.lifecycle.ViewModelProvider(activity)[PlaceIdeasViewModel::class.java].load() }
@@ -117,8 +119,8 @@ class HeaderNavigationTest {
         compose.onNodeWithText("Museu atualizado").assertExists()
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu atualizado")
-        compose.onNodeWithTag("place.review").performClick()
-        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performClick()
+        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.title").fetchSemanticsNodes().isEmpty() }
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isNotEmpty() }
@@ -232,10 +234,10 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.name").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Lugar 1 de 2"))
         val card = compose.onNodeWithTag("detail.dismiss.card").fetchSemanticsNode().boundsInRoot
         val handle = compose.onNodeWithTag("detail.dismiss").fetchSemanticsNode().boundsInRoot
-        org.junit.Assert.assertTrue(card.left > 0f)
-        org.junit.Assert.assertTrue(card.right < compose.activity.resources.displayMetrics.widthPixels)
+        org.junit.Assert.assertTrue(card.left >= 0f)
+        org.junit.Assert.assertTrue(card.right <= compose.activity.resources.displayMetrics.widthPixels)
         org.junit.Assert.assertTrue(card.bottom < compose.activity.resources.displayMetrics.heightPixels)
-        org.junit.Assert.assertTrue(handle.bottom <= card.top + 1f)
+        org.junit.Assert.assertTrue(handle.top >= card.top)
         compose.onNodeWithTag("detail.infoText").assertDoesNotExist()
         compose.onNodeWithTag("detail.info").performClick()
         compose.onNodeWithTag("detail.infoText").assertIsDisplayed()

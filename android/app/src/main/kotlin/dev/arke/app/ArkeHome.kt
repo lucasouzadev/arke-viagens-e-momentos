@@ -4,6 +4,12 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -126,7 +132,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         Column(Modifier.padding(20.dp)) {
                             CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
                             HorizontalDivider(Modifier.padding(vertical = 12.dp))
-                            Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {
+                            Column(Modifier.weight(1f).arkeScrollEdges().testTag("home.contentBody").verticalScroll(rememberScrollState())) {
                                 if (savedNotice) Text(stringResource(R.string.saved_place_notice), modifier = Modifier.testTag("place.savedNotice"), style = MaterialTheme.typography.bodySmall)
                                 if (placeState.error != null && !showingAddPlace) {
                                     Text(placeState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
@@ -185,25 +191,43 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    val description = stringResource(R.string.change_context, stringResource(active.title()))
-    val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
-    Box {
-        IconButton(
-            onClick = { expanded = true },
-            modifier = Modifier.size(48.dp).testTag("home.contextMenu").semantics { contentDescription = description },
-        ) { Icon(painterResource(R.drawable.ic_clock), contentDescription = null, tint = actionColor) }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            TravelContext.entries.forEach { context ->
-                DropdownMenuItem(
-                    modifier = Modifier.testTag("context.${context.name}").semantics { selected = context == active },
-                    text = { Text(stringResource(context.title())) },
-                    trailingIcon = { if (context == active) Text("✓") },
-                    onClick = { onSelect(context); expanded = false },
-                )
+    IconButton(onClick = { expanded = true }, modifier = Modifier.size(48.dp).testTag("home.contextMenu")) {
+        Icon(painterResource(R.drawable.ic_clock), stringResource(R.string.change_context, stringResource(active.title())))
+    }
+    if (expanded) {
+        ModalBottomSheet(onDismissRequest = { expanded = false }) {
+            val options = TravelContext.entries
+            val list = rememberLazyListState(initialFirstVisibleItemIndex = options.indexOf(active))
+            val scope = rememberCoroutineScope()
+            LaunchedEffect(list) {
+                snapshotFlow {
+                    val layout = list.layoutInfo
+                    val center = (layout.viewportStartOffset + layout.viewportEndOffset) / 2
+                    val nearest = layout.visibleItemsInfo.minByOrNull { abs(it.offset + it.size / 2 - center) }?.index
+                    if (list.isScrollInProgress) null else nearest
+                }.distinctUntilChanged().collect { index -> index?.let { onSelect(options[it]) } }
             }
+            Text("Escolha o contexto", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Box(Modifier.fillMaxWidth().height(240.dp)) {
+                Box(Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 20.dp).height(48.dp)
+                    .background(arkeInsetColor(), RoundedCornerShape(24.dp)))
+                Text("›", modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp), style = MaterialTheme.typography.titleLarge)
+                LazyColumn(state = list, flingBehavior = rememberSnapFlingBehavior(list),
+                    contentPadding = PaddingValues(vertical = 96.dp), modifier = Modifier.fillMaxSize().testTag("home.contextWheel")) {
+                    items(options.size) { index ->
+                        val option = options[index]
+                        TextButton(onClick = { scope.launch { list.animateScrollToItem(index) } },
+                            modifier = Modifier.fillMaxWidth().height(48.dp).testTag("context.${option.name}").semantics { selected = option == active }) {
+                            Text(stringResource(option.title()))
+                        }
+                    }
+                }
+            }
+            TextButton(onClick = { expanded = false }, modifier = Modifier.align(Alignment.CenterHorizontally).heightIn(min = 48.dp)) { Text("Concluído") }
         }
     }
 }

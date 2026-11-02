@@ -13,10 +13,9 @@ struct PlaceIdeasContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if store.ideas.isEmpty {
-                Text("Sua próxima viagem começa com uma ideia").arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
-                Text("Guarde os lugares que você quer conhecer, mesmo antes de criar uma viagem.")
+                Text("Qual lugar você quer conhecer?").arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
+                Text("Toque em + para guardar uma ideia.").foregroundStyle(.secondary).padding(.vertical, 20)
             } else {
-                Text("Ideias de lugares").arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
                 ForEach(store.ideas) { idea in
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
@@ -29,7 +28,7 @@ struct PlaceIdeasContent: View {
                         Text(idea.address).foregroundStyle(.secondary)
                         if !idea.note.isEmpty { Text(idea.note) }
                         Button { selected = idea } label: {
-                            Text("Ver detalhes").arkeText(.button)
+                            Label("Abrir", systemImage: "arrow.up.right").arkeText(.button)
                                 .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
                                 .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
                                 .contentShape(Rectangle())
@@ -37,17 +36,18 @@ struct PlaceIdeasContent: View {
                             .buttonStyle(.plain)
                             .accessibilityLabel("Ver detalhes de \(idea.name)")
                             .accessibilityIdentifier("place.open.\(idea.id)")
-                        Button("Excluir lugar", role: .destructive) { deleting = idea }
+                        Button(role: .destructive) { deleting = idea } label: {
+                            Image(systemName: "trash").frame(width: 48, height: 48)
+                                .background(ArkeUI.sheetSurface(colorScheme), in: Circle())
+                        }
                             .disabled(store.busy)
                             .accessibilityLabel("Excluir \(idea.name)")
                             .accessibilityIdentifier("place.delete.\(idea.id)")
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    Divider()
+                    .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
                 }
             }
-            Text("Em desenvolvimento · ideias salvas apenas neste aparelho")
-                .arkeText(.caption).foregroundStyle(.secondary)
         }
         .onChange(of: selected != nil || editing != nil) { _, visible in onDetailsVisibilityChanged(visible) }
         .onDisappear { onDetailsVisibilityChanged(false) }
@@ -145,12 +145,7 @@ struct PlaceDetails: View {
                     }
                 }
                 .id(selectedID).accessibilityIdentifier("detail.body")
-                .mask {
-                    VStack(spacing: 0) {
-                        Rectangle()
-                        LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom).frame(height: 32)
-                    }.allowsHitTesting(false).accessibilityHidden(true)
-                }
+                .arkeScrollEdges()
                 HStack(spacing: 16) {
                     if let index, index > 0 {
                         Button { selectedID = ideas[index - 1].id } label: {

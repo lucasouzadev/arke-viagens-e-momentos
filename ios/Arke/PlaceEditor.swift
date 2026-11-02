@@ -32,7 +32,7 @@ struct PlaceEditor: View {
 
     var body: some View {
         ArkeFloatingSheet(dismissIdentifier: "place.dismiss", enabled: !saving, onDismiss: cancel) {
-            NavigationStack {
+            Group {
                 VStack(spacing: 0) {
                     HStack(spacing: 0) {
                         Button(action: cancel) {
@@ -62,8 +62,9 @@ struct PlaceEditor: View {
                             }.foregroundStyle(ink).frame(width: 240).padding(20).presentationCompactAdaptation(.popover)
                         }
                     }
-                    .buttonStyle(.plain).padding(.top, 24)
+                    .buttonStyle(.plain).padding(.top, 12)
                     ScrollView {
+                        VStack(spacing: 16) {
                         VStack(alignment: .leading, spacing: 16) {
                             VStack(alignment: .leading, spacing: 20) {
                             if reviewing {
@@ -72,7 +73,9 @@ struct PlaceEditor: View {
                                 summary("Nota opcional", value: draft.normalized.note.isEmpty ? "Sem nota" : draft.normalized.note, height: 120)
                             } else {
                                 input("Nome do lugar", text: $draft.name, height: 56, lines: 1...1, focus: .name, identifier: "place.name")
+                                Divider()
                                 input("Endereço ou referência", text: $draft.address, height: 96, lines: 2...4, focus: .address, identifier: "place.address")
+                                Divider()
                                 input("Nota opcional", text: $draft.note, height: 120, lines: 3...6, focus: .note, identifier: "place.note")
                                 if submitted, let issue = draft.issue {
                                     Text(issue.message).arkeText(.caption).accessibilityIdentifier("place.validation")
@@ -85,16 +88,6 @@ struct PlaceEditor: View {
                         }
                         .foregroundStyle(ink).frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 24).padding(.bottom, 48)
-                    }
-                    .scrollDismissesKeyboard(.interactively).accessibilityIdentifier("place.fields")
-                    .mask {
-                        VStack(spacing: 0) {
-                            Rectangle()
-                            LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom)
-                                .frame(height: 32)
-                        }
-                        .allowsHitTesting(false).accessibilityHidden(true)
-                    }
                     VStack(spacing: 12) {
                         if reviewing {
                             Button { reviewing = false } label: {
@@ -112,16 +105,15 @@ struct PlaceEditor: View {
                         }
                     }
                     .buttonStyle(.plain).foregroundStyle(ink).padding(.bottom, 16)
+                    .padding(.bottom, 32)
+                        }
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .accessibilityIdentifier("place.fields").arkeScrollEdges()
+
                 }
                 .padding(.horizontal, ArkeUI.margin)
                 .background(ArkeUI.sheetSurface(colorScheme))
-                .toolbar(.hidden, for: .navigationBar)
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button("Concluir") { field = nil }
-                    }
-                }
                 .alert("Descartar rascunho?", isPresented: $confirmingDiscard) {
                     Button("Continuar editando", role: .cancel) {}
                     Button("Descartar", role: .destructive) { onCancel() }
@@ -145,14 +137,23 @@ struct PlaceEditor: View {
         VStack(alignment: .leading, spacing: 8) {
             Label(title, systemImage: title == "Nome do lugar" ? "bookmark.fill" : (title == "Endereço ou referência" ? "mappin" : "text.alignleft"))
                 .arkeText(.label).labelStyle(EditorFieldLabelStyle())
-            TextField(title, text: text, prompt: Text(""), axis: focus == .name ? .horizontal : .vertical)
-                .arkeText(.body).focused($field, equals: focus)
-                .lineLimit(lines).textInputAutocapitalization(focus == .name ? .words : .sentences)
-                .submitLabel(focus == .name ? .next : .return)
-                .onSubmit { if focus == .name { field = .address } }
-                .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
-                .disabled(saving).accessibilityLabel(title).accessibilityIdentifier(identifier)
+            Group {
+                if focus == .name {
+                    TextField(title, text: text, prompt: Text(""))
+                        .submitLabel(.next).onSubmit { field = .address }
+                } else {
+                    TextEditor(text: text).scrollContentBackground(.hidden)
+                        .frame(minHeight: height)
+                }
+            }
+            .arkeText(.body).focused($field, equals: focus)
+            .textInputAutocapitalization(focus == .name ? .words : .sentences)
+            .frame(maxWidth: .infinity, minHeight: focus == .name ? 48 : height, alignment: .topLeading)
+            .disabled(saving).accessibilityLabel(title).accessibilityIdentifier(identifier)
+
         }
+        .contentShape(Rectangle())
+        .simultaneousGesture(TapGesture().onEnded { if !saving { field = focus } })
     }
 
     private func summary(_ title: String, value: String, height: CGFloat) -> some View {

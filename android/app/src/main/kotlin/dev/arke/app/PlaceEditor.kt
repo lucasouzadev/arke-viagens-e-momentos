@@ -1,6 +1,9 @@
 package dev.arke.app
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -110,6 +113,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 Modifier.fillMaxWidth().weight(1f)
                     .drawWithContent {
                         drawContent()
+                        drawRect(Brush.verticalGradient(colors = listOf(sheetColor, Color.Transparent), startY = 0f, endY = 12.dp.toPx()))
                         drawRect(Brush.verticalGradient(
                             colors = listOf(Color.Transparent, sheetColor),
                             startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f),
@@ -128,7 +132,9 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     PlaceSummary(stringResource(R.string.place_note), draft.normalized().note.ifEmpty { stringResource(R.string.no_note) }, 120.dp)
                 } else {
                     PlaceInput(stringResource(R.string.place_name), draft.name, { draft = draft.copy(name = it) }, 56.dp, 1, 1, saving, "place.name")
+                    HorizontalDivider()
                     PlaceInput(stringResource(R.string.place_address), draft.address, { draft = draft.copy(address = it) }, 96.dp, 2, 4, saving, "place.address")
+                    HorizontalDivider()
                     PlaceInput(stringResource(R.string.place_note), draft.note, { draft = draft.copy(note = it) }, 120.dp, 3, 6, saving, "place.note")
                     if (submitted) draft.issue?.let { issue ->
                         Text(stringResource(issue.message()), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.validation"))
@@ -136,7 +142,6 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 }
                 }
                 if (saveError != null) Text(saveError, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.saveError"))
-            }
             Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (reviewing) {
                     TextButton(
@@ -156,6 +161,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     }
                 }
             }
+            }
         }
     }
     if (confirmingDiscard) {
@@ -172,7 +178,8 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
 @Composable
 private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit, minHeight: Dp, minLines: Int, maxLines: Int, saving: Boolean, tag: String) {
     val focus = LocalFocusManager.current
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val requester = remember { FocusRequester() }
+    Column(Modifier.clickable(enabled = !saving) { requester.requestFocus() }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(painterResource(if (label == stringResource(R.string.place_name)) R.drawable.ic_bookmark else if (label == stringResource(R.string.place_address)) R.drawable.ic_pin else R.drawable.ic_note), null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(24.dp))
@@ -186,7 +193,7 @@ private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit,
             keyboardOptions = KeyboardOptions(capitalization = if (maxLines == 1) KeyboardCapitalization.Words else KeyboardCapitalization.Sentences, imeAction = if (maxLines == 1) ImeAction.Next else ImeAction.Default),
             keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
             modifier = Modifier.fillMaxWidth().heightIn(min = minHeight)
-                .testTag(tag).semantics { contentDescription = label },
+                .focusRequester(requester).testTag(tag).semantics { contentDescription = label },
         )
     }
 }
