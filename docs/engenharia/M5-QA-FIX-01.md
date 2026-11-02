@@ -1,6 +1,6 @@
 # M5-QA-FIX-01 — Interação da beta
 
-2 de novembro de 2026. UI em revisão; complemento de localização em validação. Autorização explícita no chat para corrigir QA-BETA-01 nas bases nativas, branch chore/development-kickoff/PR #2, sem merge ou nova beta automática. Escopo: UI, estados/testes, CI de evidência, localização em primeiro plano e continuidade. Snapshot v1 e ideias existentes preservados. O pedido atual substitui alça externa/CTA fixo e a restrição histórica de GPS apenas para posição pessoal contextual.
+2 de novembro de 2026. UI e localização simulada em revisão; suíte final aprovada. Autorização explícita no chat para corrigir QA-BETA-01 nas bases nativas, branch chore/development-kickoff/PR #2, sem merge ou nova beta automática. Escopo: UI, estados/testes, CI de evidência, localização em primeiro plano e continuidade. Snapshot v1 e ideias existentes preservados. O pedido atual substitui alça externa/CTA fixo e a restrição histórica de GPS apenas para posição pessoal contextual.
 
 ## Resultado implementado
 
@@ -19,7 +19,8 @@
 
 - **iOS d138616 / [41531702064](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41531702064), job 125575720532:** Xcode 27.0/runner arm64, iPhone 14/iOS 27.0. Build, 10 core e 8 UI PASSARAM. Oito cenários mantidos: validação/descarte, contextos, detalhes finitos, foco/viewport/nota longa/revisão, swipe de sheet, detalhe longo, arraste da home e salvar/reabrir/editar/excluir. Vinte PNGs originais de iPhone 14 e SE3, claro/escuro, inspecionados; gravação de interação inspecionada na escrita e no gesto. Aviso de metadados AppIntents sem dependência é da ferramenta; sem supressão.
 - **Android a6bce1d / [41536109808](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41536109808), job 125588232527:** branch temporária chore/qa-android-retry, somente workflow difere de d138616; árvores android/ios/scripts iguais. API 35/Pixel 6: build, 6 core e 12 instrumentados PASSARAM; lint 0 erros/19 avisos, sem supressão. Vinte PNGs padrão/compacto e claro/escuro inspecionados; APK debug gerado. Avisos: target/versões, ícone de aplicativo e strings antigas sem uso. SHA256 APK: 9F5FC49DC0D2A7DF56C44C29065FE8F3EE9A2F187FD006F126C41F033049EA70.
-- **Complemento 906cb03 / 41538918894:** dois testes iOS adicionais para ausência de prompt no início, permissão no toque, recusa/retry e fix simulado. Em execução; não considerar aprovado antes do resultado. A posição injetada é uma referência pública de QA, nunca a de uma pessoa. Estado de fix tem valor acessível sem divulgar coordenadas.
+- **Complemento fc8b349 / [41541148886](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41541148886), iOS job 125605320868:** os dois testes de localização PASSARAM: ausência de prompt inicial, permissão no toque, fix por proxy nativa, recusa/retry. Captura original confirma mapa aproximado e ponto; referência pública de QA, nunca a posição de uma pessoa. Nove dos dez UI passaram; primeiro caso foi interrompido na abertura por Failed to get background assertion...Timed out, antes das interações. Demais fluxos e Android aprovados. Não é aprovação integral deste run. As verificações de validação/descarte já passaram em d138616 e 906cb03, com produção equivalente.
+- **Consolidação 3ba7343 / [41544358087](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41544358087):** ambas as plataformas PASSARAM. iOS job 125616169822: 10 core, 10 UI, build e 20 PNGs/filmagem gerados. Android job 125616169523: 6 core, 12 instrumentados, build/lint e 20 PNGs/APK. Abertura inicial, nota longa/revisão e ambos os cenários de localização aprovados juntos. Código de produção equivalente às evidências visuais acima; ajuste final só no teste de abertura.
 
 A gravação usa apenas dados fictícios e é artifact temporário de sete dias, conforme autorização de QA; não contém assinatura ou dados pessoais reais. O GIF de gesto inicialmente exibido veio de d2410e0 e não valida o teclado; frames de escrita/capturas atuais vêm de d138616. Capturas estáticas são originais; quadros extraídos de vídeo são identificados como tal.
 
@@ -36,7 +37,7 @@ Tentativas anteriores de compensação por notificações/medidas de viewport fo
 
 ## Limites e fronteira de dados
 
-Aparelho informado: iPhone 14/iOS 27; reprodução realizada em simulador, sem Xcode local neste Windows. Aparelho físico, iOS mínimo suportado, fonte 200%, VoiceOver/TalkBack, contraste global, redução de movimento, landscape/tablets, seleção/cursor manual, gestos adicionais de reversão/cancelamento e profiling NÃO EXECUTADOS. Automação de foco/teclado e vídeo não equivalem a toda essa matriz. Permissão e fix simulados são complemento ainda em execução; GPS real e localização aproximada/restrita/desligada ainda exigem validação própria.
+Aparelho informado: iPhone 14/iOS 27; reprodução realizada em simulador, sem Xcode local neste Windows. Aparelho físico, iOS mínimo suportado, fonte 200%, VoiceOver/TalkBack, contraste global, redução de movimento, landscape/tablets, seleção/cursor manual, gestos adicionais de reversão/cancelamento e profiling NÃO EXECUTADOS. Automação de foco/teclado e vídeo não equivalem a toda essa matriz. Permissão/recusa/fix simulados aprovados; GPS real e localização aproximada/restrita/desligada ainda exigem validação própria.
 
 Google Maps real BLOQUEADO por configuração privada; fallback não pede permissão. Não criar conta/faturamento. Sem backend, geocoding, contas, grupos, sync, compartilhamento ou migração. Posição é transitória; não há coordenadas pessoais em logs/fixtures/relatórios. APIs nativas/provedores e declarações de privacidade de loja devem ser revistos antes de distribuição pública. Sem promessa de certificação MASVS/WCAG.
 
@@ -50,16 +51,16 @@ Nenhuma nova build enviada ao TestFlight: a beta anterior é 0.0.1 (8.1). Job de
 | G-02 | PASSOU: contrato/autorização/fronteiras registrados antes das alterações. |
 | G-03 | PASSOU na revisão: adaptador de apresentação local, fluxo/store/repositórios mantidos. |
 | G-04 | PASSOU em builds/lint, XML, sintaxe Bash/Python embutido e diff; avisos registrados. |
-| G-05 | PASSOU nos fluxos UI exercitados e inspeção de 40 PNGs/vídeo; complemento de posição ainda NÃO EXECUTADO integralmente. |
+| G-05 | PASSOU nos fluxos UI exercitados, permissão/recusa/fix simulado e inspeção de 40 PNGs/vídeo; matriz manual ampliada pendente. |
 | G-06 | NÃO EXECUTADO integralmente: padrão/compacto/claro/escuro aprovados; fonte ampliada/rotação/tablets/aparelho físico pendentes. |
 | G-07 | NÃO EXECUTADO integralmente: alvos, labels, alternativa de toque e foco automatizado revisados; leitores/contraste/movimento reduzido pendentes. |
 | G-08 | PASSOU na revisão proporcional: sem credenciais/dados pessoais em código ou artifacts; sem backend/dependência nova; auditoria MASVS completa NÃO EXECUTADA. |
 | G-09 | PASSOU na delimitação de privacidade: pedido contextual/sem persistência/background; declarações de loja e uso físico ainda exigem revisão. |
 | G-10 | PASSOU nos testes de validação, descarte, update/retry/conflito/identidade/reabertura/exclusão; JSON v1 mantido. |
 | G-11 | NÃO EXECUTADO: vídeo de gesto inspecionado; profiling não realizado. |
-| G-12 | PASSOU em 36 testes únicos e 40 capturas; complemento de dois testes de localização ainda em validação. |
+| G-12 | PASSOU: 38 testes na suíte final 3ba7343, builds/lint, 40 capturas de produção equivalente e gravação inspecionada. |
 | G-13 | PASSOU na fronteira operacional: APK temporário, sem nova beta/merge/publicação; rollback preserva dados. |
-| G-14 | Em consolidação: STATUS/HANDOFF/ROADMAP/changelog/PR devem refletir o resultado do complemento. |
+| G-14 | PASSOU: STATUS/HANDOFF/ROADMAP, changelog, contrato e PR reconciliados com resultados e limites. |
 | G-15 | PASSOU: preferência pessoal restrita ao chat e ausente dos artefatos. |
 
 Revisão humana pendente. Não promover release com regressão de escrita/salvamento. As pendências manuais e de configuração externa não são convertidas em aprovação automática.
