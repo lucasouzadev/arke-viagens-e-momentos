@@ -69,7 +69,7 @@ fun ArkeFloatingSheet(
         },
     ) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp)) {
-            Column(modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(arkeSheetColor())
+            Column(modifier.fillMaxWidth().clip(RoundedCornerShape(36.dp)).background(arkeSheetColor())
                 .testTag("$tagPrefix.dismiss.card"), content = content)
         }
     }

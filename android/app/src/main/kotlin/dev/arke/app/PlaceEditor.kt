@@ -79,8 +79,14 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 TextButton(
                     colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
                     contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier.width(76.dp).heightIn(min = 48.dp).testTag("place.cancel"),
-                ) { Text(stringResource(R.string.cancel), Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
+                    shape = CircleShape,
+                    modifier = Modifier.width(48.dp).heightIn(min = 48.dp).testTag("place.cancel"),
+                ) {
+                    Box(Modifier.size(48.dp).background(arkeInsetColor(), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ic_close), stringResource(R.string.cancel))
+                    }
+                }
+                Spacer(Modifier.width(28.dp))
                 Text(
                     stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
                     Modifier.weight(1f).testTag("place.title").semantics { heading() },
@@ -114,6 +120,8 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     .padding(top = 24.dp, bottom = 48.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(24.dp)).padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 if (reviewing) {
                     PlaceSummary(stringResource(R.string.place_name), draft.normalized().name, 56.dp)
                     PlaceSummary(stringResource(R.string.place_address), draft.normalized().address, 96.dp)
@@ -125,6 +133,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     if (submitted) draft.issue?.let { issue ->
                         Text(stringResource(issue.message()), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.validation"))
                     }
+                }
                 }
                 if (saveError != null) Text(saveError, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.saveError"))
             }
@@ -177,8 +186,7 @@ private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit,
             keyboardOptions = KeyboardOptions(capitalization = if (maxLines == 1) KeyboardCapitalization.Words else KeyboardCapitalization.Sentences, imeAction = if (maxLines == 1) ImeAction.Next else ImeAction.Default),
             keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
             modifier = Modifier.fillMaxWidth().heightIn(min = minHeight)
-                .background(arkeInsetColor(), RoundedCornerShape(12.dp))
-                .padding(16.dp).testTag(tag).semantics { contentDescription = label },
+                .testTag(tag).semantics { contentDescription = label },
         )
     }
 }
@@ -192,7 +200,7 @@ private fun PlaceSummary(label: String, value: String, minHeight: Dp) {
             Text(label, style = MaterialTheme.typography.labelMedium)
         }
         Text(value, style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).background(arkeInsetColor(), RoundedCornerShape(12.dp)).padding(16.dp))
+            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight))
     }
 }
 

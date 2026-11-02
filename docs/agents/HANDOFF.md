@@ -1,5 +1,7 @@
 # HANDOFF — Continuidade entre agents
 
+**M5-EDITOR-UI-02 em validação:** X preenchido no lugar de Cancelar, campos/revisão agrupados e cartão flutuante com raio 36. Builds/testes/capturas da nova fonte pendentes; sem merge/release.
+
 **M5-EDITOR-UI-01 em validação:** adicionar/editar/revisar alinhados ao padrão visual dos detalhes, com i, menos texto permanente, ícones discretos e cápsulas. Builds/testes/capturas novos pendentes; sem merge/release.
 
 **M5-EDIT-01 verificado e em revisão:** cabeçalho central, bookmark preenchido/alinhado, Próximo largo na primeira página, retorno por ícone e Concluído na última/unitária. Edição pela lista com campos preenchidos, descarte só quando alterado e update mantendo ID/ordem/outros registros; conflito/ausente recusados e retry idempotente. [Contrato](../engenharia/M5-EDIT-01.md). [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41388017517), fonte `4ee4af0`: iOS 10 core + 7 UI; Android 6 core + 11 instrumentados; lint 0/9. 40 PNGs originais inspecionados; falhas anteriores de interação do teste iOS corrigidas sem mudar produto ou remover cenário. Snapshot v1 preservado, sem migração/rede nova. Fonte 200%, leitores de tela, IME Android manual, landscape/tablets, aparelho físico e profiling não executados. PR #2 rascunho, sem merge/release. Próximo: revisão visual humana e próximo contrato de planejamento.

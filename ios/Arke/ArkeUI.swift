@@ -78,7 +78,7 @@ struct ArkeFloatingSheet<Content: View>: View {
             .accessibilityIdentifier(dismissIdentifier)
             content
                 .background(ArkeUI.sheetSurface(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 28))
+                .clipShape(RoundedRectangle(cornerRadius: 36))
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier(dismissIdentifier + ".card")
         }

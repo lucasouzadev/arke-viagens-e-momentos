@@ -36,11 +36,12 @@ struct PlaceEditor: View {
                 VStack(spacing: 0) {
                     HStack(spacing: 0) {
                         Button(action: cancel) {
-                            Text("Cancelar").arkeText(.button).foregroundStyle(actionInk)
-                                .frame(width: 76, height: ArkeUI.controlHeight, alignment: .leading)
+                            Image(systemName: "xmark").font(.system(size: 20)).foregroundStyle(ink)
+                                .frame(width: 48, height: 48)
+                                .background(ArkeUI.insetSurface(colorScheme), in: Circle())
                                 .contentShape(Rectangle())
                         }
-                        .disabled(saving).accessibilityIdentifier("place.cancel")
+                        .frame(width: 76, alignment: .leading).disabled(saving).accessibilityLabel("Cancelar").accessibilityIdentifier("place.cancel")
                         Text(reviewing ? "Revisar lugar" : (original == nil ? "Adicionar lugar" : "Editar lugar"))
                             .arkeText(.contextTitle).foregroundStyle(ink)
                             .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
@@ -64,6 +65,7 @@ struct PlaceEditor: View {
                     .buttonStyle(.plain).padding(.top, 24)
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 20) {
                             if reviewing {
                                 summary("Nome do lugar", value: draft.normalized.name, height: 56)
                                 summary("Endereço ou referência", value: draft.normalized.address, height: 96)
@@ -76,6 +78,7 @@ struct PlaceEditor: View {
                                     Text(issue.message).arkeText(.caption).accessibilityIdentifier("place.validation")
                                 }
                             }
+                            }.padding(20).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
                             if let saveError {
                                 Text(saveError).arkeText(.caption).accessibilityIdentifier("place.saveError")
                             }
@@ -147,8 +150,7 @@ struct PlaceEditor: View {
                 .lineLimit(lines).textInputAutocapitalization(focus == .name ? .words : .sentences)
                 .submitLabel(focus == .name ? .next : .return)
                 .onSubmit { if focus == .name { field = .address } }
-                .padding(16).frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
-                .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
+                .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
                 .disabled(saving).accessibilityLabel(title).accessibilityIdentifier(identifier)
         }
     }
@@ -158,8 +160,7 @@ struct PlaceEditor: View {
             Label(title, systemImage: title == "Nome do lugar" ? "bookmark.fill" : (title == "Endereço ou referência" ? "mappin" : "text.alignleft"))
                 .arkeText(.label).labelStyle(EditorFieldLabelStyle())
             Text(value).arkeText(.body)
-                .padding(16).frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
-                .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
+                .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
         }
     }
 
