@@ -4,6 +4,8 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 ## Projeto em desenvolvimento — 2 de novembro de 2026
 
+- Enviamos a primeira versão de testes do iPhone para processamento da Apple. A liberação aos testadores ainda precisa ser conferida; o app não foi lançado nas lojas.
+
 - Simplificamos a navegação dos lugares e adicionamos a edição das ideias salvas neste aparelho.
 
 ## Projeto em desenvolvimento — 1 de novembro de 2026

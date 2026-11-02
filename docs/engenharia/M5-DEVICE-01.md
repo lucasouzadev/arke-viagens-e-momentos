@@ -1,5 +1,7 @@
 # M5-DEVICE-01 — Teste em aparelhos
 
+**Atualização 02/11/2026:** APK gerado e primeiro upload iOS aceito pela Apple: 0.0.1 (8.1), fonte 90c1e5d, [run 41491266745](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41491266745). Profile/certificado e seis secrets funcionaram no environment aprovado. Processamento Apple, grupo e instalação física não verificados. Detalhes em M5-TESTFLIGHT-01; os registros de configuração pendente abaixo são históricos. Sem publicação em lojas ou merge.
+
 02/11/2026. Autorização explícita no chat para continuar e gerar APK. Esta autorização substitui o limite histórico de artifacts somente PNG exclusivamente para APK debug de testes. Sem APK de produção, Play Store, merge, compra ou publicação Apple automática. Apple Developer Program ativo confirmado no chat; assinatura Apple e envio ao TestFlight ainda dependem de configuração privada.
 
 Primeira entrega: artifact APK debug após sucesso do job Android, apenas PR do próprio repositório ou execução manual, retenção sete dias, sem segredo novo. APK padrão do Gradle assinado com certificado debug, min Android 8, package dev.arke.app.dev. Certificado debug do runner é efêmero: não prometer atualização entre builds diferentes; não desinstalar app com dados importantes sem planejamento, pois ideias locais não têm backup. Chave estável de testes deverá ser configurada privadamente antes de cadência de atualizações.
