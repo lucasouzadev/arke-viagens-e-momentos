@@ -2,6 +2,8 @@ package dev.arke.app
 
 import androidx.compose.ui.geometry.Offset
 import androidx.activity.compose.setContent
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -12,6 +14,30 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class HeaderNavigationTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    private fun reviewPlaceAndWaitForKeyboard() {
+        compose.onNodeWithTag("place.review").performClick()
+        // IME/layout work is outside Compose's test clock. Wait before the next physical tap.
+        compose.waitUntil(10_000) {
+            var keyboardVisible = true
+            compose.activityRule.scenario.onActivity { activity ->
+                keyboardVisible = ViewCompat.getRootWindowInsets(activity.window.decorView)
+                    ?.isVisible(WindowInsetsCompat.Type.ime()) ?: false
+            }
+            !keyboardVisible && compose.onAllNodesWithTag("place.edit").fetchSemanticsNodes().size == 1
+        }
+        compose.waitForIdle()
+    }
+
+    private fun returnToPlaceFields() {
+        compose.onNodeWithTag("place.edit").assertIsDisplayed().performClick()
+        try {
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.name").fetchSemanticsNodes().size == 1 }
+        } catch (failure: Throwable) {
+            compose.onRoot(useUnmergedTree = true).printToLog("ArkeEditReturnFailure")
+            throw failure
+        }
+    }
 
     @Test fun clockChangesAllContextsWithoutChangingPanel() {
         compose.onNodeWithTag("home.panelMenu").performClick()
@@ -53,9 +79,9 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("home.addPlace").performClick()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Museu de teste")
         compose.onNodeWithTag("place.address").performScrollTo().performTextReplacement("Rua de teste, 100")
-        compose.onNodeWithTag("place.review").performClick()
+        reviewPlaceAndWaitForKeyboard()
         compose.onNodeWithText("Museu de teste").assertExists()
-        compose.onNodeWithTag("place.edit").performClick()
+        returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
         compose.onNodeWithTag("place.review").performClick()
         compose.onNodeWithTag("place.save").performClick()
@@ -87,9 +113,9 @@ class HeaderNavigationTest {
         edit.performScrollTo().performClick()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Museu atualizado")
         compose.onNodeWithTag("place.address").performScrollTo().performTextReplacement("Nova entrada, 200")
-        compose.onNodeWithTag("place.review").performClick()
+        reviewPlaceAndWaitForKeyboard()
         compose.onNodeWithText("Museu atualizado").assertExists()
-        compose.onNodeWithTag("place.edit").performClick()
+        returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu atualizado")
         compose.onNodeWithTag("place.review").performClick()
         compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performClick()

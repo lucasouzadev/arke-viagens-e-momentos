@@ -1,0 +1,9 @@
+# M5-ANDROID-CI-01 — Retorno da revisão no teste Android
+
+02/11/2026, em andamento, autorizado pelo relato de falha Android no chat. Branch chore/development-kickoff, PR #2. Objetivo: diagnosticar/corrigir a falha de UI sem remover o cenário nem alterar dados/fluxos aprovados.
+
+Evidência: native-checks 41482836190, job 125406110356, saveReviewReloadAndConfirmedDelete falhou após tocar Ajustar informações: campo place.name ausente, não texto diferente. Não há evidência de crash nesse log. Hipótese: toque durante reposicionamento externo do teclado; sincronização automática Compose não cobre todo trabalho externo. Fonte: https://developer.android.com/develop/ui/compose/testing/synchronization . Não declarar hipótese confirmada antes da execução.
+
+Escopo: teste HeaderNavigationTest, sincronização explícita da saída do teclado/entrada na revisão, espera pelo campo ao retornar, diagnóstico de árvore semântica no ponto de falha. Exemplos de teste apenas, sem dados reais. Nenhuma supressão, repetição de toque para esconder falha, exclusão de cenário ou mudança de produto. Aceite: build/lint/core + todos 11 instrumentados e capturas/novo APK no CI; preservar edição, recriação e conteúdo salvo. Arquivos permitidos: teste Android e documentação de STATUS/HANDOFF/contrato.
+
+Risco P3: diagnóstico falso de flakiness. Salvaguarda: falha permanece falha, espera limitada por estado observável, evidência de erro impressa antes de limpar Activity; novo run necessário. Rollback do teste sem tocar snapshots. G-01/02/03/08/09/10/15 PASSOU por revisão de escopo; G-04/12/13 aguardam CI; G-05/06/07 não alterados, limites anteriores de fontes/leitores/tablets permanecem; G-11 profiling NÃO EXECUTADO; G-14 fechamento pendente. Backend/novas permissões N/A. Sem changelog de produto, sem merge/release. TestFlight continua bloqueado no profile e não deve ser disparado por esse reparo Android.
