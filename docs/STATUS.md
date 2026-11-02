@@ -1,5 +1,9 @@
 # STATUS — Estado verificável do Arke
 
+**M5-TESTFLIGHT-01 em andamento:** responsável confirmou seis secrets no environment e autorizou primeira build beta. Workflow separado com Xcode 26.3, assinatura manual validada, upload e limpeza; execução ainda pendente. Sem merge/publicação em lojas. [Contrato](engenharia/M5-TESTFLIGHT-01.md).
+
+**APK gerado:** [CI ea8f264 aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41453817438), artifact arke-android-debug-apk baixado. SHA256 APK: d5f73c2ddd530b03daebb20b8face3e8b330f3a249988d6ce7298973969af584. Instalação física não executada. Fonte inclui M5-EDITOR-UI-02 com checks nativos aprovados; inspeção dos novos PNGs ainda pendente. Registros anteriores abaixo são históricos.
+
 **M5-DEVICE-01 em andamento:** APK debug autorizado como artifact temporário após validação Android; configuração privada Apple/TestFlight pendente. Assinatura Apple Developer ativa confirmada, sem credenciais no repositório. Sem merge/publicação em lojas.
 
 **M5-EDITOR-UI-02 em validação:** X preenchido no lugar de Cancelar, campos/revisão agrupados e cartão flutuante com raio 36. Builds/testes/capturas da nova fonte pendentes; sem merge/release.

@@ -1,5 +1,7 @@
 # ROADMAP — Plano principal do Arke
 
+**Recorte beta autorizado em 02/11/2026:** [M5-TESTFLIGHT-01](engenharia/M5-TESTFLIGHT-01.md), primeira assinatura/upload TestFlight em ambiente protegido, além do APK debug de M5-DEVICE-01. Substitui limites históricos apenas para teste em aparelhos; sem merge ou publicação em lojas. Em andamento.
+
 **Documento canônico e único de planejamento.** Não criar ROADMAP-V2, ROADMAP-FINAL nem cópias por agente. Base documental integrada pelo PR #1 em 28/10/2026; atualizado em 31/10/2026 para a fundação nativa autorizada. Para andamento factual leia [STATUS](STATUS.md); para continuidade leia [HANDOFF](agents/HANDOFF.md).
 
 ## 1. Objetivo e fronteira atual

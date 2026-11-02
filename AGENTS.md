@@ -1,5 +1,7 @@
 # AGENTS.md — Regras centrais do Arke
 
+> **Primeiro TestFlight — 02/11/2026:** autorização explícita no chat para assinar e enviar a primeira build beta, após configuração privada dos seis secrets no environment `ios-testflight`. [M5-TESTFLIGHT-01](docs/engenharia/M5-TESTFLIGHT-01.md) substitui as restrições históricas de assinatura/upload apenas nesse recorte. Sem merge, publicação App Store/Play Store ou convites automáticos. Execuções futuras exigem disparo explícito.
+
 > **Exceção de fase — 31/10/2026:** o responsável autorizou iniciar ambas as bases nativas e compilar no GitHub Actions. [ADR-009](docs/decisoes/ADR-009.md) e [M5-BOOTSTRAP-01](docs/engenharia/M5-BOOTSTRAP-01.md) autorizam somente a fundação inicial, testes e builds de verificação. As restrições documentation-first abaixo continuam para o restante não autorizado; não bloquear novamente esta tarefa por instruções históricas. Sem merge, assinatura de distribuição ou release automático.
 
 > **Recorte seguinte autorizado:** [ADR-010](docs/decisoes/ADR-010.md) e [M5-PREVIEW-01](docs/engenharia/M5-PREVIEW-01.md) autorizam Apple Maps/Google Maps sem GPS e capturas reais em simuladores. Somente PNGs de evidência podem ser enviados pelo Actions; sem binários de distribuição. Google Cloud/chave Android ainda indisponíveis, sem criação automática de conta/faturamento.

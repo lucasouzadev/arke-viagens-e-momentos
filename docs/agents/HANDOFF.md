@@ -1,5 +1,9 @@
 # HANDOFF — Continuidade entre agents
 
+**M5-TESTFLIGHT-01 em andamento:** primeira assinatura/upload beta autorizada no chat após confirmação dos seis secrets no environment ios-testflight. Workflow separado Xcode 26.3, sem PR secrets/IPA artifact. Disparo inicial por commit marcado [testflight] na própria branch, depois manual; sem merge ou publicação em lojas. Registrar resultado real de validação/upload e processamento Apple separadamente. [Contrato](../engenharia/M5-TESTFLIGHT-01.md).
+
+**APK disponível:** run 41453817438 / ea8f264 passou ambas as plataformas; artifact debug baixado e SHA256 registrado em STATUS. Instalação física ainda não executada. UI-02 passou checks nativos; novos PNGs ainda aguardam inspeção. Entradas seguintes são histórico.
+
 **M5-DEVICE-01 em andamento:** APK debug autorizado como artifact temporário após validação Android; configuração privada Apple/TestFlight pendente. Assinatura Apple Developer ativa confirmada, sem credenciais no repositório. Sem merge/publicação em lojas.
 
 **M5-EDITOR-UI-02 em validação:** X preenchido no lugar de Cancelar, campos/revisão agrupados e cartão flutuante com raio 36. Builds/testes/capturas da nova fonte pendentes; sem merge/release.

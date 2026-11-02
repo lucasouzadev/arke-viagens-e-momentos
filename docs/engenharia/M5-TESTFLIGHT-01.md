@@ -1,0 +1,17 @@
+# M5-TESTFLIGHT-01 — Primeira build beta
+
+Status: em andamento. Marco M5, 02/11/2026. Autorização explícita no chat para tentar a primeira build TestFlight, com configuração privada confirmada. Branch chore/development-kickoff, PR #2; sem merge.
+
+Objetivo: assinar Release com.travel.arke / equipe ZRVX9VFFJW, exportar IPA e enviar ao App Store Connect para TestFlight. Entregar também o APK debug já validado. Sem publicação em lojas, convites, alteração dos fluxos/dados ou Google Cloud.
+
+Arquivos autorizados: workflow separado, scripts de assinatura/validação, projeto iOS e recursos mínimos exigidos pelo upload (ícone provisório e manifesto de privacidade), documentação operacional. Não alterar identidade final da marca. Referências: AGENTS, M5-DEVICE-01, DISTRIBUICAO, SECURITY-PRIVACY, SAFEGUARDS, QUALITY-GATES.
+
+Dependências: environment ios-testflight com APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD, APPLE_PROVISIONING_PROFILE_BASE64, ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY_BASE64; registro do app na Apple, permissões e contratos válidos. Valores não devem ser lidos no chat/repositório. Xcode 26.3 explícito no macos-15; iOS mínimo 17 preservado.
+
+Aceite: validar profile App Store/equipe/bundle/validade e certificado com chave privada; testar core no toolchain de distribuição; archive Release, exportação manual, validação e upload com sucesso; informar processamento Apple separadamente. Build number por run_number.run_attempt; reexecução gera versão diferente. APK original de CI entregue com SHA256. Instalação física depende do responsável.
+
+Ameaças/risco P2: credenciais de distribuição no runner e uploads acidentais. Environment isolado, contents:read, checkout sem credenciais, sem pull_request_target e sem secrets em PR/forks. Somente workflow_dispatch explícito ou push na branch de desenvolvimento com marcador [testflight] no commit, pelo proprietário; nenhum disparo em PR ou push comum. Chaveiro e arquivos privados em RUNNER_TEMP com permissão restrita, limpeza always; sem artifact IPA/profile/p12/p8/log privado. Não imprimir conteúdo de credenciais. Falha de assinatura/validação impede upload. Mitigar repetição com concorrência serializada. Histórico anterior ea8f264 tem checks aprovados. Interromper em erro; correção por novo commit, preservar dados e não revogar certificados/excluir builds automaticamente. Após upload, expiração da beta pela Apple é uma ação separada, não rollback de dados.
+
+Gates: G-01/02/03 PASSOU (escopo/direção/contrato); G-04/08/09/13 em validação operacional, sem alegar conformidade de loja; G-05/06/07 sem mudança de layout, herdam limites documentados de fontes/leitores/tablets; G-10 sem migração; G-11 profiling NÃO EXECUTADO; G-12 checks anteriores aprovados, toolchain Release ainda NÃO EXECUTADO; G-14 atualização final pendente; G-15 preferência confirmada apenas no chat, ausente dos arquivos. Sem backend/grupos novos. Changelog: beta de testes, não versão pública disponível. Próximo handoff: registrar execução e resultado real, incluindo eventuais bloqueios de credenciais/Apple.
+
+Fontes: https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md ; https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications ; https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds ; https://developer.apple.com/news/upcoming-requirements/?id=04282026a .

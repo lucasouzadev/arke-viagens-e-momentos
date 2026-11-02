@@ -1,5 +1,7 @@
 # Índice e maturidade da documentação
 
+[M5-TESTFLIGHT-01 — primeira build beta](engenharia/M5-TESTFLIGHT-01.md) e [M5-DEVICE-01 — APK e teste em aparelho](engenharia/M5-DEVICE-01.md): recorte de distribuição de testes autorizado, sem publicação nas lojas.
+
 [M5-EDIT-01 — navegação limpa e edição segura de ideias](engenharia/M5-EDIT-01.md).
 
 **Documento de navegação do Arke.** ROADMAP é [único e canônico](ROADMAP.md); andamento em [STATUS](STATUS.md), continuação em [HANDOFF](agents/HANDOFF.md).
