@@ -113,10 +113,8 @@ final class HeaderNavigationTests: XCTestCase {
         edit.tap()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Museu de teste")
-        name.tap()
-        name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 100) + "Museu atualizado")
-        address.tap()
-        address.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 100) + "Nova entrada, 200")
+        replaceText(in: name, with: "Museu atualizado", app: app)
+        replaceText(in: address, with: "Nova entrada, 200", app: app)
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
         app.buttons["place.review"].tap()
         XCTAssertTrue(app.staticTexts["Museu atualizado"].exists)
@@ -265,4 +263,15 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
     }
 
+    private func replaceText(in field: XCUIElement, with value: String, app: XCUIApplication) {
+        field.tap()
+        field.press(forDuration: 1.2)
+        let selectAll = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label IN %@", ["Select All", "Selecionar Tudo", "Selecionar tudo"]
+        )).firstMatch
+        XCTAssertTrue(selectAll.waitForExistence(timeout: 5), "Native Select All must be available before replacing existing text")
+        selectAll.tap()
+        field.typeText(value)
+        XCTAssertEqual(field.value as? String, value)
+    }
 }
