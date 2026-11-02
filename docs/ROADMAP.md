@@ -1,5 +1,7 @@
 # ROADMAP — Plano principal do Arke
 
+**QA da beta em validação — 02/11/2026:** [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md): correções implementadas; Android 18 testes/20 PNGs aprovados na fonte 70f623b. Reprodução iPhone 14/iOS 27 em preparação; sem nova beta/merge. Resultado e limites em STATUS.
+
 **Primeira beta enviada — 02/11/2026:** M5-TESTFLIGHT-01 teve validação/upload Apple aceitos para 0.0.1 (8.1), fonte 90c1e5d. Processamento, grupo e instalação ainda não verificados; sem release pública/merge. Evidências em STATUS e contrato.
 
 **Recorte beta autorizado em 02/11/2026:** [M5-TESTFLIGHT-01](engenharia/M5-TESTFLIGHT-01.md), primeira assinatura/upload TestFlight em ambiente protegido, além do APK debug de M5-DEVICE-01. Substitui limites históricos apenas para teste em aparelhos; sem merge ou publicação em lojas. Em andamento.

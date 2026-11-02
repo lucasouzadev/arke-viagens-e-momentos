@@ -15,3 +15,41 @@ Fonte 11869a1/run 41513478869: Android aprovado integralmente (6 core/12 instrum
 Refino do viewport: medir o contêiner externo estável e reservar overlap fora do ScrollView, para que o fade inferior termine acima do teclado. Se o sistema já encolher o contêiner, overlap é zero. Removida dependência de UIScrollView.adjustedContentInset para não criar realimentação com tamanho do conteúdo. Testes iOS limitados a 180 s por método para diagnosticar travamentos; nenhum caso removido. Botão de localização Android movido ao topo para preservar atribuição do provedor; fallback ganhou respiro antes do fade.
 
 Simplificação final do teclado: restaurar NavigationStack (presente na beta do vídeo, que já posicionava conteúdo acima do teclado), sem toolbar Concluir e sem barra de navegação visível. Mantidos CTA no scroll e campos expansíveis. Removidas as duas tentativas de compensação manual/UIView probe antes de disponibilizar beta; priorizar o contêiner nativo. Versão anterior cancelada antes de aprovação de QA, sem declarar workaround validado.
+
+## Evidência do candidato 70f623b
+
+[Execução 41520708559](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41520708559), fonte 70f623b42c3a4dc850f023fc5219cb16ffd92eb0. Android PASSOU: build, 6 core, 12 instrumentados, lint com 0 erros/19 avisos; 20 PNGs originais inspecionados em padrão/compacto e claro/escuro. Avisos: versões/target, ícone de aplicativo ainda pendente e strings antigas sem uso; sem supressão. APK debug gerado, SHA256 DE63F1D0007846AEF0863302F0CAB68B0943C04CDFEE54AD373306F3F93F2532. Android API 35, Pixel 6, teclado/foco, revisão, persistência/reabertura, edição, exclusão confirmada, contextos e gestos exercitados. Teste instrumentado não substitui inspeção manual de seleção/cursor ou avaliação de fluidez.
+
+iOS 26: build e núcleo aprovados; interface/capturas/gravação ainda em execução. Não usar sucessos Android como aprovação iOS. Não há Xcode local neste Windows. No editor, o contêiner NavigationStack nativo foi restaurado sem toolbar de teclado; não resta compensação manual de frame/UIScrollView.
+
+Limites de localização: código solicita apenas ao tocar Minha localização, sem background ou persistência. Concessão/negação real e recentralização NÃO EXECUTADAS nesta rodada. Google Maps real BLOQUEADO pela chave/configuração privada ainda ausentes; o APK mantém fallback e não pede permissão nessa condição. Nova permissão de localização requer revisão das declarações de privacidade antes de distribuição pública.
+
+Revisão visual humana, iOS mínimo suportado, VoiceOver/TalkBack, fonte 200%, redução de movimento, landscape/tablets, aparelho físico e profiling NÃO EXECUTADOS. Nenhuma nova beta/convite/merge; versão já enviada permanece 0.0.1 (8.1). Reversão somente do código preserva snapshot v1 e dados locais.
+
+## Gates desta rodada — revisão do agente implementador
+
+| Gate | Estado e alcance |
+| --- | --- |
+| G-01 | PASSOU: dois cartões, stack nativa e um azul preservados; revisão atual do DESIGN-006 prevalece. |
+| G-02 | PASSOU: contrato, autorização e fronteiras registrados antes das alterações. |
+| G-03 | PASSOU na revisão: UI reutilizada; persistência/store/repositórios mantidos; posição transitória em primeiro plano. |
+| G-04 | PASSOU em build das duas bases e lint Android; 19 avisos registrados, sem supressão. |
+| G-05 | NÃO EXECUTADO integralmente: Android automatizado/capturas aprovados; fluxo/gravação iOS atual ainda em execução. |
+| G-06 | NÃO EXECUTADO integralmente: Android padrão/compacto claro/escuro inspecionado; iOS compacto, fontes ampliadas, rotação/tablets e aparelho físico pendentes. |
+| G-07 | NÃO EXECUTADO integralmente: revisão de labels, alvos, seleção anunciável e alternativas por toque realizada; VoiceOver/TalkBack, contraste global e movimento reduzido pendentes. |
+| G-08 | PASSOU na revisão proporcional: sem novo backend, dependência ou credencial; nenhuma coordenada ou dado pessoal nas fixtures/logs, permissão somente contextual. Auditoria MASVS completa NÃO EXECUTADA. |
+| G-09 | PASSOU na delimitação de privacidade: posição local/sem background; declarações de loja e uso real ainda exigem revisão antes de distribuição pública. |
+| G-10 | PASSOU nos testes Android e core iOS de validação/persistência; snapshot v1 mantido, sem migração. Fluxo completo iOS atual pendente em G-12. |
+| G-11 | NÃO EXECUTADO: sem profiling; gravação temporal ainda pendente. |
+| G-12 | NÃO EXECUTADO integralmente: Android 6 core/12 instrumentados aprovados, iOS 10 core/build aprovados; suíte UI iOS atual pendente. |
+| G-13 | PASSOU na fronteira operacional: APK temporário, sem nova beta, merge, convite ou publicação; rollback de código conserva dados v1. |
+| G-14 | NÃO EXECUTADO: consolidação final de STATUS/HANDOFF/ROADMAP/changelog e PR aguarda o resultado iOS. |
+| G-15 | PASSOU: preferência pessoal usada somente nas respostas do chat, ausente dos artefatos. |
+
+Não promover uma nova beta com regressão de revisão/salvamento (P1). A falta de configuração Google Maps é bloqueio externo explícito; localização e ambientes manuais ainda não exercitados não são convertidos em aprovação.
+
+## Ambiente informado e alinhamento da reprodução
+
+O aparelho informado é iPhone 14 com iOS 27. A análise inicial considerou iOS 26; validar esse runtime não reproduz integralmente o ambiente informado. Native-checks agora seleciona `xcode-27` arm64, Xcode 27.0 e runtime iOS 27.0 exato, criando iPhone 14 e SE3. Não selecionar iOS 27.1 por maior versão: a imagem o disponibiliza para outro modelo; não misturar visionOS nem runtimes entre dispositivos. Boot tem limite de 360 s por dispositivo para permitir diagnóstico explícito e upload das evidências já produzidas. Nenhum teste de interface removido. Configuração do job de assinatura/TestFlight não alterada ou executada nesta rodada; antes de novo envio, alinhar a toolchain à versão efetivamente validada.
+
+Fontes oficiais consultadas em 02/11/2026: [runner Xcode 27 GA](https://github.blog/changelog/2026-10-15-xcode-27-runner-image-generally-available/) e [software/runtimes da imagem](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md). Sintaxe Bash e Python embutido aprovadas localmente; compilação/interação iOS 27 ainda não executadas.

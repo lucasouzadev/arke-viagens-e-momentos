@@ -3,21 +3,23 @@ set -euo pipefail
 
 output="$PWD/build/screenshots/ios"
 mkdir -p "$output"
-if [ -n "${ARKE_SIMULATOR_MAJOR:-}" ]; then
-  runtime=$(xcrun simctl list runtimes --json | python3 -c 'import json,os,sys; runtimes=[r for r in json.load(sys.stdin)["runtimes"] if r.get("isAvailable") and ".SimRuntime.iOS-" in r.get("identifier", "") and r.get("version", "").split(".")[0] == os.environ["ARKE_SIMULATOR_MAJOR"]]; assert runtimes, "Requested iOS runtime unavailable"; print(runtimes[-1]["identifier"])')
+if [ -n "${ARKE_SIMULATOR_VERSION:-}" ]; then
+  runtime=$(xcrun simctl list runtimes --json | python3 -c 'import json,os,sys; runtimes=[r for r in json.load(sys.stdin)["runtimes"] if r.get("isAvailable") and ".SimRuntime.iOS-" in r.get("identifier", "") and r.get("version") == os.environ["ARKE_SIMULATOR_VERSION"]]; assert runtimes, "Requested iOS runtime unavailable"; print(runtimes[-1]["identifier"])')
+  export ARKE_CAPTURE_RUNTIME="$runtime"
+  xcrun simctl create "iPhone 14 QA" com.apple.CoreSimulator.SimDeviceType.iPhone-14 "$runtime"
   xcrun simctl create "iPhone SE (3rd generation) QA" com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation "$runtime"
 fi
 xcrun simctl list devices available --json > "$output/devices.json"
 python3 - "$output/devices.json" > "$output/selected.tsv" <<'PY'
 import json, sys, os
 data = json.load(open(sys.argv[1]))
-major = os.environ.get('ARKE_SIMULATOR_MAJOR')
-device_sets = [ds for runtime, ds in data['devices'].items() if not major or f'.iOS-{major}-' in runtime]
+selected_runtime = os.environ.get('ARKE_CAPTURE_RUNTIME')
+device_sets = [ds for runtime, ds in data['devices'].items() if not selected_runtime or runtime == selected_runtime]
 phones = [d for ds in device_sets for d in ds
           if d.get('isAvailable') and d['name'].startswith('iPhone')]
 if not phones:
     raise SystemExit('No available iPhone Simulator')
-standard = next((d for d in phones if d['name'] == 'iPhone 16'), phones[0])
+standard = next((d for d in phones if d['name'] == 'iPhone 14 QA'), phones[0])
 compact = next((d for d in phones if 'SE' in d['name']),
                next((d for d in phones if d['udid'] != standard['udid']), None))
 print('standard\t' + standard['udid'] + '\t' + standard['name'])
@@ -28,7 +30,13 @@ PY
 while IFS=$'\t' read -r size device model; do
   printf '%s: %s\n' "$size" "$model"
   xcrun simctl boot "$device" || true
-  xcrun simctl bootstatus "$device" -b
+  python3 - "$device" <<'PY'
+import subprocess, sys
+try:
+    subprocess.run(['xcrun', 'simctl', 'bootstatus', sys.argv[1], '-b'], check=True, timeout=360)
+except subprocess.TimeoutExpired:
+    raise SystemExit('Simulator boot exceeded 360 seconds')
+PY
   xcrun simctl status_bar "$device" override --time '9:41' --batteryState charged --batteryLevel 100
   xcrun simctl install "$device" build/ios/Build/Products/Debug-iphonesimulator/Arke.app
   if [ "$size" = standard ]; then

@@ -1,5 +1,7 @@
 # Índice e maturidade da documentação
 
+[M5-QA-FIX-01 — correções de interação da beta](engenharia/M5-QA-FIX-01.md): implementação e validação, com [análise original](qualidade/QA-BETA-01.md).
+
 [M5-TESTFLIGHT-01 — primeira build beta](engenharia/M5-TESTFLIGHT-01.md) e [M5-DEVICE-01 — APK e teste em aparelho](engenharia/M5-DEVICE-01.md): recorte de distribuição de testes autorizado, sem publicação nas lojas.
 
 [M5-EDIT-01 — navegação limpa e edição segura de ideias](engenharia/M5-EDIT-01.md).

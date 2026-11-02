@@ -4,6 +4,9 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 ## Projeto em desenvolvimento — 2 de novembro de 2026
 
+- Reorganizamos os painéis com campos maiores, separadores e ações que acompanham a rolagem durante a escrita. A nova interface ainda está em validação.
+- Preparamos a seleção de contextos por encaixe, cartões para as ideias e o botão para mostrar sua posição no mapa, mediante permissão. O mapa Android ainda depende de configuração.
+
 - Enviamos a primeira versão de testes do iPhone para processamento da Apple. A liberação aos testadores ainda precisa ser conferida; o app não foi lançado nas lojas.
 
 - Simplificamos a navegação dos lugares e adicionamos a edição das ideias salvas neste aparelho.
