@@ -1,5 +1,7 @@
 # AGENTS.md — Regras centrais do Arke
 
+> **QA autorizado — 02/11/2026:** M5-QA-FIX-01 implementa o QA da beta em ambas as plataformas. Pedido atual substitui alça externa/CTA fixo e autoriza localização pessoal somente em primeiro plano, solicitada por toque e sem armazenamento/compartilhamento. Sem merge, configuração Google Cloud automática ou envio de nova beta sem disparo aprovado.
+
 > **Primeiro TestFlight — 02/11/2026:** autorização explícita no chat para assinar e enviar a primeira build beta, após configuração privada dos seis secrets no environment `ios-testflight`. [M5-TESTFLIGHT-01](docs/engenharia/M5-TESTFLIGHT-01.md) substitui as restrições históricas de assinatura/upload apenas nesse recorte. Sem merge, publicação App Store/Play Store ou convites automáticos. Execuções futuras exigem disparo explícito.
 
 > **Exceção de fase — 31/10/2026:** o responsável autorizou iniciar ambas as bases nativas e compilar no GitHub Actions. [ADR-009](docs/decisoes/ADR-009.md) e [M5-BOOTSTRAP-01](docs/engenharia/M5-BOOTSTRAP-01.md) autorizam somente a fundação inicial, testes e builds de verificação. As restrições documentation-first abaixo continuam para o restante não autorizado; não bloquear novamente esta tarefa por instruções históricas. Sem merge, assinatura de distribuição ou release automático.

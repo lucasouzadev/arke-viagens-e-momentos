@@ -267,6 +267,30 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
     }
 
+    func testEditorFullFieldTapAndScrollableReview() {
+        let app = XCUIApplication()
+        app.launch()
+        let add = app.buttons["home.addPlace"]
+        XCTAssertTrue(add.waitForExistence(timeout: 15))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: add)
+        waitForExpectations(timeout: 10)
+        add.tap()
+        let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.8)).tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Concluir"].exists)
+        name.typeText("Lugar com toque amplo")
+        let address = app.textViews["place.address"]
+        XCTAssertTrue(address.exists)
+        address.tap()
+        address.typeText("Referência para teste")
+        tapEditorAction("place.review", app: app)
+        XCTAssertTrue(app.staticTexts["Lugar com toque amplo"].exists)
+        app.buttons["place.cancel"].tap()
+        app.buttons["Descartar"].tap()
+    }
+
     private func tapEditorAction(_ identifier: String, app: XCUIApplication) {
         let button = app.buttons[identifier]
         for _ in 0..<6 {

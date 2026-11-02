@@ -95,6 +95,11 @@ struct HomeView: View {
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
         .arkeReceding(presented: showingAddPlace || showingDetailPreview || showingSavedDetails || showingEditPreview)
+        .task(id: savedNotice) {
+            if savedNotice {
+                do { try await Task.sleep(nanoseconds: 4_000_000_000); savedNotice = false } catch { }
+            }
+        }
         .task {
             await places.load()
             #if DEBUG

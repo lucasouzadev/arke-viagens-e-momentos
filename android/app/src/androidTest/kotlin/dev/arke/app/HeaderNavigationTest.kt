@@ -39,6 +39,20 @@ class HeaderNavigationTest {
         }
     }
 
+    @Test fun editorWholeFieldFocusAndScrollableReview() {
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("home.addPlace").fetchSemanticsNodes().any { !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled) } }
+        compose.onNodeWithTag("home.addPlace").performClick()
+        compose.onNodeWithTag("place.name").performScrollTo().performTouchInput {
+            click(Offset(width * 0.8f, height * 0.8f))
+        }
+        compose.onNodeWithTag("place.name").assertIsFocused().performTextInput("Lugar com toque amplo")
+        compose.onNodeWithTag("place.address").performScrollTo().performTextInput("Referência para teste")
+        compose.onNodeWithTag("place.review").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithText("Lugar com toque amplo").assertExists()
+        compose.onNodeWithTag("place.cancel").performClick()
+        compose.onNodeWithTag("place.discard").performClick()
+    }
+
     @Test fun clockChangesAllContextsWithoutChangingPanel() {
         compose.onNodeWithTag("home.panelMenu").performClick()
         compose.onNodeWithTag("detent.DETAILS").performClick()

@@ -142,7 +142,7 @@ struct PlaceEditor: View {
                     TextField(title, text: text, prompt: Text(""))
                         .submitLabel(.next).onSubmit { field = .address }
                 } else {
-                    TextEditor(text: text).scrollContentBackground(.hidden)
+                    TextEditor(text: text).scrollContentBackground(.hidden).scrollIndicators(.hidden)
                         .frame(minHeight: height)
                 }
             }

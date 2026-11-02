@@ -1,5 +1,7 @@
 # DESIGN-006 — Guia comum de UI/UX iOS e Android
 
+**Revisão autorizada — QA de 02/11/2026:** M5-QA-FIX-01 substitui os itens históricos de alça externa, fundo transparente/cartão duplicado e Revisar fixo. Usar uma apresentação nativa única, alça interna com gesto do host, corpo/ação Revisar roláveis, fades nas duas bordas, indicadores ocultos e campos realmente editáveis em toda a superfície. Contextos usam seleção por ponteiro central com encaixe, alternativas de toque/leitor e sem carrossel livre. Ideias têm cartões próprios sem bordas e ações acessíveis discretas. A paridade e a proteção dos dados continuam obrigatórias.
+
 Status: direção aprovada explicitamente no chat em 01/11/2026; implementação verificada em M5-PARITY-01, disponível para revisão no PR #2. Aplica-se a todas as próximas telas e componentes. Natividade preserva tecnologia/semântica, mas não é motivo para mudar posição, hierarquia ou espaçamento de ações equivalentes.
 
 ## Regras comuns

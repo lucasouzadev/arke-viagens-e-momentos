@@ -53,7 +53,7 @@ fun TravelMap(modifier: Modifier = Modifier) {
         val manager = context.getSystemService(LocationManager::class.java)
         if (!manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) { message = "Ative a localização para mostrar sua posição. Você pode continuar explorando o mapa."; return }
         try {
-            LocationManagerCompat.getCurrentLocation(manager, LocationManager.NETWORK_PROVIDER, null, ContextCompat.getMainExecutor(context)) { location ->
+            LocationManagerCompat.getCurrentLocation(manager, LocationManager.NETWORK_PROVIDER, android.os.CancellationSignal(), ContextCompat.getMainExecutor(context)) { location: android.location.Location? ->
                 if (location != null) scope.launch { camera.animate(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude, location.longitude), 14f)) }
                 else message = "Não foi possível obter sua posição agora. Tente novamente."
             }
