@@ -102,7 +102,7 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("detail.title").assertIsDisplayed()
-        androidx.test.espresso.Espresso.pressBack()
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.title").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
     }
