@@ -40,8 +40,6 @@ PY
   xcrun simctl status_bar "$device" override --time '9:41' --batteryState charged --batteryLevel 100
   xcrun simctl install "$device" build/ios/Build/Products/Debug-iphonesimulator/Arke.app
   if [ "$size" = standard ]; then
-    # Fictitious QA position; never a person's location.
-    xcrun simctl location "$device" set 0,0
     xcrun simctl io "$device" recordVideo --codec=h264 "$output/ios-qa-interactions.mov" &
     recorder=$!
     trap 'kill -INT "$recorder" 2>/dev/null || true; wait "$recorder" 2>/dev/null || true' EXIT

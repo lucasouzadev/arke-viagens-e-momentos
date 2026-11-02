@@ -1,4 +1,5 @@
 import XCTest
+import CoreLocation
 
 final class HeaderNavigationTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
@@ -327,9 +328,12 @@ final class HeaderNavigationTests: XCTestCase {
         app.resetAuthorizationStatus(for: .location)
     }
 
+    @MainActor
     func testLocationCentersOnSimulatedPosition() {
         let app = XCUIApplication()
         app.resetAuthorizationStatus(for: .location)
+        XCUIDevice.shared.location = XCUILocation(location: CLLocation(latitude: 37.334886, longitude: -122.008988))
+        defer { XCUIDevice.shared.location = nil }
         app.launch()
         let locate = app.buttons["home.location"]
         XCTAssertTrue(locate.waitForExistence(timeout: 15))

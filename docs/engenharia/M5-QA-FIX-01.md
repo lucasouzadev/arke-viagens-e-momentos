@@ -1,61 +1,69 @@
 # M5-QA-FIX-01 — Interação da beta
 
-Em andamento, 02/11/2026. Autorização explícita para iniciar as correções de QA-BETA-01 no chat. Plataformas nativas, branch atual/PR #2; sem merge. Arquivos autorizados: UI iOS/Android, estados/testes de interação, permissões de localização em primeiro plano e documentos de continuidade. Snapshot v1 e ideias existentes preservados.
+2 de novembro de 2026. UI em revisão; complemento de localização em validação. Autorização explícita no chat para corrigir QA-BETA-01 nas bases nativas, branch chore/development-kickoff/PR #2, sem merge ou nova beta automática. Escopo: UI, estados/testes, CI de evidência, localização em primeiro plano e continuidade. Snapshot v1 e ideias existentes preservados. O pedido atual substitui alça externa/CTA fixo e a restrição histórica de GPS apenas para posição pessoal contextual.
 
-Aceite: estabilizar gesto da home, uma única apresentação de sheet nativo/alça interna, eliminar toolbar Concluir, campos com área editável real e separadores, ação Revisar no corpo durante escrita, fades superior/inferior sem barra visível, contextos por ponteiro com snap e alternativa acessível, cartões de ideias sem texto técnico repetido e localização pessoal contextual/negável. Android Maps depende da chave privada ainda indisponível; não criar conta/faturamento. Sem localização em background, compartilhamento ou coleta nova. Pedido atual substitui as diretrizes anteriores de alça externa e CTA sempre fixo.
+## Resultado implementado
 
-Validação: CI sem secrets, testes nativos de persistência/descarte/gestos e foco/teclado, screenshots padrão/compacto/claro/escuro; iOS 26 exige sessão de interação específica para reproduzir vídeo. Não publicar outra beta automaticamente. Risco P1 de regressão em rascunhos/foco; nunca dispensar com dados alterados ou durante gravação. Rollback por código preserva JSON. Gates G-01/02/03/08/09/10/15 revisados no escopo; G-04/05/06/07/12/13 aguardam execução, G-11 profiling não executado, G-14 atualização ao fim. Revisão proporcional de privacidade: posição somente local, permissão no toque, nenhuma coordenada em logs/fixtures/relatórios; negada mantém mapa utilizável. Referências: QA-BETA-01, DESIGN-006, QUALITY-GATES e SAFEGUARDS.
+| Problema | Implementação atual |
+| --- | --- |
+| Gesto da home | Base absoluta estável durante o arraste; detent/reset aplicados na mesma transação. Câmera explícita, sem recorte que esconda atribuições do mapa. |
+| Sheet/mesa de vidro | Uma apresentação nativa com superfície semântica; retirados cartão interno duplicado e recuo manual iOS. Alça interna com gesto do host e dispensa acessível protegida. |
+| Teclado | Sem toolbar Concluir. Adaptador UIKit local limita UIHostingController ao keyboardLayoutGuide; safeAreaRegions.container evita compensação dupla. Home ignora o teclado ao fundo. Sem observers/alturas calculadas. |
+| Escrita | Campos maiores agrupados, separadores suaves, área de foco ampliada e editores expansíveis. Revisar/Salvar integram a rolagem; fades decorativos superior/inferior e indicadores ocultos. |
+| Relógio | Seleção central com encaixe: wheel nativo iOS e lista com snap/ponteiro Android. Alternativa por toque e Concluído preenchido. |
+| Ideias | Cartões próprios sem bordas, nome único, nota resumida em três linhas e ações Abrir/excluir na mesma linha. Detalhes mantêm todo o texto; exclusão confirmada. |
+| Vazio/feedback | Uma frase curta no vazio, confirmação transitória de salvamento. Informação sobre dados locais permanece no i. |
+| Posição pessoal | Botão contextual de 48; pedido apenas em primeiro plano, sem armazenamento de coordenadas, background ou compartilhamento próprio. Mapas/permissionamento reais Android dependem da chave privada ausente. |
 
-Evidência temporal: gravar o simulador iOS 26 durante a suíte de interação, com dados fictícios de teste, em MOV temporário de sete dias. Essa evidência específica do QA substitui o limite histórico somente PNG para a gravação solicitada pela análise de gestos. Sem vídeo de dados pessoais reais ou material privado de assinatura.
+## Evidências verificadas
 
-Validações intermediárias: fonte 5b7023d/run 41509583149 compilou ambas as bases, Android teve 11/12 instrumentados aprovados (teste do contexto fora da lista virtualizada corrigido para scrollToNode); iOS 26 teve 4/8 UI aprovados, com três falhas de acesso a Revisar e uma diferença geométrica subpixel. Corrigida rolagem aninhada dos editores (crescimento por conteúdo e scroll externo), tolerância geométrica de 1 pt e preservação da atribuição do mapa. Fonte 4f3446e/run 41512033197 compilou iOS, mas script escolheu visionOS 26 para SE3; corrigido filtro por identificador iOS. Nenhuma dessas execuções é aprovação completa do QA. Callbacks CoreLocation agora fazem salto explícito para MainActor, sem suprimir warnings de isolamento.
+- **iOS d138616 / [41531702064](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41531702064), job 125575720532:** Xcode 27.0/runner arm64, iPhone 14/iOS 27.0. Build, 10 core e 8 UI PASSARAM. Oito cenários mantidos: validação/descarte, contextos, detalhes finitos, foco/viewport/nota longa/revisão, swipe de sheet, detalhe longo, arraste da home e salvar/reabrir/editar/excluir. Vinte PNGs originais de iPhone 14 e SE3, claro/escuro, inspecionados; gravação de interação inspecionada na escrita e no gesto. Aviso de metadados AppIntents sem dependência é da ferramenta; sem supressão.
+- **Android a6bce1d / [41536109808](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41536109808), job 125588232527:** branch temporária chore/qa-android-retry, somente workflow difere de d138616; árvores android/ios/scripts iguais. API 35/Pixel 6: build, 6 core e 12 instrumentados PASSARAM; lint 0 erros/19 avisos, sem supressão. Vinte PNGs padrão/compacto e claro/escuro inspecionados; APK debug gerado. Avisos: target/versões, ícone de aplicativo e strings antigas sem uso. SHA256 APK: 9F5FC49DC0D2A7DF56C44C29065FE8F3EE9A2F187FD006F126C41F033049EA70.
+- **Complemento 906cb03 / 41538918894:** dois testes iOS adicionais para ausência de prompt no início, permissão no toque, recusa/retry e fix simulado. Em execução; não considerar aprovado antes do resultado. A posição injetada é uma referência pública de QA, nunca a de uma pessoa. Estado de fix tem valor acessível sem divulgar coordenadas.
 
-Fonte 11869a1/run 41513478869: Android aprovado integralmente (6 core/12 instrumentados, build/lint, 20 PNGs/APK). iOS 26: 5/8 UI passaram; três falhas de acesso ao CTA persistiram. Árvore/screenshot mostram ScrollView de y163 a852 enquanto teclado cobre y548 a852, sem range de rolagem suficiente. Corrigir apenas overlap não tratado pelos adjustedContentInsets nativos, via observação pública de UIScrollView/UIKeyboard; não deslocar cabeçalho nem criar barra fixa. Queda anterior no número de falhas confirma a correção geométrica, não aprovação completa.
+A gravação usa apenas dados fictícios e é artifact temporário de sete dias, conforme autorização de QA; não contém assinatura ou dados pessoais reais. O GIF de gesto inicialmente exibido veio de d2410e0 e não valida o teclado; frames de escrita/capturas atuais vêm de d138616. Capturas estáticas são originais; quadros extraídos de vídeo são identificados como tal.
 
-Refino do viewport: medir o contêiner externo estável e reservar overlap fora do ScrollView, para que o fade inferior termine acima do teclado. Se o sistema já encolher o contêiner, overlap é zero. Removida dependência de UIScrollView.adjustedContentInset para não criar realimentação com tamanho do conteúdo. Testes iOS limitados a 180 s por método para diagnosticar travamentos; nenhum caso removido. Botão de localização Android movido ao topo para preservar atribuição do provedor; fallback ganhou respiro antes do fade.
+## Diagnóstico preservado
 
-Simplificação final do teclado: restaurar NavigationStack (presente na beta do vídeo, que já posicionava conteúdo acima do teclado), sem toolbar Concluir e sem barra de navegação visível. Mantidos CTA no scroll e campos expansíveis. Removidas as duas tentativas de compensação manual/UIView probe antes de disponibilizar beta; priorizar o contêiner nativo. Versão anterior cancelada antes de aprovação de QA, sem declarar workaround validado.
+| Fonte/run | Resultado e aprendizado |
+| --- | --- |
+| 11869a1 / 41513478869 | iOS 5/8 UI; Revisar inacessível com teclado. ScrollView y163..852, teclado a partir de y548. Android aprovado. |
+| 70f623b / 41520708559 | Android aprovado; etapa iOS não terminou e foi cancelada, sem evidência suficiente de UI. Não usar como aprovação iOS. |
+| d2410e0 / 41527925569 | Ambiente corrigido para iPhone 14/iOS 27; iOS 5/8 UI. ScrollView y151..844, teclado a partir de y516. NavigationStack sozinho insuficiente. |
+| d138616 / 41531702064 | Adaptador keyboardLayoutGuide resolveu os oito cenários iOS. Android falhou antes do app ao descompactar imagem do SDK (ZipFile unknown archive); repetição isolada a6bce1d aprovada, sem mudar código do app. |
 
-## Evidência do candidato 70f623b
+Tentativas anteriores de compensação por notificações/medidas de viewport foram retiradas. A solução atual usa Auto Layout e o guia nativo. O seletor de runtime exige iOS 27.0 exato, sem misturar visionOS ou o runtime 27.1 destinado a outro aparelho. Boot tem limite de 360 s/dispositivo. Não houve remoção de cenário para produzir aprovação.
 
-[Execução 41520708559](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41520708559), fonte 70f623b42c3a4dc850f023fc5219cb16ffd92eb0. Android PASSOU: build, 6 core, 12 instrumentados, lint com 0 erros/19 avisos; 20 PNGs originais inspecionados em padrão/compacto e claro/escuro. Avisos: versões/target, ícone de aplicativo ainda pendente e strings antigas sem uso; sem supressão. APK debug gerado, SHA256 DE63F1D0007846AEF0863302F0CAB68B0943C04CDFEE54AD373306F3F93F2532. Android API 35, Pixel 6, teclado/foco, revisão, persistência/reabertura, edição, exclusão confirmada, contextos e gestos exercitados. Teste instrumentado não substitui inspeção manual de seleção/cursor ou avaliação de fluidez.
+## Limites e fronteira de dados
 
-iOS 26: build e núcleo aprovados; interface/capturas/gravação ainda em execução. Não usar sucessos Android como aprovação iOS. Não há Xcode local neste Windows. No editor, o contêiner NavigationStack nativo foi restaurado sem toolbar de teclado; não resta compensação manual de frame/UIScrollView.
+Aparelho informado: iPhone 14/iOS 27; reprodução realizada em simulador, sem Xcode local neste Windows. Aparelho físico, iOS mínimo suportado, fonte 200%, VoiceOver/TalkBack, contraste global, redução de movimento, landscape/tablets, seleção/cursor manual, gestos adicionais de reversão/cancelamento e profiling NÃO EXECUTADOS. Automação de foco/teclado e vídeo não equivalem a toda essa matriz. Permissão e fix simulados são complemento ainda em execução; GPS real e localização aproximada/restrita/desligada ainda exigem validação própria.
 
-Limites de localização: código solicita apenas ao tocar Minha localização, sem background ou persistência. Concessão/negação real e recentralização NÃO EXECUTADAS nesta rodada. Google Maps real BLOQUEADO pela chave/configuração privada ainda ausentes; o APK mantém fallback e não pede permissão nessa condição. Nova permissão de localização requer revisão das declarações de privacidade antes de distribuição pública.
+Google Maps real BLOQUEADO por configuração privada; fallback não pede permissão. Não criar conta/faturamento. Sem backend, geocoding, contas, grupos, sync, compartilhamento ou migração. Posição é transitória; não há coordenadas pessoais em logs/fixtures/relatórios. APIs nativas/provedores e declarações de privacidade de loja devem ser revistos antes de distribuição pública. Sem promessa de certificação MASVS/WCAG.
 
-Revisão visual humana, iOS mínimo suportado, VoiceOver/TalkBack, fonte 200%, redução de movimento, landscape/tablets, aparelho físico e profiling NÃO EXECUTADOS. Nenhuma nova beta/convite/merge; versão já enviada permanece 0.0.1 (8.1). Reversão somente do código preserva snapshot v1 e dados locais.
+Nenhuma nova build enviada ao TestFlight: a beta anterior é 0.0.1 (8.1). Job de assinatura não alterado/disparado neste recorte; antes de novo envio, alinhar toolchain à efetivamente validada. Sem merge, convite ou publicação pública. Rollback somente do código preserva o snapshot v1 e as ideias salvas; nunca apagar dados para contornar teste ou instalação.
 
-## Gates desta rodada — revisão do agente implementador
+## Gates — revisão do agente implementador
 
 | Gate | Estado e alcance |
 | --- | --- |
-| G-01 | PASSOU: dois cartões, stack nativa e um azul preservados; revisão atual do DESIGN-006 prevalece. |
-| G-02 | PASSOU: contrato, autorização e fronteiras registrados antes das alterações. |
-| G-03 | PASSOU na revisão: UI reutilizada; persistência/store/repositórios mantidos; posição transitória em primeiro plano. |
-| G-04 | PASSOU em build das duas bases e lint Android; 19 avisos registrados, sem supressão. |
-| G-05 | NÃO EXECUTADO integralmente: Android automatizado/capturas aprovados; fluxo/gravação iOS atual ainda em execução. |
-| G-06 | NÃO EXECUTADO integralmente: Android padrão/compacto claro/escuro inspecionado; iOS compacto, fontes ampliadas, rotação/tablets e aparelho físico pendentes. |
-| G-07 | NÃO EXECUTADO integralmente: revisão de labels, alvos, seleção anunciável e alternativas por toque realizada; VoiceOver/TalkBack, contraste global e movimento reduzido pendentes. |
-| G-08 | PASSOU na revisão proporcional: sem novo backend, dependência ou credencial; nenhuma coordenada ou dado pessoal nas fixtures/logs, permissão somente contextual. Auditoria MASVS completa NÃO EXECUTADA. |
-| G-09 | PASSOU na delimitação de privacidade: posição local/sem background; declarações de loja e uso real ainda exigem revisão antes de distribuição pública. |
-| G-10 | PASSOU nos testes Android e core iOS de validação/persistência; snapshot v1 mantido, sem migração. Fluxo completo iOS atual pendente em G-12. |
-| G-11 | NÃO EXECUTADO: sem profiling; gravação temporal ainda pendente. |
-| G-12 | NÃO EXECUTADO integralmente: Android 6 core/12 instrumentados aprovados, iOS 10 core/build aprovados; suíte UI iOS atual pendente. |
-| G-13 | PASSOU na fronteira operacional: APK temporário, sem nova beta, merge, convite ou publicação; rollback de código conserva dados v1. |
-| G-14 | NÃO EXECUTADO: consolidação final de STATUS/HANDOFF/ROADMAP/changelog e PR aguarda o resultado iOS. |
-| G-15 | PASSOU: preferência pessoal usada somente nas respostas do chat, ausente dos artefatos. |
+| G-01 | PASSOU: dois cartões, stack nativa e um azul; DESIGN-006 atualizado prevalece. |
+| G-02 | PASSOU: contrato/autorização/fronteiras registrados antes das alterações. |
+| G-03 | PASSOU na revisão: adaptador de apresentação local, fluxo/store/repositórios mantidos. |
+| G-04 | PASSOU em builds/lint, XML, sintaxe Bash/Python embutido e diff; avisos registrados. |
+| G-05 | PASSOU nos fluxos UI exercitados e inspeção de 40 PNGs/vídeo; complemento de posição ainda NÃO EXECUTADO integralmente. |
+| G-06 | NÃO EXECUTADO integralmente: padrão/compacto/claro/escuro aprovados; fonte ampliada/rotação/tablets/aparelho físico pendentes. |
+| G-07 | NÃO EXECUTADO integralmente: alvos, labels, alternativa de toque e foco automatizado revisados; leitores/contraste/movimento reduzido pendentes. |
+| G-08 | PASSOU na revisão proporcional: sem credenciais/dados pessoais em código ou artifacts; sem backend/dependência nova; auditoria MASVS completa NÃO EXECUTADA. |
+| G-09 | PASSOU na delimitação de privacidade: pedido contextual/sem persistência/background; declarações de loja e uso físico ainda exigem revisão. |
+| G-10 | PASSOU nos testes de validação, descarte, update/retry/conflito/identidade/reabertura/exclusão; JSON v1 mantido. |
+| G-11 | NÃO EXECUTADO: vídeo de gesto inspecionado; profiling não realizado. |
+| G-12 | PASSOU em 36 testes únicos e 40 capturas; complemento de dois testes de localização ainda em validação. |
+| G-13 | PASSOU na fronteira operacional: APK temporário, sem nova beta/merge/publicação; rollback preserva dados. |
+| G-14 | Em consolidação: STATUS/HANDOFF/ROADMAP/changelog/PR devem refletir o resultado do complemento. |
+| G-15 | PASSOU: preferência pessoal restrita ao chat e ausente dos artefatos. |
 
-Não promover uma nova beta com regressão de revisão/salvamento (P1). A falta de configuração Google Maps é bloqueio externo explícito; localização e ambientes manuais ainda não exercitados não são convertidos em aprovação.
+Revisão humana pendente. Não promover release com regressão de escrita/salvamento. As pendências manuais e de configuração externa não são convertidas em aprovação automática.
 
-## Ambiente informado e alinhamento da reprodução
+Referências oficiais: [keyboardLayoutGuide](https://developer.apple.com/documentation/uikit/adjusting-your-layout-with-keyboard-layout-guide), [safeAreaRegions](https://developer.apple.com/documentation/swiftui/uihostingcontroller/safearearegions), [runner Xcode 27](https://github.blog/changelog/2026-10-15-xcode-27-runner-image-generally-available/), [simulação de localização](https://developer.apple.com/documentation/xcode/simulating-location-in-tests).
 
-O aparelho informado é iPhone 14 com iOS 27. A análise inicial considerou iOS 26; validar esse runtime não reproduz integralmente o ambiente informado. Native-checks agora seleciona `xcode-27` arm64, Xcode 27.0 e runtime iOS 27.0 exato, criando iPhone 14 e SE3. Não selecionar iOS 27.1 por maior versão: a imagem o disponibiliza para outro modelo; não misturar visionOS nem runtimes entre dispositivos. Boot tem limite de 360 s por dispositivo para permitir diagnóstico explícito e upload das evidências já produzidas. Nenhum teste de interface removido. Configuração do job de assinatura/TestFlight não alterada ou executada nesta rodada; antes de novo envio, alinhar a toolchain à versão efetivamente validada.
-
-Fontes oficiais consultadas em 02/11/2026: [runner Xcode 27 GA](https://github.blog/changelog/2026-10-15-xcode-27-runner-image-generally-available/) e [software/runtimes da imagem](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md). Sintaxe Bash e Python embutido aprovadas localmente; compilação/interação iOS 27 ainda não executadas.
-
-Refino de paridade no mesmo recorte: botão Concluído preenchido também no seletor Android, fade na lista de encaixe com superfície correspondente, botões Abrir/excluir na mesma linha dos cartões nas duas plataformas e notas resumidas em até três linhas (texto completo preservado em detalhes). Rodapé iOS recebe espaço antes do fade, equivalente ao respiro Android. Minha localização Android usa ícone circular de 48 dp com label acessível, mantendo atribuições do mapa livres. Sem mudança de dados/permissão ou novos cenários de teste; executar novamente a regressão existente após esse ajuste visual.
-
-Fonte d2410e0/run 41527925569: Android repetiu aprovação completa; iPhone 14/iOS 27 compilou e passou 10 core + 5/8 UI. As três falhas continuam em Revisar: árvore mostra ScrollView y151..844, teclado começa em y516. NavigationStack sozinho não resolve. Capturas/vídeo preservados. Substituir a dependência do inset SwiftUI por um contêiner UIKit local: UIHostingController filho, conteúdo limitado ao keyboardLayoutGuide.topAnchor e safeAreaRegions.container para evitar compensação dupla. Sem observers de teclado, alturas medidas, dados novos ou deslocamento do cabeçalho. Home ignora teclado ao fundo. Regressão existente ganha assert de viewport acima do teclado, mantendo os oito casos. [API Apple](https://developer.apple.com/documentation/uikit/adjusting-your-layout-with-keyboard-layout-guide). Ainda exige aprovação dos testes antes de nova beta.
-
-Fonte d138616/run 41531702064: iPhone 14/iOS 27 PASSOU 10 core e 8 UI, incluindo viewport acima do teclado, foco ampliado, nota longa e salvar/editar/reabrir/excluir. Vinte PNGs padrão/SE3 e claro/escuro inspecionados, além da gravação de escrita. Android desse run falhou antes dos testes ao descompactar a imagem SDK (ZipFile unknown archive); repetição isolada na branch chore/qa-android-retry, a6bce1d/run 41536109808, passou (mesma árvore android/ios/scripts, apenas workflow mudou). Complementar o recorte com dois testes iOS de permissão/recusa e fix simulado. Coordenada de QA é fictícia e pública (origem do mapa); a restrição de logs/fixtures aplica-se a posições pessoais reais, que não são usadas. Nenhum rastreamento em background, persistência ou compartilhamento de posição introduzido.
+Complemento 906cb03/run 41538918894: Android aprovado novamente; iOS 9/10 UI, incluindo recusa/retry e ausência de prompt inicial. Falhou somente o fix simulado após Allow Once (20 s). Alterar apenas a fixture: XCUIDevice.shared.location/XCUILocation configurados no próprio método, conforme documentação Apple; retirar simctl set anterior à sessão. Usar ponto público do exemplo Apple e limpar a proxy ao terminar. Código de produção mantido. Nova execução necessária, sem declarar fix ou localização física aprovados.
