@@ -2,6 +2,12 @@
 
 02/11/2026, em andamento, autorizado pelo relato de falha Android no chat. Branch chore/development-kickoff, PR #2. Objetivo: diagnosticar/corrigir a falha de UI sem remover o cenário nem alterar dados/fluxos aprovados.
 
+**Resultado:** Android da execução automática [41485316048](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41485316048/job/125415765393), fonte 2523df3, PASSOU build/core/lint e todos 11 instrumentados, zero skips/falhas; cenário de edição completo preservado. Capturas e APK gerados, artifacts 13161129619 e 13162198829. Lint 0 erros/12 avisos; avisos não suprimidos, antes eram 9: comparar diagnósticos antes de alegar igualdade. Ajuste só no teste, sem mudança do app; hipótese de sincronização é compatível com o resultado, não prova exclusiva de causa.
+
+Execução manual paralela 41485775132 falhou antes dos testes: emulator 37.2.13 precisou de 7372,80 MB para userdata e havia 7308,91 MB. Timeout de boot em 600 s, nenhum teste UI executado e nenhum PNG; não confundir com regressão de produto. Configuração agora limita disco a 2048M e boot a 300 s, inputs confirmados no action.yml do SHA fixado. Alteração de infraestrutura ainda aguarda execução real. Sem limpeza destrutiva do runner ou alteração de perfis/dados do app.
+
+G-04/12 PASSOU para fonte 2523df3 Android; G-13 APK gerado, novo limite de disco ainda NÃO EXECUTADO; G-14 STATUS/HANDOFF atualizados. Instalação física e nova inspeção visual dos PNGs não executadas. iOS dessa execução não faz parte do reparo Android e ainda não é declarado aprovado.
+
 Evidência: native-checks 41482836190, job 125406110356, saveReviewReloadAndConfirmedDelete falhou após tocar Ajustar informações: campo place.name ausente, não texto diferente. Não há evidência de crash nesse log. Hipótese: toque durante reposicionamento externo do teclado; sincronização automática Compose não cobre todo trabalho externo. Fonte: https://developer.android.com/develop/ui/compose/testing/synchronization . Não declarar hipótese confirmada antes da execução.
 
 Escopo: teste HeaderNavigationTest, sincronização explícita da saída do teclado/entrada na revisão, espera pelo campo ao retornar, diagnóstico de árvore semântica no ponto de falha. Exemplos de teste apenas, sem dados reais. Nenhuma supressão, repetição de toque para esconder falha, exclusão de cenário ou mudança de produto. Aceite: build/lint/core + todos 11 instrumentados e capturas/novo APK no CI; preservar edição, recriação e conteúdo salvo. Arquivos permitidos: teste Android e documentação de STATUS/HANDOFF/contrato.
