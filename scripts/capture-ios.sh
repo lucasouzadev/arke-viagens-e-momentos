@@ -5,9 +5,11 @@ output="$PWD/build/screenshots/ios"
 mkdir -p "$output"
 xcrun simctl list devices available --json > "$output/devices.json"
 python3 - "$output/devices.json" > "$output/selected.tsv" <<'PY'
-import json, sys
+import json, sys, os
 data = json.load(open(sys.argv[1]))
-phones = [d for ds in data['devices'].values() for d in ds
+major = os.environ.get('ARKE_SIMULATOR_MAJOR')
+device_sets = [ds for runtime, ds in data['devices'].items() if not major or f'.iOS-{major}-' in runtime]
+phones = [d for ds in device_sets for d in ds
           if d.get('isAvailable') and d['name'].startswith('iPhone')]
 if not phones:
     raise SystemExit('No available iPhone Simulator')
