@@ -23,7 +23,6 @@ jobs:
     timeout-minutes: 40
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-      DISTRIBUTION_DIR: ${{ runner.temp }}/arke-testflight
       BUILD_NUMBER: ${{ github.run_number }}.${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -31,6 +30,7 @@ jobs:
           persist-credentials: false
       - name: Check distribution toolchain and core tests
         run: |
+          echo "DISTRIBUTION_DIR=$RUNNER_TEMP/arke-testflight" >> "$GITHUB_ENV"
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
           swift test --package-path ios
