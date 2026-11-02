@@ -1,6 +1,9 @@
 package dev.arke.app
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -46,6 +49,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
+    var showingSavedDetails by remember { mutableStateOf(false) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
     var showingDetailPreview by rememberSaveable { mutableStateOf(captureDetails) }
     LaunchedEffect(captureDetails) {
@@ -58,7 +62,12 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
             pendingSaveId = null
         }
     }
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLow) {
+    val modalVisible = showingAddPlace || showingDetailPreview || showingSavedDetails
+    val surfaceScale by animateFloatAsState(if (modalVisible) 0.96f else 1f, label = "modalRecess")
+    Surface(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow).graphicsLayer {
+        scaleX = surfaceScale; scaleY = surfaceScale; transformOrigin = TransformOrigin(0.5f, 0f)
+        shape = RoundedCornerShape(if (modalVisible) 28.dp else 0.dp); clip = modalVisible
+    }, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(
             Modifier.safeDrawingPadding().imePadding().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -123,7 +132,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
                                     TextButton(onClick = places::load) { Text(stringResource(R.string.retry)) }
                                 }
                                 if (placeState.ready) {
-                                    if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState) { id -> savedNotice = false; places.remove(id) }
+                                    if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState, onDetailsVisibilityChanged = { showingSavedDetails = it }) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         Text(stringResource(state.context.title()), style = MaterialTheme.typography.titleLarge)
                                         Text(stringResource(R.string.context_pending))

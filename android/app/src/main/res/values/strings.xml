@@ -54,8 +54,6 @@
     <string name="check_idea">Confira sua ideia</string>
     <string name="no_note">Sem nota</string>
     <string name="view_place_details">Ver detalhes</string>
-    <string name="place_details">Detalhes do lugar</string>
-    <string name="close_details">Fechar</string>
     <string name="previous_place">Anterior</string>
     <string name="next_place">Próximo</string>
     <string name="place_position">Lugar %1$d de %2$d</string>
@@ -63,8 +61,8 @@
     <string name="place_detail_notice">Esta ideia fica só neste aparelho, sem backup. Desinstalar o app pode apagá-la. O endereço ainda não aparece no mapa.</string>
     <string name="view_place_details_label">Ver detalhes de %1$s</string>
     <string name="detail_header">Seus lugares</string>
-    <string name="place_position_compact">%1$d / %2$d</string>
     <string name="detail_info_label">Informações sobre este lugar</string>
     <string name="detail_info_title">Sobre este lugar</string>
     <string name="detail_info_dismiss">Entendi</string>
+    <string name="sheet_dismiss">Recolher painel</string>
 </resources>

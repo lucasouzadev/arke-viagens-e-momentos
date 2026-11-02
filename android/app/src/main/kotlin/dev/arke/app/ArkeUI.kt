@@ -1,5 +1,20 @@
 package dev.arke.app
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -27,3 +42,31 @@ else androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLowest
 fun arkeInsetColor() = if (androidx.compose.foundation.isSystemInDarkTheme())
     androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLowest
 else androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLow
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArkeFloatingSheet(
+    onDismiss: () -> Unit,
+    tagPrefix: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss, sheetState = sheetState,
+        containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface, tonalElevation = 0.dp,
+        shape = RectangleShape, dragHandle = null,
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp)) {
+            val dismissLabel = stringResource(dev.arke.app.R.string.sheet_dismiss)
+            TextButton(onClick = onDismiss, enabled = enabled,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("$tagPrefix.dismiss").semantics { contentDescription = dismissLabel },
+            ) {
+                Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
+            }
+            Column(modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(arkeSheetColor())
+                .testTag("$tagPrefix.dismiss.card"), content = content)
+        }
+    }
+}

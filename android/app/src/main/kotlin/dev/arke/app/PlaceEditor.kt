@@ -62,29 +62,23 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
         skipPartiallyExpanded = true,
         confirmValueChange = { it != SheetValue.Hidden || (draft.isEmpty && !saving) },
     )
-    ModalBottomSheet(
-        onDismissRequest = { if (!saving) cancel() }, sheetState = sheet,
-        containerColor = sheetColor, tonalElevation = 0.dp,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = {
-            Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
-            }
-        },
+    ArkeFloatingSheet(
+        onDismiss = { if (!saving) cancel() }, tagPrefix = "place", sheetState = sheet, enabled = !saving,
+        modifier = Modifier.fillMaxHeight(0.9f).imePadding(),
     ) {
-        Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).imePadding().padding(horizontal = 20.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
                     colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
                     contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier.width(88.dp).heightIn(min = 48.dp).testTag("place.cancel"),
+                    modifier = Modifier.width(76.dp).heightIn(min = 48.dp).testTag("place.cancel"),
                 ) { Text(stringResource(R.string.cancel), Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
                 Text(
                     stringResource(if (reviewing) R.string.review_place else R.string.add_place),
                     Modifier.weight(1f).testTag("place.title").semantics { heading() },
                     style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
                 )
-                Spacer(Modifier.width(88.dp))
+                Spacer(Modifier.width(76.dp))
             }
             Column(
                 Modifier.fillMaxWidth().weight(1f)

@@ -4,6 +4,8 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 ## Projeto em desenvolvimento — 1 de novembro de 2026
 
+- Ajustamos os painéis para aparecerem como cartões flutuantes, com cabeçalho mais simples e a tela de fundo recuada.
+
 - Reorganizamos os detalhes dos lugares em um painel mais compacto, com informações agrupadas e botões arredondados.
 
 - Simplificamos os detalhes dos lugares, com ícones, informações extras por toque e botões de navegação preenchidos.

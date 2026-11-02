@@ -8,6 +8,7 @@ struct HomeView: View {
     @GestureState private var panelTranslation: CGFloat = 0
     @State private var showingAddPlace = false
     @State private var showingDetailPreview = false
+    @State private var showingSavedDetails = false
     @State private var savedNotice = false
     @StateObject private var places = PlaceIdeasStore()
     @State private var showingContextPicker = false
@@ -56,7 +57,7 @@ struct HomeView: View {
                                         PlaceIdeasContent(store: places, onDelete: { id in
                                             savedNotice = false
                                             Task { await places.remove(id: id) }
-                                        })
+                                        }, onDetailsVisibilityChanged: { showingSavedDetails = $0 })
                                     } else {
                                         Text(state.context.title).arkeText(.cardTitle)
                                         Text("Este espaço está em desenvolvimento.")
@@ -78,6 +79,7 @@ struct HomeView: View {
         .arkeText(.body)
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
+        .arkeReceding(presented: showingAddPlace || showingDetailPreview || showingSavedDetails)
         .task {
             await places.load()
             #if DEBUG

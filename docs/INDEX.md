@@ -107,3 +107,5 @@ A documentação original não implementou aplicativo. A branch inicial de desen
 - [M5-DETAILS-UI-02](engenharia/M5-DETAILS-UI-02.md): detalhes mais limpos, ícones e informação por toque.
 
 - [M5-DETAILS-UI-03 — Sheet compacto](engenharia/M5-DETAILS-UI-03.md).
+
+- [M5-FLOATING-01 — Cartões flutuantes](engenharia/M5-FLOATING-01.md).

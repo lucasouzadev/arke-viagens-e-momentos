@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.text.style.TextAlign
@@ -31,9 +32,11 @@ import androidx.compose.ui.unit.dp
 import dev.arke.core.PlaceIdea
 
 @Composable
-fun PlaceIdeasContent(state: PlaceIdeasUiState, onDelete: (String) -> Unit) {
+fun PlaceIdeasContent(state: PlaceIdeasUiState, onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onDelete: (String) -> Unit) {
     var deleting by remember { mutableStateOf<PlaceIdea?>(null) }
     var selectedID by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedID) { onDetailsVisibilityChanged(selectedID != null) }
+    DisposableEffect(Unit) { onDispose { onDetailsVisibilityChanged(false) } }
     if (state.ideas.isEmpty()) {
         Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
@@ -86,31 +89,11 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
     val insetColor = arkeInsetColor()
     val ink = MaterialTheme.colorScheme.onSurface
     val maximumHeight = with(LocalDensity.current) { (LocalWindowInfo.current.containerSize.height * 0.9f).toDp() }
-    ModalBottomSheet(
-        onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = sheetColor, tonalElevation = 0.dp,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = {
-            Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
-            }
-        },
-    ) {
-        Column(Modifier.fillMaxWidth().heightIn(max = maximumHeight).padding(horizontal = 20.dp)) {
+    ArkeFloatingSheet(onDismiss = onClose, tagPrefix = "detail", modifier = Modifier.heightIn(max = maximumHeight)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose, modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.close")) {
-                    Icon(painterResource(R.drawable.ic_close), stringResource(R.string.close_details), tint = ink)
-                }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.detail_header), Modifier.testTag("detail.title").semantics { heading() },
-                        style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                    if (index >= 0) {
-                        val positionLabel = stringResource(R.string.place_position, index + 1, ideas.size)
-                        Text(stringResource(R.string.place_position_compact, index + 1, ideas.size),
-                            Modifier.testTag("detail.position").semantics { liveRegion = LiveRegionMode.Polite; contentDescription = positionLabel },
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
+                Text(stringResource(R.string.detail_header), Modifier.weight(1f).testTag("detail.title").semantics { heading() },
+                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Start)
                 Box {
                     IconButton(onClick = { showingInfo = true }, modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.info")) {
                         Icon(painterResource(R.drawable.ic_info), stringResource(R.string.detail_info_label), tint = ink)
@@ -134,8 +117,14 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                     verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     if (index >= 0) {
                         val idea = ideas[index]
-                        Text(idea.name, style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.testTag("detail.name").semantics { heading() })
+                        val positionLabel = stringResource(R.string.place_position, index + 1, ideas.size)
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                            Icon(painterResource(R.drawable.ic_bookmark), null, modifier = Modifier.size(24.dp, 28.dp))
+                            Text(idea.name, style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.weight(1f).testTag("detail.name").semantics {
+                                    heading(); liveRegion = LiveRegionMode.Polite; stateDescription = positionLabel
+                                })
+                        }
                         Column(Modifier.fillMaxWidth().background(insetColor, RoundedCornerShape(24.dp)).padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)) {
                             DetailContentRow(idea.address, R.drawable.ic_pin, stringResource(R.string.place_address), "detail.address")
@@ -162,7 +151,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
 private fun DetailContentRow(value: String, icon: Int, label: String, tag: String) {
     Row(Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-        Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(24.dp))
+        Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(24.dp))
         Text(value, style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f).testTag(tag).semantics { contentDescription = "$label: $value" })
     }

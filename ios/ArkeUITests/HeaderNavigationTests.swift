@@ -88,7 +88,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["detail.address"].label, "Endereço: Rua de teste, 100")
         XCTAssertFalse(app.buttons["detail.previous"].isEnabled)
         XCTAssertFalse(app.buttons["detail.next"].isEnabled)
-        app.buttons["detail.close"].tap()
+        app.buttons["detail.dismiss"].tap()
         let delete = app.buttons["Excluir Museu de teste"]
         delete.tap()
         app.alerts["Excluir ideia?"].buttons["Cancelar"].tap()
@@ -134,6 +134,22 @@ final class HeaderNavigationTests: XCTestCase {
         waitForExpectations(timeout: 5)
     }
 
+    func testFloatingDetailsDismissWithSwipe() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--capture-place-details"]
+        app.launch()
+        let handle = app.buttons["detail.dismiss"]
+        XCTAssertTrue(handle.waitForExistence(timeout: 15))
+        let window = app.coordinate(withNormalizedOffset: .zero)
+        let start = window.withOffset(CGVector(dx: handle.frame.midX, dy: handle.frame.midY))
+        let end = window.withOffset(CGVector(dx: handle.frame.midX, dy: app.frame.maxY - 30))
+        start.press(forDuration: 0.1, thenDragTo: end)
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: handle)
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(app.buttons["home.contextMenu"].isHittable)
+        XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
+    }
+
     func testLongDetailsScrollWhileActionsRemainReachable() {
         let app = XCUIApplication()
         app.launchArguments = ["--capture-place-details", "--test-long-detail"]
@@ -146,7 +162,7 @@ final class HeaderNavigationTests: XCTestCase {
         body.swipeUp()
         XCTAssertLessThan(note.frame.minY, originalY)
         XCTAssertTrue(app.buttons["detail.next"].isHittable)
-        XCTAssertTrue(app.buttons["detail.close"].isHittable)
+        XCTAssertTrue(app.buttons["detail.dismiss"].isHittable)
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
     }
@@ -155,30 +171,39 @@ final class HeaderNavigationTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--capture-place-details"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["detail.position"].waitForExistence(timeout: 15))
-        XCTAssertEqual(app.staticTexts["detail.position"].label, "Lugar 1 de 2")
+        XCTAssertTrue(app.staticTexts["detail.name"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["detail.close"].exists)
+        XCTAssertFalse(app.staticTexts["detail.position"].exists)
+        let card = app.otherElements["detail.dismiss.card"]
+        XCTAssertTrue(card.exists)
+        XCTAssertGreaterThan(card.frame.minX, app.frame.minX)
+        XCTAssertLessThan(card.frame.maxX, app.frame.maxX)
+        XCTAssertLessThan(card.frame.maxY, app.frame.maxY)
+        XCTAssertLessThanOrEqual(app.buttons["detail.dismiss"].frame.maxY, card.frame.minY + 1)
+        XCTAssertLessThan(app.staticTexts["detail.title"].frame.minX, app.buttons["detail.info"].frame.minX)
+        XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
         XCTAssertFalse(app.staticTexts["detail.infoText"].exists)
         app.buttons["detail.info"].tap()
         XCTAssertTrue(app.staticTexts["detail.infoText"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["detail.infoText"].label.contains("sem backup"))
         app.buttons["detail.infoDismiss"].tap()
         XCTAssertFalse(app.staticTexts["detail.infoText"].exists)
-        XCTAssertEqual(app.staticTexts["detail.position"].label, "Lugar 1 de 2")
+        XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
         XCTAssertFalse(app.buttons["detail.previous"].isEnabled)
-        XCTAssertLessThan(app.buttons["detail.close"].frame.midX, app.staticTexts["detail.title"].frame.midX)
-        let firstCloseY = app.buttons["detail.close"].frame.minY
+        XCTAssertTrue(app.buttons["detail.dismiss"].isHittable)
+        let firstCloseY = app.buttons["detail.dismiss"].frame.minY
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
         expectation(for: NSPredicate { _, _ in
-            app.buttons["detail.close"].frame.minY > firstCloseY + 20
-        }, evaluatedWith: app.buttons["detail.close"])
+            app.buttons["detail.dismiss"].frame.minY > firstCloseY + 20
+        }, evaluatedWith: app.buttons["detail.dismiss"])
         waitForExpectations(timeout: 5)
-        XCTAssertEqual(app.staticTexts["detail.position"].label, "Lugar 2 de 2")
+        XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 2 de 2")
         XCTAssertFalse(app.buttons["detail.next"].isEnabled)
         XCTAssertFalse(app.staticTexts["detail.note"].exists)
         app.buttons["detail.previous"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Jardim das descobertas")
-        app.buttons["detail.close"].tap()
+        app.buttons["detail.dismiss"].tap()
         XCTAssertTrue(app.buttons["home.contextMenu"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["home.contextTitle"].label, "Planejamento")
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")

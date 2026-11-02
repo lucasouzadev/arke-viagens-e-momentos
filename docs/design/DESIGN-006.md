@@ -5,9 +5,10 @@ Status: direção aprovada explicitamente no chat em 01/11/2026; implementação
 ## Regras comuns
 
 - Mesma ordem, rótulos, grupos de conteúdo, posição de ações e estados por fluxo.
-- Editor/revisão: apresentação grande, próxima de 94% da área disponível, alça visível central; cabeçalho fixo com Cancelar à esquerda, título central e coluna direita reservada para equilíbrio. Corpo rolável independente; ações no rodapé fixo acima do teclado/safe area.
+- Editor/revisão: apresentação grande, próxima de 94% da área disponível, alça externa visível central; cabeçalho fixo com Cancelar à esquerda, título central e coluna direita reservada para equilíbrio. Corpo rolável independente; ações no rodapé fixo acima do teclado/safe area.
 - Limite inferior do corpo rolável: fade decorativo de 32 pt/dp até a superfície do sheet, sem barra sólida, contorno ou sombra atrás das ações. Padding final de 48 permite revelar integralmente o último campo/texto acima da transição; efeito não bloqueia toque/foco. Mesmo tratamento no editor/revisão dos dois sistemas e nos dois temas. [M5-FADE-01](../engenharia/M5-FADE-01.md).
-- Detalhes de ideia: altura acompanha conteúdo até o limite da área segura, com corpo rolável quando necessário. X/i em controles circulares de 48; nome 22 semibold, endereço/nota agrupados em uma superfície de raio 24, espaçamento interno 20. Anterior/Próximo em cápsulas próximas ao conteúdo. [M5-DETAILS-UI-03](../engenharia/M5-DETAILS-UI-03.md) refina a composição, preservando informação/semântica. X de fechar à esquerda, título curto com contador compacto central e i à direita. Nome em destaque sem rótulo/caixa redundante; endereço/nota com ícones e descrição acessível; nota vazia omitida. Aviso local fica apenas no painel informativo por toque. Anterior preenchido neutro e Próximo azul no rodapé, sem texto expositivo. Navegação finita por ID. [M5-DETAILS-UI-02](../engenharia/M5-DETAILS-UI-02.md) refina [M5-DETAILS-01](../engenharia/M5-DETAILS-01.md).
+- Detalhes de ideia: título à esquerda, apenas i à direita, sem X nem contador visível. Nome 22 semibold com ícone de ideia; posição completa somente na semântica acessível do nome. Endereço/nota agrupados em superfície de raio 24, ícones decorativos secundários mais fracos que o texto; nota vazia omitida. Informação local por toque no i, navegação Anterior/Próximo em cápsulas e finita por ID. [M5-FLOATING-01](../engenharia/M5-FLOATING-01.md) substitui cabeçalho/alça de M5-DETAILS-UI-03 sem mudar os dados.
+- Detalhes e editor/revisão apresentados como cartões flutuantes: quatro cantos de raio 28, margem horizontal e inferior 12 dentro das safe areas, fundo externo transparente, alça central fora do cartão com alvo 48. Alça pode recolher por toque, além dos gestos nativos; no editor equivale a Cancelar e protege rascunho/salvamento. Apenas o cabeçalho de detalhes perde X/contador; editor mantém Cancelar. A home recua para escala 0,96 ao abrir, restaurando ao fechar; redução de movimento respeitada pelas APIs nativas. Sem sombra/contorno decorativo.
 - Confirmação de descarte usa alerta central nos dois sistemas, com opção de continuar editando e confirmação destrutiva explícita.
 - Editor e revisão usam a mesma estrutura. Rótulos persistentes acima dos campos; Nome, Endereço/referência e Nota nessa ordem. Revisar/Salvar é ação primária preenchida; Editar informações é secundária acima de Salvar. Avisos/erros nas mesmas zonas, sem deslocar Cancelar.
 - Sheets usam superfície semanticamente mais clara que suas áreas internas em ambos os temas (iOS: systemBackground/secondarySystemBackground no claro, secondarySystemGroupedBackground/systemBackground no escuro; Android: surfaceContainerLowest/surfaceContainerLow no claro, surfaceContainerHigh/surfaceContainerLowest no escuro). Campos e cartões têm preenchimento neutro distinto do fundo, sem contorno desenhado ou sombra decorativa. Só um azul de marca. Texto de ações no escuro usa semântica legível.
@@ -24,7 +25,7 @@ Valores de distância equivalentes em pt no iOS e dp no Android; texto em pontos
 | Gaps pequenos / label-campo / seção | 8 / 8 / 16 |
 | Separação cabeçalho-corpo / corpo-rodapé | 24 / 24 |
 | Alvo mínimo de botão | 48 |
-| Colunas laterais do cabeçalho do editor | 88 |
+| Colunas laterais do cabeçalho do editor flutuante | 76 |
 | Raio cartão / campo e botão / sheet | 20 / 12 / 28 |
 | Altura mínima campo nome / endereço / nota | 56 / 96 / 120 |
 | Padding interno de campo | 16 |
@@ -33,9 +34,9 @@ Valores de distância equivalentes em pt no iOS e dp no Android; texto em pontos
 | Corpo / rótulo / nota auxiliar / botão | 16 regular / 14 semibold / 14 regular / 16 semibold |
 | Line-height de corpo / auxiliar | aproximadamente 24 / 20 |
 
-Alturas são mínimos, não limites. Textos longos e fontes ampliadas podem crescer; corpo rola e CTA permanece alcançável. Não truncar dados ou reduzir fonte para caber. Alça nativa iOS e indicador Compose compartilham posição/área reservada; pequeno detalhe do desenho do sistema é permitido.
+Alturas são mínimos, não limites. Textos longos e fontes ampliadas podem crescer; corpo rola e CTA permanece alcançável. Não truncar dados ou reduzir fonte para caber. Alça externa SwiftUI/Compose compartilha posição/área reservada; a apresentação, gestos, foco modal e insets continuam usando o host nativo.
 
-No detalhe, SwiftUI mede o conteúdo para um detent de altura limitado pelo sistema; Compose usa altura natural com limite de 90% da tela no conteúdo. Ambos mantêm ações fora do scroll e respeitam insets.
+Com o envelope flutuante, reservar também a faixa externa da alça (48) e margem inferior (12). No detalhe, SwiftUI mede o conteúdo para um detent de altura limitado pelo sistema; Compose usa altura natural com limite de 90% da tela no conteúdo. Ambos mantêm ações fora do scroll e respeitam insets.
 
 A fração do sheet do editor é uma intenção visual sobre a área disponível, não uma tradução literal entre APIs. No Compose a altura é aplicada ao conteúdo (90% mais alça/insets), preservando a âncora inferior do modal; no SwiftUI usa-se detent de 94%. Não limitar a janela/âncora externa para obter essa altura. Conferir a margem superior e as barras do sistema nas capturas.
 
