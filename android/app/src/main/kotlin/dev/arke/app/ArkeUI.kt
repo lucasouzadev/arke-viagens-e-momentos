@@ -63,7 +63,9 @@ fun ArkeFloatingSheet(
             TextButton(onClick = onDismiss, enabled = enabled,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("$tagPrefix.dismiss").semantics { contentDescription = dismissLabel },
             ) {
-                Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
+                Box(Modifier.size(64.dp, 16.dp).background(arkeSheetColor(), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
+                }
             }
             Column(modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(arkeSheetColor())
                 .testTag("$tagPrefix.dismiss.card"), content = content)

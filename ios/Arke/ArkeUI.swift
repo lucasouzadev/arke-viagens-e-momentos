@@ -69,6 +69,8 @@ struct ArkeFloatingSheet<Content: View>: View {
         VStack(spacing: 0) {
             Button(action: onDismiss) {
                 Capsule().fill(Color(uiColor: .secondaryLabel)).frame(width: 36, height: 4)
+                    .frame(width: 64, height: 16)
+                    .background(ArkeUI.sheetSurface(colorScheme), in: Capsule())
                     .frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
             }
             .buttonStyle(.plain).disabled(!enabled)
