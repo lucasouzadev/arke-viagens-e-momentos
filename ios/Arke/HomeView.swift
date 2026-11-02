@@ -91,6 +91,7 @@ struct HomeView: View {
         .arkeText(.body)
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .arkeReceding(presented: showingAddPlace || showingDetailPreview || showingSavedDetails || showingEditPreview)
         .task(id: savedNotice) {
             if savedNotice {

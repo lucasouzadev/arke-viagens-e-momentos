@@ -26,29 +26,32 @@ struct PlaceIdeasContent: View {
                                 .accessibilityLabel("Editar \(idea.name)").accessibilityIdentifier("place.update.\(idea.id)")
                         }
                         Text(idea.address).foregroundStyle(.secondary)
-                        if !idea.note.isEmpty { Text(idea.note) }
-                        Button { selected = idea } label: {
-                            Label("Abrir", systemImage: "arrow.up.right").arkeText(.button)
-                                .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
-                                .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                                .contentShape(Rectangle())
+                        if !idea.note.isEmpty { Text(idea.note).lineLimit(3) }
+                        HStack(spacing: 12) {
+                            Button { selected = idea } label: {
+                                Label("Abrir", systemImage: "arrow.up.right").arkeText(.button)
+                                    .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
+                                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Ver detalhes de \(idea.name)")
+                                .accessibilityIdentifier("place.open.\(idea.id)")
+                            Button(role: .destructive) { deleting = idea } label: {
+                                Image(systemName: "trash").frame(width: 48, height: 48)
+                                    .background(ArkeUI.sheetSurface(colorScheme), in: Circle())
+                            }
+                                .disabled(store.busy)
+                                .accessibilityLabel("Excluir \(idea.name)")
+                                .accessibilityIdentifier("place.delete.\(idea.id)")
                         }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Ver detalhes de \(idea.name)")
-                            .accessibilityIdentifier("place.open.\(idea.id)")
-                        Button(role: .destructive) { deleting = idea } label: {
-                            Image(systemName: "trash").frame(width: 48, height: 48)
-                                .background(ArkeUI.sheetSurface(colorScheme), in: Circle())
-                        }
-                            .disabled(store.busy)
-                            .accessibilityLabel("Excluir \(idea.name)")
-                            .accessibilityIdentifier("place.delete.\(idea.id)")
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                     .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
                 }
             }
         }
+        .padding(.bottom, 24)
         .onChange(of: selected != nil || editing != nil) { _, visible in onDetailsVisibilityChanged(visible) }
         .onDisappear { onDetailsVisibilityChanged(false) }
         .sheet(item: $selected) { idea in

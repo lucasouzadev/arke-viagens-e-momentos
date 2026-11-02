@@ -198,7 +198,7 @@ private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit
         Icon(painterResource(R.drawable.ic_clock), stringResource(R.string.change_context, stringResource(active.title())))
     }
     if (expanded) {
-        ModalBottomSheet(onDismissRequest = { expanded = false }) {
+        ModalBottomSheet(onDismissRequest = { expanded = false }, containerColor = arkeSheetColor(), shape = RoundedCornerShape(36.dp), tonalElevation = 0.dp) {
             val options = TravelContext.entries
             val itemHeight = 48.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
             val list = rememberLazyListState(initialFirstVisibleItemIndex = options.indexOf(active))
@@ -217,7 +217,7 @@ private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit
                     .background(arkeInsetColor(), RoundedCornerShape(24.dp)))
                 Text("›", modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp), style = MaterialTheme.typography.titleLarge)
                 LazyColumn(state = list, flingBehavior = rememberSnapFlingBehavior(list),
-                    contentPadding = PaddingValues(vertical = itemHeight), modifier = Modifier.fillMaxSize().testTag("home.contextWheel")) {
+                    contentPadding = PaddingValues(vertical = itemHeight), modifier = Modifier.fillMaxSize().testTag("home.contextWheel").arkeScrollEdges(arkeSheetColor())) {
                     items(options.size) { index ->
                         val option = options[index]
                         TextButton(onClick = { scope.launch { list.animateScrollToItem(index) } },
@@ -227,7 +227,7 @@ private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit
                     }
                 }
             }
-            TextButton(onClick = { expanded = false }, modifier = Modifier.align(Alignment.CenterHorizontally).heightIn(min = 48.dp)) { Text("Concluído") }
+            Button(onClick = { expanded = false }, shape = RoundedCornerShape(50), modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 20.dp).heightIn(min = 48.dp)) { Text("Concluído") }
         }
     }
 }

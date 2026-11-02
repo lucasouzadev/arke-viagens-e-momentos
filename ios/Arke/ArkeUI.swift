@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum ArkeUI {
     static func sheetSurface(_ scheme: ColorScheme) -> Color {
@@ -110,4 +111,49 @@ struct ArkeScrollEdges: ViewModifier {
 }
 extension View {
     func arkeScrollEdges() -> some View { modifier(ArkeScrollEdges()) }
+}
+
+/// UIKit owns keyboard occlusion; SwiftUI receives the actual visible viewport.
+struct ArkeKeyboardViewport<Content: View>: UIViewControllerRepresentable {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) { self.content = content() }
+
+    func makeUIViewController(context: Context) -> ArkeKeyboardViewportController<Content> {
+        ArkeKeyboardViewportController(content: content)
+    }
+
+    func updateUIViewController(_ controller: ArkeKeyboardViewportController<Content>, context: Context) {
+        controller.host.rootView = content
+    }
+}
+
+@MainActor
+final class ArkeKeyboardViewportController<Content: View>: UIViewController {
+    let host: UIHostingController<Content>
+
+    init(content: Content) {
+        host = UIHostingController(rootView: content)
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Use init(content:)") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .clear
+        host.safeAreaRegions = .container
+        addChild(host)
+        host.view.backgroundColor = .clear
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(host.view)
+        NSLayoutConstraint.activate([
+            host.view.topAnchor.constraint(equalTo: view.topAnchor),
+            host.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            host.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            host.view.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+        ])
+        host.didMove(toParent: self)
+    }
 }

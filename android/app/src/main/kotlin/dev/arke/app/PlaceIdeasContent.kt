@@ -67,19 +67,21 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                     }
                 }
                 Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (idea.note.isNotEmpty()) Text(idea.note)
-                val openLabel = stringResource(R.string.view_place_details_label, idea.name)
-                TextButton(onClick = { selectedID = idea.id },
-                    colors = ButtonDefaults.textButtonColors(contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary),
-                    contentPadding = PaddingValues(0.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) {
-                    Text("Abrir ↗", Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    val openLabel = stringResource(R.string.view_place_details_label, idea.name)
+                    TextButton(onClick = { selectedID = idea.id },
+                        colors = ButtonDefaults.textButtonColors(contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary),
+                        contentPadding = PaddingValues(0.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                        .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) {
+                        Text("Abrir ↗", Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                    }
+                    val deleteLabel = stringResource(R.string.delete_place) + ": " + idea.name
+                    IconButton(
+                        onClick = { deleting = idea }, enabled = !state.busy,
+                        modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("place.delete.${idea.id}").semantics { contentDescription = deleteLabel },
+                    ) { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) }
                 }
-                val deleteLabel = stringResource(R.string.delete_place) + ": " + idea.name
-                TextButton(
-                    onClick = { deleting = idea }, enabled = !state.busy,
-                    modifier = Modifier.testTag("place.delete.${idea.id}").semantics { contentDescription = deleteLabel },
-                ) { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) }
                 }
             }
         }

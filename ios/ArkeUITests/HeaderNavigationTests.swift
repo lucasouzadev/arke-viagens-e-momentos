@@ -285,6 +285,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertTrue(address.exists)
         address.tap()
         address.typeText("Referência para teste")
+        XCTAssertLessThanOrEqual(app.scrollViews["place.fields"].frame.maxY, app.keyboards.firstMatch.frame.minY + 1)
         tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Lugar com toque amplo"].exists)
         app.buttons["place.cancel"].tap()

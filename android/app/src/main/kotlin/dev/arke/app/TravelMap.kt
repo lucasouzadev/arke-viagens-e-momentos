@@ -1,6 +1,11 @@
 package dev.arke.app
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -72,8 +77,10 @@ fun TravelMap(modifier: Modifier = Modifier) {
         properties = MapProperties(isMyLocationEnabled = permitted),
         uiSettings = MapUiSettings(myLocationButtonEnabled = false, mapToolbarEnabled = false),
     )
-    TextButton(onClick = { if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) locate() else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
-        modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) { Text("Minha localização") }
+    IconButton(onClick = { if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) locate() else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
+        modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(48.dp).background(arkeSheetColor(), CircleShape)) {
+        Icon(painterResource(R.drawable.ic_location), contentDescription = "Minha localização")
+    }
     }
     if (message != null) AlertDialog(onDismissRequest = { message = null }, title = { Text("Minha localização") }, text = { Text(message.orEmpty()) }, confirmButton = { TextButton(onClick = { message = null }) { Text("Entendi") } })
 }
