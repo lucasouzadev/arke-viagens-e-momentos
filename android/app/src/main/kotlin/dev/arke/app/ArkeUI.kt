@@ -61,7 +61,7 @@ fun ArkeFloatingSheet(
         shape = RoundedCornerShape(36.dp),
         dragHandle = {
             val dismissLabel = stringResource(dev.arke.app.R.string.sheet_dismiss)
-            TextButton(onClick = onDismiss, enabled = enabled,
+            TextButton(onClick = onDismiss, enabled = enabled, contentPadding = PaddingValues(0.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("$tagPrefix.dismiss").semantics { contentDescription = dismissLabel },
             ) {
                 BottomSheetDefaults.DragHandle()

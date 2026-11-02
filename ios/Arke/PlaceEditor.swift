@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct PlaceEditor: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -8,6 +9,7 @@ struct PlaceEditor: View {
     let onCancel: () -> Void
     let original: PlaceIdea?
     @State private var draft = PlaceDraft()
+    @State private var keyboardOverlap: CGFloat = 0
     @State private var reviewing = false
     @State private var submitted = false
     @State private var confirmingDiscard = false
@@ -107,6 +109,8 @@ struct PlaceEditor: View {
                     .buttonStyle(.plain).foregroundStyle(ink).padding(.bottom, 16)
                     .padding(.bottom, 32)
                         }
+                        .padding(.bottom, keyboardOverlap)
+                        .background(KeyboardScrollOverlap(overlap: $keyboardOverlap).allowsHitTesting(false))
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .accessibilityIdentifier("place.fields").arkeScrollEdges()
@@ -201,5 +205,55 @@ private struct EditorFieldLabelStyle: LabelStyle {
             configuration.icon.foregroundStyle(Color(uiColor: .tertiaryLabel)).frame(width: 24).accessibilityHidden(true)
             configuration.title
         }
+    }
+}
+
+/// Fill only keyboard overlap not already handled by the native scroll insets.
+private struct KeyboardScrollOverlap: UIViewRepresentable {
+    @Binding var overlap: CGFloat
+    func makeUIView(context: Context) -> KeyboardViewportProbe {
+        let view = KeyboardViewportProbe()
+        view.changed = { value in if abs(overlap - value) > 1 { overlap = value } }
+        return view
+    }
+    func updateUIView(_ view: KeyboardViewportProbe, context: Context) {
+        view.changed = { value in if abs(overlap - value) > 1 { overlap = value } }
+    }
+}
+
+private final class KeyboardViewportProbe: UIView {
+    var changed: ((CGFloat) -> Void)?
+    private var keyboardFrame = CGRect.null
+    private var lastOverlap: CGFloat = -1
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        for name in [UIResponder.keyboardWillChangeFrameNotification, UIResponder.keyboardDidChangeFrameNotification, UIResponder.keyboardWillHideNotification] {
+            NotificationCenter.default.addObserver(self, selector: #selector(keyboardChanged(_:)), name: name, object: nil)
+        }
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    deinit { NotificationCenter.default.removeObserver(self) }
+    @objc private func keyboardChanged(_ notification: Notification) {
+        keyboardFrame = notification.name == UIResponder.keyboardWillHideNotification ? .null :
+            (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? .null)
+        updateOverlap()
+    }
+    override func didMoveToWindow() { super.didMoveToWindow(); updateOverlap() }
+    override func layoutSubviews() { super.layoutSubviews(); updateOverlap() }
+    private func updateOverlap() {
+        guard let window else { return }
+        var ancestor = superview
+        while let candidate = ancestor, !(candidate is UIScrollView) { ancestor = candidate.superview }
+        guard let scroll = ancestor as? UIScrollView else { return }
+        let viewport = scroll.convert(scroll.bounds, to: window)
+        let keyboard = window.convert(keyboardFrame, from: nil)
+        // Floating keyboards keep their native interaction; reserve no full-width band.
+        let intersection = viewport.intersection(keyboard)
+        let covered = intersection.isNull || intersection.width < viewport.width * 0.8 ? 0 : intersection.height
+        let value = max(0, covered - scroll.adjustedContentInset.bottom)
+        guard abs(value - lastOverlap) > 1 else { return }
+        lastOverlap = value
+        DispatchQueue.main.async { [weak self] in self?.changed?(value) }
     }
 }
