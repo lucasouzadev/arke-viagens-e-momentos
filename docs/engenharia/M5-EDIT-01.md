@@ -1,6 +1,6 @@
 # M5-EDIT-01 — Navegação limpa e edição segura de ideias
 
-02/11/2026. Autorizado explicitamente no chat: corrigir o sheet e seguir o próximo fluxo do plano (edição segura, indicado em HANDOFF). Branch chore/development-kickoff, PR #2 rascunho; sem merge/release.
+02/11/2026. Implementado, verificado e em revisão. Autorizado explicitamente no chat: corrigir o sheet e seguir o próximo fluxo do plano (edição segura, indicado em HANDOFF). Branch chore/development-kickoff, PR #2 rascunho; sem merge/release.
 
 Primeiro recorte: título do sheet centralizado com colunas laterais equivalentes; bookmark preenchido alinhado ao eixo dos ícones de endereço/nota por recuo de 20. Primeira página sem Anterior e Próximo largo; páginas seguintes com Anterior somente ícone, alvo 48 e nome acessível. Última página (também coleção unitária) com Concluído largo, fechando o painel. Listas maiores mantêm Próximo nos itens intermediários. Posição somente acessível, informação por toque, alça externa, flutuação e fade preservados nas duas plataformas.
 
@@ -18,6 +18,14 @@ Primeira execução 41385270237, fonte 35fb002: Android aprovado (6 core + 11 in
 
 Execução 41386548922, fonte 3e74ec0: Android aprovado novamente; iOS 10 core + 6/7 UI, falha porque Selecionar Tudo não apareceu após pressão longa no campo. Substituição passa a usar o gesto nativo de três toques para selecionar o parágrafo único das fixtures, conforme [guia Apple](https://support.apple.com/guide/iphone/select-edit-and-move-text-iph1a9cae52c/27/ios/27), mantendo conferência do campo e reabertura. Falha de valor agora registra hierarquia e attachment PNG dentro do teste; script exporta esses attachments, pois captura simctl após encerramento do XCTest mostrou SpringBoard. Produto permanece idêntico à fonte Android aprovada; nenhum cenário removido ou convertido em sucesso.
 
+## Evidências finais
+
+[Native checks aprovados](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41388017517), fonte `4ee4af04e1027f6f15141690fa591e02ebb609f6`: iOS build Simulator, 10 core + 7 XCUITest; Android build debug, 6 core + 11 instrumentados (8 UI/3 repositório), sem falhas/skips. Total 34 testes. Lint Android 0 erros/9 avisos anteriores, incluindo ic_close sem uso (P3), sem supressão. Teste iOS de edição passou com seleção nativa do parágrafo e valores conferidos antes de revisar e após reabrir. Produto idêntico ao aprovado na fonte 35fb002; somente teste/diagnóstico/docs foram corrigidos depois.
+
+40 PNGs originais inspecionados individualmente e em pares: home/editor vazio/editor preenchido/detalhe com nota/sem nota × padrão/compacto × claro/escuro × ambas plataformas. iOS artefato 13116349601 da fonte final; Android artefato 13115292774/run 41385270237/fonte 35fb002, mesmo código Android validado novamente na execução final. iPhone 16/SE 3, Android API 35 Pixel 6/viewport compacta. Cabeçalho central, ícones/textos alinhados e bookmark preenchido confirmados; primeira página sem Anterior, última com seta e Concluído largo. Nenhuma imagem editada ou mídia da referência incorporada. Prévia preenchida somente Debug/memória, Save sem escrita; edição real validada separadamente pelo teste de persistência UI. Artefatos Actions somente PNG, sete dias, sem APK/IPA.
+
+UI verifica geometria, primeira/última página e coleção unitária, informação por toque, altura curta/nota longa, retorno por alça/swipe/Voltar e preservação da home. Editor exercita cancelar sem alteração, continuar editando/descartar após mudança, revisão/correção/salvar/reabrir/excluir. Android recria Activity mantendo rascunho alterado e depois confirma conteúdo atualizado. Casos intermediários de coleções maiores que dois foram revisados no código, sem teste UI/PNG específico. Falha real de disco/conflito visível em UI, processo morto durante gravação, fonte 200%, leitores de tela, alternância manual de redução de movimento, IME Android manual, landscape/tablets/aparelho físico e profiling NÃO EXECUTADOS. Falhas anteriores preservadas acima; nenhum cenário removido.
+
 ## Revisão de arquitetura e dados
 
 Fluxo pessoal: lista → cópia do original + rascunho → validação/revisão → store/viewmodel → repositório serializado → snapshot atômico v1 → confirmação de sucesso → fechar editor. Android confirma a solicitação específica por identificador transitório, sem persistir esse identificador no JSON; comparação do conteúdo sozinha não fecha antecipadamente um salvamento sem mudanças. Original/rascunho pendentes e seleção são restaurados na recriação Android exercitada no teste. iOS aguarda o resultado async do store. O callback de veto de fechamento Android é estável e lê estado atualizado, preservando o sheet enquanto o rascunho muda.
@@ -32,16 +40,16 @@ Delta de risco STORAGE/CODE: sobrescrita desatualizada/ID trocado/registro ausen
 | G-02 | PASSOU: contrato de correção e próximo fluxo antes do código; escopo pessoal delimitado. |
 | G-03 | PASSOU: apresentação reaproveitada, operação update separada de add, ID estável e confirmação explícita de sucesso. |
 | G-04 | PASSOU na revisão de diff/XML/links/sintaxe bash e builds/lint já executados; lint Android 0 erros/9 avisos anteriores, sem supressão. |
-| G-05 | NÃO EXECUTADO no fechamento final iOS; Android aprovado e 20 PNGs inspecionados. |
-| G-06 | PASSOU no Android padrão/compacto e claro/escuro; iOS final pendente. Fonte 200%, landscape/tablets e aparelho físico NÃO EXECUTADOS. |
+| G-05 | PASSOU: fluxos/gestos e 40 PNGs inspecionados; nova navegação e edição real em paridade. |
+| G-06 | PASSOU em padrão/compacto e claro/escuro das duas plataformas; teclado iOS exercitado no teste. Fonte 200%, IME Android manual, landscape/tablets e aparelho físico NÃO EXECUTADOS. |
 | G-07 | PASSOU na revisão de alvos 48, nomes acessíveis para lápis/voltar e posição sem contador visual; VoiceOver/TalkBack, auditoria global de contraste e alternância manual de redução de movimento NÃO EXECUTADOS. |
 | G-08 | PASSOU na revisão proporcional STORAGE/CODE descrita acima; sem nova rede/permissão/segredo/dependência. Auditoria MASVS completa NÃO EXECUTADA. |
 | G-09 | NÃO APLICÁVEL a nova coleta/mídia/licença: mesmos dados pessoais locais e ícones vetoriais originais/APIs nativas, sem asset das referências. |
 | G-10 | PASSOU nos testes de update/retry/conflito/ausente/identidade/bytes/ordem/releitura; snapshot v1 e salvaguardas existentes preservados. |
 | G-11 | Profiling NÃO EXECUTADO; IO continua fora da UI e serializado, sem promessa de desempenho medido. |
-| G-12 | NÃO EXECUTADO na fonte de teste iOS corrigida; Android 6 core + 11 instrumentados aprovados, iOS 10 core + 6/7 UI na primeira fonte. |
+| G-12 | PASSOU: 34 testes, builds/lint e 40 PNGs; falhas e correções de interação do teste registradas. |
 | G-13 | PASSOU: PR rascunho, sem merge/release/assinatura; reversão de código preserva dados v1. |
-| G-14 | NÃO EXECUTADO no fechamento final; guia/contrato/STATUS/HANDOFF/ROADMAP/INDEX/CHANGELOG e PR marcam a validação pendente. |
+| G-14 | PASSOU: guia/contrato/STATUS/HANDOFF/ROADMAP/INDEX/CHANGELOG e PR reconciliados com evidências e limites; links verificados. |
 | G-15 | PASSOU: preferência privada restrita ao chat, ausente dos artefatos. |
 
-Risco residual P2 nos ambientes não exercitados e P3 dos avisos de lint; revisão visual humana pendente. Nenhum teste pendente é tratado como aprovado. Próximo: concluir evidências iOS, reconciliar continuidade e disponibilizar capturas para revisão.
+Risco residual P2 nos ambientes não exercitados e P3 dos avisos de lint; nenhum P0/P1 identificado no recorte. Revisão visual humana pendente. Nenhum teste pendente é tratado como aprovado. Próximo: colher revisão deste resultado e definir o próximo contrato de planejamento; Google Maps real continua dependente do projeto/chave externos já pendentes. PR rascunho, sem merge/release.

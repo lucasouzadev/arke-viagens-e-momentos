@@ -6,6 +6,8 @@ Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no 
 
 - Simplificamos a navegação dos lugares e adicionamos a edição das ideias salvas neste aparelho.
 
+## Projeto em desenvolvimento — 1 de novembro de 2026
+
 - Ajustamos os painéis para aparecerem como cartões flutuantes, com cabeçalho mais simples e a tela de fundo recuada.
 
 - Reorganizamos os detalhes dos lugares em um painel mais compacto, com informações agrupadas e botões arredondados.
