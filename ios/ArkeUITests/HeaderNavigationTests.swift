@@ -277,7 +277,10 @@ final class HeaderNavigationTests: XCTestCase {
         add.tap()
         let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
         XCTAssertTrue(name.waitForExistence(timeout: 5))
-        name.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.8)).tap()
+        let nameRegion = app.descendants(matching: .any).matching(identifier: "place.name.region").firstMatch
+        XCTAssertTrue(nameRegion.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(nameRegion.frame.height, name.frame.height)
+        nameRegion.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.8)).tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Concluir"].exists)
         name.typeText("Lugar com toque amplo")
@@ -286,6 +289,15 @@ final class HeaderNavigationTests: XCTestCase {
         address.tap()
         address.typeText("Referência para teste")
         XCTAssertLessThanOrEqual(app.scrollViews["place.fields"].frame.maxY, app.keyboards.firstMatch.frame.minY + 1)
+        let note = app.textViews["place.note"]
+        for _ in 0..<4 {
+            if note.isHittable { break }
+            app.scrollViews["place.fields"].swipeUp()
+        }
+        note.tap()
+        let longNote = String(repeating: "Uma nota de teste para verificar a escrita com o teclado aberto. ", count: 5)
+        note.typeText(longNote)
+        XCTAssertEqual(note.value as? String, longNote)
         tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Lugar com toque amplo"].exists)
         app.buttons["place.cancel"].tap()

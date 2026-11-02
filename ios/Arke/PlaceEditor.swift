@@ -165,6 +165,8 @@ struct PlaceEditor: View {
         }
         .contentShape(Rectangle())
         .simultaneousGesture(TapGesture().onEnded { if !saving { field = focus } })
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(identifier + ".region")
     }
 
     private func summary(_ title: String, value: String, height: CGFloat) -> some View {
