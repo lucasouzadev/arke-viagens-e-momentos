@@ -140,16 +140,23 @@ struct PlaceEditor: View {
             Group {
                 if focus == .name {
                     TextField(title, text: text, prompt: Text(""))
+                        .focused($field, equals: focus).accessibilityLabel(title).accessibilityIdentifier(identifier)
                         .submitLabel(.next).onSubmit { field = .address }
                 } else {
-                    TextEditor(text: text).scrollContentBackground(.hidden).scrollIndicators(.hidden)
-                        .frame(minHeight: height)
+                    ZStack(alignment: .topLeading) {
+                        Text(text.wrappedValue + "\n").arkeText(.body)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 5).padding(.vertical, 8)
+                            .hidden().accessibilityHidden(true)
+                        TextEditor(text: text).scrollContentBackground(.hidden).scrollDisabled(true)
+                            .focused($field, equals: focus).accessibilityLabel(title).accessibilityIdentifier(identifier)
+                    }.frame(minHeight: height)
                 }
             }
-            .arkeText(.body).focused($field, equals: focus)
+            .arkeText(.body)
             .textInputAutocapitalization(focus == .name ? .words : .sentences)
             .frame(maxWidth: .infinity, minHeight: focus == .name ? 48 : height, alignment: .topLeading)
-            .disabled(saving).accessibilityLabel(title).accessibilityIdentifier(identifier)
+            .disabled(saving)
 
         }
         .contentShape(Rectangle())

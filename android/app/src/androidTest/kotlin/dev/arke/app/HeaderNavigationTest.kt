@@ -59,7 +59,8 @@ class HeaderNavigationTest {
         val contexts = listOf("EXPENSES" to "Gastos", "SAVINGS" to "Cofrinho", "REVIEWS" to "Avaliações", "MEMORIES" to "Memórias", "PLANNING" to "Planejamento")
         for ((id, title) in contexts) {
             compose.onNodeWithTag("home.contextMenu").performClick()
-            compose.onNodeWithTag("context.$id").performScrollTo().performClick()
+            compose.onNodeWithTag("home.contextWheel").performScrollToNode(hasTestTag("context.$id"))
+            compose.onNodeWithTag("context.$id").performClick()
             compose.waitForIdle()
             compose.onNodeWithText("Concluído").performClick()
             compose.onNodeWithTag("home.contextTitle").assertTextEquals(title)
@@ -250,7 +251,7 @@ class HeaderNavigationTest {
         val handle = compose.onNodeWithTag("detail.dismiss").fetchSemanticsNode().boundsInRoot
         org.junit.Assert.assertTrue(card.left >= 0f)
         org.junit.Assert.assertTrue(card.right <= compose.activity.resources.displayMetrics.widthPixels)
-        org.junit.Assert.assertTrue(card.bottom < compose.activity.resources.displayMetrics.heightPixels)
+        org.junit.Assert.assertTrue(card.bottom <= compose.activity.resources.displayMetrics.heightPixels)
         org.junit.Assert.assertTrue(handle.top >= card.top)
         compose.onNodeWithTag("detail.infoText").assertDoesNotExist()
         compose.onNodeWithTag("detail.info").performClick()

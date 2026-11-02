@@ -52,9 +52,8 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
     }
     DisposableEffect(Unit) { onDispose { onDetailsVisibilityChanged(false) } }
     if (state.ideas.isEmpty()) {
-        Text("Qual lugar você quer conhecer?", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(12.dp))
-        Text("Toque em + para guardar uma ideia.")
+        Text("Guarde seu próximo lugar com +", style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), textAlign = TextAlign.Center)
     } else {
         state.ideas.forEach { idea ->
             key(idea.id) {

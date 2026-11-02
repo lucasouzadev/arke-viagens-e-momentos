@@ -36,8 +36,7 @@ struct HomeView: View {
                     Map(position: $camera) { UserAnnotation() }
                         .mapStyle(.standard)
                         .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
-                        .frame(height: geometry.size.height)
-                        .frame(height: panelHeight ?? mapHeight(in: geometry.size.height), alignment: .center).clipped()
+                        .frame(height: panelHeight ?? mapHeight(in: geometry.size.height))
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .contentShape(RoundedRectangle(cornerRadius: 20))
                         .overlay(alignment: .bottomTrailing) {
@@ -71,9 +70,7 @@ struct HomeView: View {
                                             Task { await places.remove(id: id) }
                                         }, onDetailsVisibilityChanged: { showingSavedDetails = $0 })
                                     } else {
-                                        Text(state.context.title).arkeText(.cardTitle)
-                                        Text("Este espaço está em desenvolvimento.")
-                                        Text("Seus lugares estão em Planejamento.")
+                                        Text("Em breve.")
                                         Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
                                     }
                                 } else if places.busy { ProgressView("Abrindo seus lugares…") }

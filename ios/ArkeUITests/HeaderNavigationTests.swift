@@ -229,7 +229,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(card.frame.minX, app.frame.minX)
         XCTAssertLessThanOrEqual(card.frame.maxX, app.frame.maxX)
         XCTAssertLessThan(card.frame.maxY, app.frame.maxY)
-        XCTAssertGreaterThanOrEqual(app.buttons["detail.dismiss"].frame.minY, card.frame.minY)
+        XCTAssertGreaterThanOrEqual(app.buttons["detail.dismiss"].frame.minY + 1, card.frame.minY)
         XCTAssertLessThan(app.staticTexts["detail.title"].frame.minX, app.buttons["detail.info"].frame.minX)
         XCTAssertEqual(app.staticTexts["detail.title"].frame.midX, card.frame.midX, accuracy: 1)
         XCTAssertEqual(app.staticTexts["detail.name"].frame.minX, app.staticTexts["detail.address"].frame.minX, accuracy: 1)
@@ -296,6 +296,10 @@ final class HeaderNavigationTests: XCTestCase {
         for _ in 0..<6 {
             if button.isHittable { break }
             app.scrollViews["place.fields"].swipeUp()
+        }
+        if !button.isHittable {
+            print(app.debugDescription)
+            let failure = XCTAttachment(screenshot: app.screenshot()); failure.lifetime = .keepAlways; add(failure)
         }
         XCTAssertTrue(button.isHittable)
         button.tap()

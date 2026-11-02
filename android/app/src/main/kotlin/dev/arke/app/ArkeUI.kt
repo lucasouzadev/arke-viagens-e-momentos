@@ -77,7 +77,7 @@ fun ArkeFloatingSheet(
 fun Modifier.arkeScrollEdges(surface: Color = MaterialTheme.colorScheme.surface): Modifier = this.then(
     Modifier.drawWithContent {
         drawContent()
-        drawRect(Brush.verticalGradient(listOf(surface, Color.Transparent), 0f, 12.dp.toPx()))
-        drawRect(Brush.verticalGradient(listOf(Color.Transparent, surface), (size.height - 24.dp.toPx()).coerceAtLeast(0f), size.height))
+        drawRect(Brush.verticalGradient(listOf(surface, Color.Transparent), 0f, minOf(12.dp.toPx(), size.height * 0.12f)))
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent, surface), (size.height - minOf(24.dp.toPx(), size.height * 0.12f)).coerceAtLeast(0f), size.height))
     }
 )

@@ -13,8 +13,8 @@ struct PlaceIdeasContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if store.ideas.isEmpty {
-                Text("Qual lugar você quer conhecer?").arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
-                Text("Toque em + para guardar uma ideia.").foregroundStyle(.secondary).padding(.vertical, 20)
+                Text("Guarde seu próximo lugar com +").arkeText(.body)
+                    .foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 48)
             } else {
                 ForEach(store.ideas) { idea in
                     VStack(alignment: .leading, spacing: 8) {

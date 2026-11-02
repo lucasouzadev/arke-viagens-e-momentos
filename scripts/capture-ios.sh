@@ -3,6 +3,10 @@ set -euo pipefail
 
 output="$PWD/build/screenshots/ios"
 mkdir -p "$output"
+if [ -n "${ARKE_SIMULATOR_MAJOR:-}" ]; then
+  runtime=$(xcrun simctl list runtimes --json | python3 -c 'import json,os,sys; runtimes=[r for r in json.load(sys.stdin)["runtimes"] if r.get("isAvailable") and r.get("version", "").split(".")[0] == os.environ["ARKE_SIMULATOR_MAJOR"]]; assert runtimes, "Requested iOS runtime unavailable"; print(runtimes[-1]["identifier"])')
+  xcrun simctl create "iPhone SE (3rd generation) QA" com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation "$runtime"
+fi
 xcrun simctl list devices available --json > "$output/devices.json"
 python3 - "$output/devices.json" > "$output/selected.tsv" <<'PY'
 import json, sys, os
@@ -28,6 +32,9 @@ while IFS=$'\t' read -r size device model; do
   xcrun simctl status_bar "$device" override --time '9:41' --batteryState charged --batteryLevel 100
   xcrun simctl install "$device" build/ios/Build/Products/Debug-iphonesimulator/Arke.app
   if [ "$size" = standard ]; then
+    xcrun simctl io "$device" recordVideo --codec=h264 "$output/ios-qa-interactions.mov" &
+    recorder=$!
+    trap 'kill -INT "$recorder" 2>/dev/null || true; wait "$recorder" 2>/dev/null || true' EXIT
     if ! xcodebuild -project ios/Arke.xcodeproj -scheme Arke -configuration Debug \
       -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO \
       -derivedDataPath build/ios -resultBundlePath build/HeaderUI.xcresult \
@@ -41,6 +48,9 @@ while IFS=$'\t' read -r size device model; do
       fi
       exit 1
     fi
+    kill -INT "$recorder" 2>/dev/null || true
+    wait "$recorder" 2>/dev/null || true
+    trap - EXIT
   fi
   for theme in light dark; do
     xcrun simctl ui "$device" appearance "$theme"

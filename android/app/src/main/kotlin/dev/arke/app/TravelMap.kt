@@ -33,7 +33,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 @Composable
 fun TravelMap(modifier: Modifier = Modifier) {
     if (!BuildConfig.MAPS_CONFIGURED) {
-        Column(modifier.padding(20.dp).verticalScroll(rememberScrollState())) {
+        Column(modifier.padding(20.dp).arkeScrollEdges().verticalScroll(rememberScrollState())) {
             Text(stringResource(R.string.map_pending), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Text(stringResource(R.string.map_pending_detail))

@@ -144,9 +144,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                         onUpdate = places::update, onEditCancel = places::load,
                                         onDetailsVisibilityChanged = { showingSavedDetails = it }) { id -> savedNotice = false; places.remove(id) }
                                     else {
-                                        Text(stringResource(state.context.title()), style = MaterialTheme.typography.titleLarge)
-                                        Text(stringResource(R.string.context_pending))
-                                        Text(stringResource(R.string.places_in_planning))
+                                        Text("Em breve.")
                                         TextButton(onClick = { state = state.selectContext(TravelContext.PLANNING) }) { Text(stringResource(R.string.view_places)) }
                                     }
                                 } else if (placeState.busy) Text(stringResource(R.string.loading_places))
@@ -202,6 +200,7 @@ private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit
     if (expanded) {
         ModalBottomSheet(onDismissRequest = { expanded = false }) {
             val options = TravelContext.entries
+            val itemHeight = 48.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
             val list = rememberLazyListState(initialFirstVisibleItemIndex = options.indexOf(active))
             val scope = rememberCoroutineScope()
             LaunchedEffect(list) {
@@ -213,16 +212,16 @@ private fun ContextMenu(active: TravelContext, onSelect: (TravelContext) -> Unit
                 }.distinctUntilChanged().collect { index -> index?.let { onSelect(options[it]) } }
             }
             Text("Escolha o contexto", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
-            Box(Modifier.fillMaxWidth().height(240.dp)) {
-                Box(Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 20.dp).height(48.dp)
+            Box(Modifier.fillMaxWidth().height(itemHeight * 3)) {
+                Box(Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 20.dp).height(itemHeight)
                     .background(arkeInsetColor(), RoundedCornerShape(24.dp)))
                 Text("›", modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp), style = MaterialTheme.typography.titleLarge)
                 LazyColumn(state = list, flingBehavior = rememberSnapFlingBehavior(list),
-                    contentPadding = PaddingValues(vertical = 96.dp), modifier = Modifier.fillMaxSize().testTag("home.contextWheel")) {
+                    contentPadding = PaddingValues(vertical = itemHeight), modifier = Modifier.fillMaxSize().testTag("home.contextWheel")) {
                     items(options.size) { index ->
                         val option = options[index]
                         TextButton(onClick = { scope.launch { list.animateScrollToItem(index) } },
-                            modifier = Modifier.fillMaxWidth().height(48.dp).testTag("context.${option.name}").semantics { selected = option == active }) {
+                            modifier = Modifier.fillMaxWidth().height(itemHeight).testTag("context.${option.name}").semantics { selected = option == active }) {
                             Text(stringResource(option.title()))
                         }
                     }

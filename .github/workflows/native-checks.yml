@@ -106,3 +106,12 @@ jobs:
           path: build/screenshots/ios/*.png
           if-no-files-found: error
           retention-days: 7
+
+      - name: Upload iOS QA interaction recording
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-qa-interactions
+          path: build/screenshots/ios/*.mov
+          if-no-files-found: warn
+          retention-days: 7

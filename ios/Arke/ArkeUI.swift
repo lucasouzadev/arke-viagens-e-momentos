@@ -98,10 +98,12 @@ extension View {
 struct ArkeScrollEdges: ViewModifier {
     func body(content: Content) -> some View {
         content.scrollIndicators(.hidden).mask {
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.clear, .white], startPoint: .top, endPoint: .bottom).frame(height: 12)
-                Rectangle()
-                LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom).frame(height: 24)
+            GeometryReader { geometry in
+                VStack(spacing: 0) {
+                    LinearGradient(colors: [.clear, .white], startPoint: .top, endPoint: .bottom).frame(height: min(12, geometry.size.height * 0.12))
+                    Rectangle()
+                    LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom).frame(height: min(24, geometry.size.height * 0.12))
+                }
             }.allowsHitTesting(false).accessibilityHidden(true)
         }
     }
