@@ -109,7 +109,9 @@ class HeaderNavigationTest {
         compose.activityRule.scenario.onActivity { it.intent.putExtra("capturePlaceDetails", true) }
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("detail.title").assertIsDisplayed()
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+        val automation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.waitForIdle(200, 5_000)
+        org.junit.Assert.assertTrue(automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.title").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
     }
