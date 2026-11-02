@@ -144,7 +144,8 @@
             isa = XCBuildConfiguration;
             name = Release;
             buildSettings = {
-                PRODUCT_BUNDLE_IDENTIFIER = dev.arke.app.dev;
+                PRODUCT_BUNDLE_IDENTIFIER = com.travel.arke;
+                DEVELOPMENT_TEAM = ZRVX9VFFJW;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 GENERATE_INFOPLIST_FILE = YES;
                 INFOPLIST_KEY_CFBundleDisplayName = Arke;
