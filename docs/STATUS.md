@@ -1,5 +1,7 @@
 # STATUS — Estado verificável do Arke
 
+**M5-DEVICE-01 em andamento:** APK debug autorizado como artifact temporário após validação Android; configuração privada Apple/TestFlight pendente. Assinatura Apple Developer ativa confirmada, sem credenciais no repositório. Sem merge/publicação em lojas.
+
 **M5-EDITOR-UI-02 em validação:** X preenchido no lugar de Cancelar, campos/revisão agrupados e cartão flutuante com raio 36. Builds/testes/capturas da nova fonte pendentes; sem merge/release.
 
 **M5-EDITOR-UI-01 em validação:** adicionar/editar/revisar alinhados ao padrão visual dos detalhes, com i, menos texto permanente, ícones discretos e cápsulas. Builds/testes/capturas novos pendentes; sem merge/release.

@@ -49,3 +49,7 @@ O fluxo [M5-PLACES-01](M5-PLACES-01.md) guarda nome/endereço escrito/nota em JS
 Scripts capturam home e editor vazio em dois tamanhos e dois temas por plataforma (16 PNGs). iOS tem entrada de captura apenas Debug, que abre o editor sem preencher ou salvar; Android abre o + pelo nó de acessibilidade observado. Testes usam somente dados sintéticos.
 
 Revisar contratos mínimos de Pin geográfico, recuperação/sync e comportamento do mapa antes dos próximos recortes. Aprovar o azul e testar as telas em claro/escuro, landscape, fonte ampliada e leitores de tela. Grupos, finanças, sincronização e publicação exigem tarefas próprias.
+
+## Teste em aparelhos — M5-DEVICE-01
+
+APK debug agora autorizado como artifact arke-android-debug-apk após sucesso Android em PR do próprio repositório ou execução manual; retenção sete dias. Não é release de loja. Plano e limites de assinatura em M5-DEVICE-01.md. TestFlight depende de build Xcode 26+/SDK iOS 26+, cadastro App Store Connect e configuração privada de assinatura/upload. O build Simulator sem assinatura não instala no iPhone.
