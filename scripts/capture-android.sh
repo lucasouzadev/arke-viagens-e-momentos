@@ -5,7 +5,13 @@ output="$PWD/build/screenshots/android"
 mkdir -p "$output"
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
-bash android/gradlew -p android --no-daemon :app:connectedDebugAndroidTest
+if ! bash android/gradlew -p android --no-daemon :app:connectedDebugAndroidTest; then
+  # Preserve the exact Back-failure window when provided by instrumentation.
+  adb pull /sdcard/arke-back-before.png "$output/android-back-before.png" || true
+  adb pull /sdcard/arke-back-failure.png "$output/android-back-failure.png" || true
+  adb exec-out screencap -p > "$output/android-ui-test-failure.png"
+  exit 1
+fi
 # The instrumentation runner cleans up installed packages after the test suite.
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 for size in standard compact; do

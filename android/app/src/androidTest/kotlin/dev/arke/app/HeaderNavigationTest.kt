@@ -111,8 +111,18 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.title").assertIsDisplayed()
         val automation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
         automation.waitForIdle(200, 5_000)
+        val before = automation.rootInActiveWindow?.let { "${it.packageName}/${it.className}" }
+        val beforeCapture = automation.executeShellCommand("screencap -p /sdcard/arke-back-before.png")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(beforeCapture).use { it.readBytes() }
         org.junit.Assert.assertTrue(automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.title").fetchSemanticsNodes().isEmpty() }
+        try {
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.title").fetchSemanticsNodes().isEmpty() }
+        } catch (failure: androidx.compose.ui.test.ComposeTimeoutException) {
+            val after = automation.rootInActiveWindow?.let { "${it.packageName}/${it.className}" }
+            val command = automation.executeShellCommand("screencap -p /sdcard/arke-back-failure.png")
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(command).use { it.readBytes() }
+            throw AssertionError("System Back did not dismiss. Active window before=$before after=$after", failure)
+        }
         compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
     }
 
