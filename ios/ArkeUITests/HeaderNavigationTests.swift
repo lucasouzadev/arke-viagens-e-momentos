@@ -34,7 +34,7 @@ final class HeaderNavigationTests: XCTestCase {
 
     func testAddPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
         let app = XCUIApplication()
-        app.launch()
+        app.activate()
         let addButton = app.buttons["home.addPlace"]
         XCTAssertTrue(addButton.waitForExistence(timeout: 15))
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
