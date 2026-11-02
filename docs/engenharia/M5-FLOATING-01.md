@@ -1,6 +1,6 @@
 # M5-FLOATING-01 — Sheets em cartões flutuantes
 
-01/11/2026. M5 em andamento, branch chore/development-kickoff, PR #2 rascunho. Correções visuais explicitamente solicitadas após M5-DETAILS-UI-03: recuo do fundo, alça externa, título à esquerda, apenas i no cabeçalho de detalhes, ícones secundários suaves, sem contador visível e ícone junto ao nome. Modelo de cartão flutuante em ambas as plataformas.
+01/11/2026, verificado em 02/11/2026. M5 em revisão, branch chore/development-kickoff, PR #2 rascunho. Correções visuais explicitamente solicitadas após M5-DETAILS-UI-03: recuo do fundo, alça externa, título à esquerda, apenas i no cabeçalho de detalhes, ícones secundários suaves, sem contador visível e ícone junto ao nome. Modelo de cartão flutuante em ambas as plataformas.
 
 Referências: [DESIGN-006](../design/DESIGN-006.md), [ADR-012](../decisoes/ADR-012.md), [M5-DETAILS-UI-03](M5-DETAILS-UI-03.md). A instrução atual substitui o X/contador e alça interna anteriores; paridade permanece. Recuo interpretado como tela de fundo se afastando levemente ao abrir o modal, sem mudar seleção/mapa/proporção. Sem expansão para novos fluxos ou dados.
 
@@ -10,7 +10,7 @@ Aceite: cartão com quatro cantos arredondados e folga inferior segura, alça ex
 
 Provas planejadas: builds/lint/testes nativos, fechar por alça e gesto/back, geometria da alça/cartão e margens, ausência visual de X/contador, informação por toque, regressão editor/descarte/storage, 32 PNGs reais nas duas plataformas/tamanhos/temas. SDKs locais ausentes; Actions autorizado. Fonte 200%, leitores de tela, landscape/tablets/aparelho físico/profiling não executados. Risco P2 de insets, teclado, interação com gesto e recuo; mitigação por controles acessíveis, confirmação de descarte e testes/capturas. Sem nova coleta/rede/permissão/dependência/asset externo: nova avaliação de backend/mídia/jurídico não aplicável. Reversão apenas da apresentação preserva snapshots. Sem merge/release.
 
-Texto público candidato: “Ajustamos os painéis para aparecerem como cartões flutuantes, com cabeçalho mais simples e a tela de fundo recuada.” Projeto em desenvolvimento. Próximo handoff: revisar visual e interações antes de continuar edição segura de ideias. Gates G-01..G-15 e evidências finais serão registrados após execução; canário confirmado somente no chat, sem nome em artefatos.
+Texto público candidato: “Ajustamos os painéis para aparecerem como cartões flutuantes, com cabeçalho mais simples e a tela de fundo recuada.” Projeto em desenvolvimento. Próximo handoff: revisar visual e interações antes de continuar edição segura de ideias. Gates G-01..G-15 e evidências finais abaixo; canário confirmado somente no chat, sem nome em artefatos.
 
 Primeira fonte 424681e, execução 41365594277: app Android compilou, mas compilação do teste novo falhou por referência a Espresso indisponível. Teste ajustado para enviar KEYCODE_BACK pela instrumentação Android já existente, sem dependência nova ou remoção de cenário. iOS aprovado: build, 9 testes core + 7 UI, incluindo swipe/alça/margens e posição acessível. Capturas iPhone confirmam flutuação, recuo e cabeçalho. Nenhuma alteração iOS nesta correção do teste Android.
 
@@ -25,3 +25,33 @@ Referência do teste de Voltar: [UiAutomation](https://developer.android.com/ref
 Execução 41369313164, fonte ddd61b6: Android manteve 9/10 instrumentados aprovados; Global Back aceito pelo sistema, mas painel não sumiu no teste. Adicionado diagnóstico da janela ativa antes/depois e PNG exato da falha, preservado pelo script sem transformar falha em sucesso. Nenhum novo comportamento de produto foi alterado com base em hipótese.
 
 Execução 41380227823, fonte 95987b8: diagnóstico identificou janela android/android.widget.FrameLayout antes/depois do Voltar; os PNGs originais mostram “Pixel Launcher isn't responding” cobrindo o Arke nos dois instantes. Causa de infraestrutura comprovada para esta falha. O teste agora fecha exclusivamente esse aviso identificado por pacote e texto, exige janela ativa do Arke e só então envia Global Back. Avisos do Arke ou outros diálogos continuam falhando; nenhuma asserção de fechamento foi removida e nenhum comportamento de produto foi alterado. Nova execução necessária para validar o retorno real.
+
+## Evidências verificadas — 02/11/2026
+
+[Android aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41381270981), fonte `0fa908b0c9f0f59b9ec00d72e2d4e67949b8ce08`: build debug, 6 testes core + 10 instrumentados (8 UI/2 repositório), sem falhas/skips; lint 0 erros/9 avisos. Voltar global com janela do Arke ativa, swipe pela alça e fechamento por toque aprovados. A recuperação do Launcher é exclusiva do ambiente de teste, sem nova interceptação de Voltar no produto. [iOS aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41380227823), fonte `95987b8e22a992ffcec710ea96b618fe6e03d26f`: build Simulator, 9 core + 7 UI sem falhas. Fonte iOS idêntica à de `0fa908b`; mudanças posteriores são somente teste/diagnóstico Android e documentação. Total: 32 testes aprovados nas duas plataformas.
+
+32 PNGs originais inspecionados: home/editor vazio/detalhe com nota/detalhe sem nota × padrão/compacto × claro/escuro × iOS/Android. Android final do artefato 13112539874; iOS inspecionado do artefato 13108193217, execução 41368315255, fonte 96c5e60, com o mesmo código iOS validado depois. iPhone 16/SE 3 e Android API 35 Pixel 6/viewport compacta. Nenhuma imagem editada; exemplos de detalhe em memória/Debug, sem gravar snapshots. Paridade de hierarquia/margens/alça externa e diferença semântica entre cartão e campos confirmada. Sistema/fonte/ícones/insets nativos mantêm diferenças próprias.
+
+Geometria da alça acima do cartão, margens e ausência de X/contador verificadas por UI; posição permanece em accessibilityValue/stateDescription. Testes cobrem informação por toque, limites finitos, seleção/recriação Android, redução de altura sem nota, texto longo rolável, contexto/detent e editor com validação/descarte/gravação/reabertura/exclusão. Recuo da home e restauração exercitados pela abertura/fechamento; sem profiling ou teste manual de redução de movimento. Fonte 200%, leitores de tela, landscape/tablets, aparelho físico e profiling NÃO EXECUTADOS. Nenhum dado/schema/IO modificado. Falhas anteriores preservadas no histórico acima, sem skip ou supressão.
+
+## Gates — revisão do agente implementador
+
+| Gate | Resultado e alcance |
+| --- | --- |
+| G-01 | PASSOU: direção solicitada explicitamente, stack nativa, dois cartões e azul preservados. |
+| G-02 | PASSOU: contrato e fronteiras registrados antes da implementação. |
+| G-03 | PASSOU: shell de apresentação compartilhado localmente em cada plataforma; nenhuma mudança de modelo/schema/IO. |
+| G-04 | PASSOU na revisão do diff e builds/lint executados; lint Android sem erros, nove avisos registrados, incluindo ic_close sem uso (P3). |
+| G-05 | PASSOU: fluxos nativos e 32 capturas inspecionadas em pares; retorno por alça/swipe e Voltar Android aprovados. |
+| G-06 | PASSOU em padrão/compacto, claro/escuro e cenários curto/longo das duas plataformas; fonte 200%, landscape/tablets e aparelho físico NÃO EXECUTADOS. |
+| G-07 | PASSOU na revisão de alvos 48, rótulos e posição acessível, alternativas à alça e descarte protegido; VoiceOver/TalkBack e auditoria global de contraste NÃO EXECUTADOS. SwiftUI respeita Reduce Motion; Compose utiliza a escala nativa das animações. Alternância manual de redução de movimento NÃO EXECUTADA. |
+| G-08 | PASSOU: sem nova rede/permissão/credencial/dependência/mídia. Diagnóstico limitado ao app Debug sintético e janela de sistema do emulador; não coleta dados reais. Nova auditoria MASVS NÃO APLICÁVEL à apresentação sem nova fronteira de dados. |
+| G-09 | NÃO APLICÁVEL a nova coleta/mídia/licença: nenhuma introduzida. |
+| G-10 | PASSOU nos testes de draft/persistência/retry/corrupção executados; modelo e snapshots preservados. |
+| G-11 | Profiling NÃO EXECUTADO; geometria iOS só atualiza ao variar mais de 1 pt. Não há promessa de desempenho medido. |
+| G-12 | PASSOU: 32 testes aprovados, builds/lint e 32 PNGs; histórico de falhas/diagnóstico/correção preservado. |
+| G-13 | PASSOU: PR rascunho, sem merge/release/assinatura; rollback de apresentação preserva snapshots. |
+| G-14 | PASSOU: guia/contrato/STATUS/HANDOFF/ROADMAP/INDEX/CHANGELOG e PR reconciliados com evidências e limites; links locais verificados. |
+| G-15 | PASSOU: preferência privada restrita ao chat e ausente dos artefatos. |
+
+Revisão visual humana final pendente. Risco residual P2 nos ambientes não exercitados e P3 dos avisos de lint; nenhum P0/P1 identificado neste recorte. Próximo: colher revisão deste resultado antes de avançar para edição segura de ideias salvas sob contrato próprio. Reversão por commit de apresentação preservando snapshots. PR #2 rascunho, sem merge/release.
