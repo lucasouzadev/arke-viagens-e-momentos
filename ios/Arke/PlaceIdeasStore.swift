@@ -36,6 +36,23 @@ final class PlaceIdeasStore: ObservableObject {
         }
     }
 
+    func update(_ draft: PlaceDraft, replacing original: PlaceIdea) async -> Bool {
+        guard ready, !busy else { return false }
+        busy = true
+        defer { busy = false }
+        do {
+            ideas = try await Self.disk.update(draft, replacing: original)
+            error = nil
+            return true
+        } catch PlaceIdeasDiskError.identityConflict {
+            self.error = "Este lugar mudou ou não está mais disponível. Suas alterações continuam abertas; cancele para abrir a versão atual."
+            return false
+        } catch {
+            self.error = "Não foi possível salvar as alterações. Seu rascunho continua aberto para tentar novamente."
+            return false
+        }
+    }
+
     func remove(id: String) async {
         guard ready, !busy else { return }
         busy = true

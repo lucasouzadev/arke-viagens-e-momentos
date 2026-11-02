@@ -8,6 +8,7 @@ struct HomeView: View {
     @GestureState private var panelTranslation: CGFloat = 0
     @State private var showingAddPlace = false
     @State private var showingDetailPreview = false
+    @State private var showingEditPreview = false
     @State private var showingSavedDetails = false
     @State private var savedNotice = false
     @StateObject private var places = PlaceIdeasStore()
@@ -79,17 +80,22 @@ struct HomeView: View {
         .arkeText(.body)
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
-        .arkeReceding(presented: showingAddPlace || showingDetailPreview || showingSavedDetails)
+        .arkeReceding(presented: showingAddPlace || showingDetailPreview || showingSavedDetails || showingEditPreview)
         .task {
             await places.load()
             #if DEBUG
             if places.ready && ProcessInfo.processInfo.arguments.contains("--capture-place-editor") { showingAddPlace = true }
             if ProcessInfo.processInfo.arguments.contains("--capture-place-details") { showingDetailPreview = true }
+            if ProcessInfo.processInfo.arguments.contains("--capture-place-edit") { showingEditPreview = true }
             #endif
         }
         #if DEBUG
         .sheet(isPresented: $showingDetailPreview) {
             PlaceDetails(ideas: DetailCapture.ideas, initialID: DetailCapture.ideas[ProcessInfo.processInfo.arguments.contains("--capture-short-detail") ? 1 : 0].id, onClose: { showingDetailPreview = false })
+        }
+        .sheet(isPresented: $showingEditPreview) {
+            PlaceEditor(initialIdea: DetailCapture.ideas[0], saving: false, saveError: nil,
+                onSave: { _ in }, onCancel: { showingEditPreview = false })
         }
         #endif
         .sheet(isPresented: $showingAddPlace) {

@@ -102,6 +102,21 @@ nodes = list(ET.parse(sys.argv[1]).iter('node'))
 if any(n.get('package') == 'android' for n in nodes) or not any(n.get('text') == 'Museu dos caminhos' for n in nodes):
     raise SystemExit('Short place details are not visible')
 PYSHORT
+    # Prefilled editor is a Debug memory-only preview; Save does not write data.
+    adb shell am force-stop dev.arke.app.dev
+    adb shell am start -W -n dev.arke.app.dev/dev.arke.app.MainActivity --ez capturePlaceEdit true
+    sleep 3
+    adb shell uiautomator dump /sdcard/arke-edit.xml
+    adb pull /sdcard/arke-edit.xml "$output/android-edit-${size}-${theme}.xml"
+    adb exec-out screencap -p > "$output/android-edit-${size}-${theme}.png"
+    python3 - "$output/android-edit-${size}-${theme}.xml" <<'PYEDIT'
+import sys, xml.etree.ElementTree as ET
+nodes = list(ET.parse(sys.argv[1]).iter('node'))
+if any(n.get('package') == 'android' for n in nodes) or not any(n.get('text') == 'Editar lugar' for n in nodes):
+    raise SystemExit('Prefilled editor is not visible')
+if not any(n.get('text') == 'Jardim das descobertas' for n in nodes):
+    raise SystemExit('Prefilled place name is missing')
+PYEDIT
   done
 done
 adb shell wm size reset

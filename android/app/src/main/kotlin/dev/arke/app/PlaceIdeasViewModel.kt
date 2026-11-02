@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class PlaceIdeasUiState(val ideas: List<PlaceIdea> = emptyList(), val ready: Boolean = false, val busy: Boolean = false, val error: String? = null)
+data class PlaceIdeasUiState(val ideas: List<PlaceIdea> = emptyList(), val ready: Boolean = false, val busy: Boolean = false, val error: String? = null,
+    val completedUpdate: String? = null)
 
 class PlaceIdeasViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = PlaceIdeasRepository(application)
@@ -36,6 +37,16 @@ class PlaceIdeasViewModel(application: Application) : AndroidViewModel(applicati
                 mutableState.value = PlaceIdeasUiState(ideas = repository.add(draft), ready = true)
             } catch (error: CancellationException) { throw error }
             catch (_: Exception) { mutableState.value = mutableState.value.copy(busy = false, error = "Não foi possível salvar. Seu rascunho continua aberto para tentar novamente.") }
+        }
+    }
+
+    fun update(draft: PlaceDraft, original: PlaceIdea, requestID: String) {
+        if (!mutableState.value.ready || mutableState.value.busy) return
+        mutableState.value = mutableState.value.copy(busy = true, error = null, completedUpdate = null)
+        viewModelScope.launch {
+            try { mutableState.value = PlaceIdeasUiState(ideas = repository.update(draft, original), ready = true, completedUpdate = requestID) }
+            catch (error: CancellationException) { throw error }
+            catch (_: Exception) { mutableState.value = mutableState.value.copy(busy = false, error = "Não foi possível salvar as alterações. O lugar pode ter mudado ou não estar mais disponível. Seu rascunho continua aberto; tente novamente ou cancele para abrir a versão atual.") }
         }
     }
 

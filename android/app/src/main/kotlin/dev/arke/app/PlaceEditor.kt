@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.arke.core.PlaceDraft
 import dev.arke.core.PlaceDraftIssue
+import dev.arke.core.PlaceIdea
 
 private val DraftSaver = Saver<PlaceDraft, List<String>>(
     save = { listOf(it.id, it.name, it.address, it.note) },
@@ -43,8 +44,10 @@ private val DraftSaver = Saver<PlaceDraft, List<String>>(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Unit, onCancel: () -> Unit) {
-    var draft by rememberSaveable(stateSaver = DraftSaver) { mutableStateOf(PlaceDraft()) }
+fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Unit, onCancel: () -> Unit, initialIdea: PlaceIdea? = null) {
+    val baseline = remember(initialIdea) { initialIdea?.let { PlaceDraft(it.id, it.name, it.address, it.note) } ?: PlaceDraft() }
+    var draft by rememberSaveable(stateSaver = DraftSaver) { mutableStateOf(baseline) }
+    val hasChanges = if (initialIdea == null) !draft.isEmpty else draft.normalized() != baseline.normalized()
     var reviewing by rememberSaveable { mutableStateOf(false) }
     var submitted by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by remember { mutableStateOf(false) }
@@ -56,11 +59,13 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     fun cancel() {
         focus.clearFocus()
         keyboard?.hide()
-        if (draft.isEmpty) onCancel() else confirmingDiscard = true
+        if (!saving) { if (!hasChanges) onCancel() else confirmingDiscard = true }
     }
+    val canDismiss by rememberUpdatedState(!hasChanges && !saving)
+    val confirmSheetChange = remember { { value: SheetValue -> value != SheetValue.Hidden || canDismiss } }
     val sheet = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { it != SheetValue.Hidden || (draft.isEmpty && !saving) },
+        confirmValueChange = confirmSheetChange,
     )
     ArkeFloatingSheet(
         onDismiss = { if (!saving) cancel() }, tagPrefix = "place", sheetState = sheet, enabled = !saving,
@@ -74,7 +79,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     modifier = Modifier.width(76.dp).heightIn(min = 48.dp).testTag("place.cancel"),
                 ) { Text(stringResource(R.string.cancel), Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
                 Text(
-                    stringResource(if (reviewing) R.string.review_place else R.string.add_place),
+                    stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
                     Modifier.weight(1f).testTag("place.title").semantics { heading() },
                     style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
                 )
@@ -118,7 +123,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     Button(
                         onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.save"),
-                    ) { Text(stringResource(if (saving) R.string.saving else R.string.save_on_device)) }
+                    ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
                     Text(stringResource(R.string.place_local_notice), style = MaterialTheme.typography.bodySmall)
                 } else {
                     Button(onClick = {

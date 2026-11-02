@@ -22,6 +22,7 @@ import dev.arke.core.PlaceDraft
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -32,10 +33,23 @@ import androidx.compose.ui.unit.dp
 import dev.arke.core.PlaceIdea
 
 @Composable
-fun PlaceIdeasContent(state: PlaceIdeasUiState, onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onDelete: (String) -> Unit) {
+fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea, String) -> Unit, onEditCancel: () -> Unit,
+    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onDelete: (String) -> Unit) {
     var deleting by remember { mutableStateOf<PlaceIdea?>(null) }
     var selectedID by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(selectedID) { onDetailsVisibilityChanged(selectedID != null) }
+    var editing by rememberSaveable(stateSaver = IdeaSaver) { mutableStateOf<PlaceIdea?>(null) }
+    var pendingUpdate by rememberSaveable(stateSaver = PendingDraftSaver) { mutableStateOf<PlaceDraft?>(null) }
+    var pendingRequest by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedID, editing) { onDetailsVisibilityChanged(selectedID != null || editing != null) }
+    LaunchedEffect(state, pendingUpdate, pendingRequest) {
+        val pending = pendingUpdate
+        if (pending != null && pendingRequest != null && state.completedUpdate == pendingRequest &&
+            state.ready && !state.busy && state.error == null && state.ideas.any { it == PlaceIdea.from(pending) }) {
+            editing = null
+            pendingUpdate = null
+            pendingRequest = null
+        }
+    }
     DisposableEffect(Unit) { onDispose { onDetailsVisibilityChanged(false) } }
     if (state.ideas.isEmpty()) {
         Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.titleLarge)
@@ -46,7 +60,13 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onDetailsVisibilityChanged: (Boo
         state.ideas.forEach { idea ->
             key(idea.id) {
                 Spacer(Modifier.height(16.dp))
-                Text(idea.name, style = MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { pendingUpdate = null; pendingRequest = null; editing = idea }, enabled = state.ready && !state.busy,
+                        modifier = Modifier.size(48.dp).testTag("place.update.${idea.id}")) {
+                        Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.edit_place_label, idea.name))
+                    }
+                }
                 Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (idea.note.isNotEmpty()) Text(idea.note)
                 val openLabel = stringResource(R.string.view_place_details_label, idea.name)
@@ -68,6 +88,15 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onDetailsVisibilityChanged: (Boo
     Spacer(Modifier.height(24.dp))
     Text(stringResource(R.string.development_notice), style = MaterialTheme.typography.bodySmall)
     selectedID?.let { id -> PlaceDetails(state.ideas, id, onClose = { selectedID = null }) }
+    editing?.let { original ->
+        PlaceEditor(initialIdea = original, saving = state.busy, saveError = if (pendingUpdate != null) state.error else null,
+            onSave = { draft ->
+                val requestID = java.util.UUID.randomUUID().toString()
+                pendingUpdate = draft; pendingRequest = requestID
+                onUpdate(draft, original, requestID)
+            },
+            onCancel = { editing = null; pendingUpdate = null; pendingRequest = null; onEditCancel() })
+    }
     if (deleting != null) {
         AlertDialog(
             onDismissRequest = { deleting = null },
@@ -78,6 +107,16 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onDetailsVisibilityChanged: (Boo
         )
     }
 }
+
+private val IdeaSaver = Saver<PlaceIdea?, List<String>>(
+    save = { idea -> idea?.let { listOf(it.id, it.name, it.address, it.note) } },
+    restore = { PlaceIdea(it[0], it[1], it[2], it[3]) },
+)
+
+private val PendingDraftSaver = Saver<PlaceDraft?, List<String>>(
+    save = { draft -> draft?.let { listOf(it.id, it.name, it.address, it.note) } },
+    restore = { PlaceDraft(it[0], it[1], it[2], it[3]) },
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,8 +131,9 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
     ArkeFloatingSheet(onDismiss = onClose, tagPrefix = "detail", modifier = Modifier.heightIn(max = maximumHeight)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(48.dp))
                 Text(stringResource(R.string.detail_header), Modifier.weight(1f).testTag("detail.title").semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Start)
+                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                 Box {
                     IconButton(onClick = { showingInfo = true }, modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.info")) {
                         Icon(painterResource(R.drawable.ic_info), stringResource(R.string.detail_info_label), tint = ink)
@@ -118,8 +158,8 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                     if (index >= 0) {
                         val idea = ideas[index]
                         val positionLabel = stringResource(R.string.place_position, index + 1, ideas.size)
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                            Icon(painterResource(R.drawable.ic_bookmark), null, modifier = Modifier.size(24.dp, 28.dp))
+                        Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                            Icon(painterResource(R.drawable.ic_bookmark), null, modifier = Modifier.size(24.dp, 28.dp).testTag("detail.nameIcon"))
                             Text(idea.name, style = MaterialTheme.typography.titleLarge,
                                 modifier = Modifier.weight(1f).testTag("detail.name").semantics {
                                     heading(); liveRegion = LiveRegionMode.Polite; stateDescription = positionLabel
@@ -134,14 +174,17 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = { if (index > 0) selectedID = ideas[index - 1].id }, enabled = index > 0,
-                    colors = ButtonDefaults.buttonColors(containerColor = insetColor, contentColor = ink),
-                    shape = CircleShape, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.previous")) {
-                    Text(stringResource(R.string.previous_place))
+                if (index > 0) {
+                    IconButton(onClick = { selectedID = ideas[index - 1].id },
+                        modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.previous")) {
+                        Icon(painterResource(R.drawable.ic_back), stringResource(R.string.previous_place), tint = ink)
+                    }
                 }
-                Button(onClick = { if (index >= 0 && index + 1 < ideas.size) selectedID = ideas[index + 1].id },
-                    enabled = index >= 0 && index + 1 < ideas.size, shape = CircleShape,
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail.next")) { Text(stringResource(R.string.next_place)) }
+                val isLast = index < 0 || index == ideas.lastIndex
+                Button(onClick = { if (isLast) onClose() else selectedID = ideas[index + 1].id }, shape = CircleShape,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag(if (isLast) "detail.done" else "detail.next")) {
+                    Text(stringResource(if (isLast) R.string.detail_done else R.string.next_place))
+                }
             }
         }
     }

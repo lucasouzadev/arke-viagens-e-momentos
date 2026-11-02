@@ -24,7 +24,10 @@ class MainActivity : ComponentActivity() {
             } else {
                 lightColorScheme(primary = brandBlue, onPrimary = Color.White)
             }
-            MaterialTheme(colorScheme = colors, typography = ArkeTypography) { ArkeHome(places, captureDetails = BuildConfig.DEBUG && intent.getBooleanExtra("capturePlaceDetails", false)) }
+            MaterialTheme(colorScheme = colors, typography = ArkeTypography) {
+                ArkeHome(places, captureDetails = BuildConfig.DEBUG && intent.getBooleanExtra("capturePlaceDetails", false),
+                    captureEdit = BuildConfig.DEBUG && intent.getBooleanExtra("capturePlaceEdit", false))
+            }
         }
     }
 }

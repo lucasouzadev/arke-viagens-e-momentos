@@ -2,7 +2,9 @@
 
 Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no aplicativo. **O Arke está em desenvolvimento e não foi lançado.** As notas abaixo não são funcionalidades disponíveis para instalar.
 
-## Projeto em desenvolvimento — 1 de novembro de 2026
+## Projeto em desenvolvimento — 2 de novembro de 2026
+
+- Simplificamos a navegação dos lugares e adicionamos a edição das ideias salvas neste aparelho.
 
 - Ajustamos os painéis para aparecerem como cartões flutuantes, com cabeçalho mais simples e a tela de fundo recuada.
 

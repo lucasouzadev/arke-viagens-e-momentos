@@ -1,5 +1,7 @@
 # Índice e maturidade da documentação
 
+[M5-EDIT-01 — navegação limpa e edição segura de ideias](engenharia/M5-EDIT-01.md).
+
 **Documento de navegação do Arke.** ROADMAP é [único e canônico](ROADMAP.md); andamento em [STATUS](STATUS.md), continuação em [HANDOFF](agents/HANDOFF.md).
 
 ## Estados

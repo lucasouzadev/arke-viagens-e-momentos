@@ -12,6 +12,37 @@ import java.io.File
 import java.util.UUID
 
 class PlaceIdeasRepositoryTest {
+    @Test fun updateKeepsIdentityOrderAndRejectsStaleOrMissingIdeas() = runBlocking {
+        val (context, directory) = isolatedContext()
+        try {
+            val repository = PlaceIdeasRepository(context)
+            val initial = PlaceDraft("first", "Jardim", "Centro")
+            val other = PlaceDraft("other", "Museu", "Praça")
+            repository.add(initial)
+            repository.add(other)
+            val original = PlaceIdea.from(initial)
+            val edited = initial.copy(name = "Jardim novo", address = "Nova entrada", note = "Pela manhã")
+            val expected = listOf(PlaceIdea.from(edited), PlaceIdea.from(other))
+            assertEquals(expected, repository.update(edited, original))
+            assertEquals(expected, repository.update(edited, original))
+            assertEquals(expected, PlaceIdeasRepository(context).load())
+            val file = File(directory, "place-ideas-v1.json")
+            val bytes = file.readBytes()
+            val missing = PlaceDraft("missing", "Ausente", "Centro")
+            for ((draft, snapshot) in listOf(
+                initial.copy(name = "Versão antiga") to original,
+                missing to PlaceIdea.from(missing),
+                edited.copy(id = "different") to original,
+                edited.copy(name = "") to PlaceIdea.from(edited),
+            )) {
+                try { repository.update(draft, snapshot); fail("Unsafe update must fail") }
+                catch (error: AssertionError) { throw error }
+                catch (_: Exception) { /* Existing snapshot must survive. */ }
+                assertArrayEquals(bytes, file.readBytes())
+            }
+        } finally { directory.deleteRecursively() }
+    }
+
     private fun isolatedContext(): Pair<Context, File> {
         val base = InstrumentationRegistry.getInstrumentation().targetContext
         val directory = File(base.cacheDir, "repository-test-${UUID.randomUUID()}").apply { mkdirs() }

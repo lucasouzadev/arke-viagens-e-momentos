@@ -35,6 +35,18 @@ public actor PlaceIdeasDisk {
         return ideas
     }
 
+    public func update(_ draft: PlaceDraft, replacing original: PlaceIdea) throws -> [PlaceIdea] {
+        guard draft.issue == nil, !draft.id.isEmpty, draft.id == original.id else { throw PlaceIdeasDiskError.invalidDraft }
+        var ideas = try load()
+        guard let index = ideas.firstIndex(where: { $0.id == original.id }) else { throw PlaceIdeasDiskError.identityConflict }
+        let replacement = PlaceIdea(draft: draft)
+        if ideas[index] == replacement { return ideas }
+        guard ideas[index] == original else { throw PlaceIdeasDiskError.identityConflict }
+        ideas[index] = replacement
+        try write(ideas)
+        return ideas
+    }
+
     public func remove(id: String) throws -> [PlaceIdea] {
         let ideas = try load().filter { $0.id != id }
         try write(ideas)

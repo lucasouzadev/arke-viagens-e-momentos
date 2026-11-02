@@ -157,5 +157,6 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-DETAILS-UI-03](engenharia/M5-DETAILS-UI-03.md) | Sheet de detalhes compacto e agrupado | Em revisão; CI e 32 PNGs verificados no PR #2 |
 
 | [M5-FLOATING-01](engenharia/M5-FLOATING-01.md) | Cartões flutuantes, recuo e cabeçalho simplificado | 32 testes e 32 PNGs verificados; em revisão no PR #2, limites no contrato |
+| [M5-EDIT-01](engenharia/M5-EDIT-01.md) | Navegação limpa e edição segura de ideias | Em andamento; builds/testes/capturas pendentes no PR #2 |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.

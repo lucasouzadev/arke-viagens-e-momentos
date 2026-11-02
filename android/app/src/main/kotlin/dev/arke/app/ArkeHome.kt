@@ -44,7 +44,7 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 )
 
 @Composable
-fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
+fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false) {
     val placeState by places.state.collectAsState()
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -52,6 +52,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
     var showingSavedDetails by remember { mutableStateOf(false) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
     var showingDetailPreview by rememberSaveable { mutableStateOf(captureDetails) }
+    var showingEditPreview by rememberSaveable { mutableStateOf(captureEdit) }
     LaunchedEffect(captureDetails) {
         if (BuildConfig.DEBUG && captureDetails) showingDetailPreview = true
     }
@@ -62,7 +63,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
             pendingSaveId = null
         }
     }
-    val modalVisible = showingAddPlace || showingDetailPreview || showingSavedDetails
+    val modalVisible = showingAddPlace || showingDetailPreview || showingSavedDetails || showingEditPreview
     val surfaceScale by animateFloatAsState(if (modalVisible) 0.96f else 1f, label = "modalRecess")
     Surface(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow).graphicsLayer {
         scaleX = surfaceScale; scaleY = surfaceScale; transformOrigin = TransformOrigin(0.5f, 0f)
@@ -132,7 +133,9 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
                                     TextButton(onClick = places::load) { Text(stringResource(R.string.retry)) }
                                 }
                                 if (placeState.ready) {
-                                    if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState, onDetailsVisibilityChanged = { showingSavedDetails = it }) { id -> savedNotice = false; places.remove(id) }
+                                    if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState,
+                                        onUpdate = places::update, onEditCancel = places::load,
+                                        onDetailsVisibilityChanged = { showingSavedDetails = it }) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         Text(stringResource(state.context.title()), style = MaterialTheme.typography.titleLarge)
                                         Text(stringResource(R.string.context_pending))
@@ -156,6 +159,11 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false) {
         PlaceEditor(saving = placeState.busy, saveError = placeState.error,
             onSave = { draft -> pendingSaveId = draft.id; places.add(draft) },
             onCancel = { showingAddPlace = false; pendingSaveId = null })
+    }
+    if (BuildConfig.DEBUG && showingEditPreview) {
+        val example = remember { detailCaptureIdeas().first() }
+        PlaceEditor(initialIdea = example, saving = false, saveError = null,
+            onSave = {}, onCancel = { showingEditPreview = false })
     }
 }
 

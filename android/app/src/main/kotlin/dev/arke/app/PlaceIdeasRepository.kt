@@ -31,6 +31,22 @@ class PlaceIdeasRepository(context: Context) {
         }
     }
 
+    suspend fun update(draft: PlaceDraft, original: PlaceIdea): List<PlaceIdea> = withContext(Dispatchers.IO) {
+        lock.withLock {
+            require(draft.issue == null && draft.id.isNotEmpty() && draft.id == original.id)
+            val ideas = read().toMutableList()
+            val index = ideas.indexOfFirst { it.id == original.id }
+            check(index >= 0) { "Idea no longer available" }
+            val replacement = PlaceIdea.from(draft)
+            if (ideas[index] != replacement) {
+                check(ideas[index] == original) { "Idea changed since editing began" }
+                ideas[index] = replacement
+                write(ideas)
+            }
+            ideas.toList()
+        }
+    }
+
     suspend fun remove(id: String): List<PlaceIdea> = withContext(Dispatchers.IO) {
         lock.withLock { read().filterNot { it.id == id }.also { write(it) } }
     }

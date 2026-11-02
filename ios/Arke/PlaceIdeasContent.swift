@@ -7,6 +7,8 @@ struct PlaceIdeasContent: View {
     var onDetailsVisibilityChanged: (Bool) -> Void = { _ in }
     @State private var deleting: PlaceIdea?
     @State private var selected: PlaceIdea?
+    @State private var editing: PlaceIdea?
+    @State private var editSaveAttempted = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -17,7 +19,13 @@ struct PlaceIdeasContent: View {
                 Text("Ideias de lugares").arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
                 ForEach(store.ideas) { idea in
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(idea.name).arkeText(.contextTitle)
+                        HStack {
+                            Text(idea.name).arkeText(.contextTitle).frame(maxWidth: .infinity, alignment: .leading)
+                            Button { editSaveAttempted = false; editing = idea } label: {
+                                Image(systemName: "pencil").font(.system(size: 20)).frame(width: 48, height: 48).contentShape(Rectangle())
+                            }.buttonStyle(.plain).disabled(store.busy || !store.ready)
+                                .accessibilityLabel("Editar \(idea.name)").accessibilityIdentifier("place.update.\(idea.id)")
+                        }
                         Text(idea.address).foregroundStyle(.secondary)
                         if !idea.note.isEmpty { Text(idea.note) }
                         Button { selected = idea } label: {
@@ -41,10 +49,16 @@ struct PlaceIdeasContent: View {
             Text("Em desenvolvimento · ideias salvas apenas neste aparelho")
                 .arkeText(.caption).foregroundStyle(.secondary)
         }
-        .onChange(of: selected?.id) { _, id in onDetailsVisibilityChanged(id != nil) }
+        .onChange(of: selected != nil || editing != nil) { _, visible in onDetailsVisibilityChanged(visible) }
         .onDisappear { onDetailsVisibilityChanged(false) }
         .sheet(item: $selected) { idea in
             PlaceDetails(ideas: store.ideas, initialID: idea.id, onClose: { selected = nil })
+        }
+        .sheet(item: $editing) { original in
+            PlaceEditor(initialIdea: original, saving: store.busy, saveError: editSaveAttempted ? store.error : nil, onSave: { draft in
+                editSaveAttempted = true
+                Task { if await store.update(draft, replacing: original) { editing = nil } }
+            }, onCancel: { editing = nil; Task { await store.load() } })
         }
         .alert("Excluir ideia?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Excluir", role: .destructive) {
@@ -78,9 +92,10 @@ struct PlaceDetails: View {
     var body: some View {
         ArkeFloatingSheet(dismissIdentifier: "detail.dismiss", onDismiss: onClose) {
             VStack(spacing: 0) {
-                HStack(spacing: 8) {
+                HStack(spacing: 0) {
+                    Color.clear.frame(width: 48, height: 1).accessibilityHidden(true)
                     Text("Seus lugares").arkeText(.contextTitle).accessibilityAddTraits(.isHeader)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                         .accessibilityIdentifier("detail.title")
                     Button { showingInfo = true } label: {
                         Image(systemName: "info.circle").font(.system(size: 22))
@@ -107,12 +122,12 @@ struct PlaceDetails: View {
                         if let index {
                             let idea = ideas[index]
                             HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "bookmark").font(.system(size: 22)).frame(width: 24, height: 28)
-                                    .accessibilityHidden(true)
+                                Image(systemName: "bookmark.fill").font(.system(size: 22)).frame(width: 24, height: 28)
+                                    .accessibilityIdentifier("detail.nameIcon").accessibilityHidden(true)
                                 Text(idea.name).arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
                                     .accessibilityValue("Lugar \(index + 1) de \(ideas.count)")
                                     .accessibilityIdentifier("detail.name")
-                            }
+                            }.padding(.horizontal, 20)
                             VStack(alignment: .leading, spacing: 20) {
                                 contentRow(icon: "mappin", value: idea.address, label: "Endereço", identifier: "detail.address")
                                 if !idea.note.isEmpty {
@@ -137,8 +152,21 @@ struct PlaceDetails: View {
                     }.allowsHitTesting(false).accessibilityHidden(true)
                 }
                 HStack(spacing: 16) {
-                    navigation("Anterior", offset: -1, enabled: (index ?? 0) > 0, id: "detail.previous", primary: false)
-                    navigation("Próximo", offset: 1, enabled: index.map { $0 + 1 < ideas.count } ?? false, id: "detail.next", primary: true)
+                    if let index, index > 0 {
+                        Button { selectedID = ideas[index - 1].id } label: {
+                            Image(systemName: "chevron.left").font(.system(size: 20))
+                                .frame(width: 48, height: 48)
+                                .background(ArkeUI.insetSurface(colorScheme), in: Circle())
+                        }.accessibilityLabel("Lugar anterior").accessibilityIdentifier("detail.previous")
+                    }
+                    let isLast = index.map { $0 == ideas.count - 1 } ?? true
+                    Button {
+                        if let index, !isLast { selectedID = ideas[index + 1].id } else { onClose() }
+                    } label: {
+                        Text(isLast ? "Concluído" : "Próximo").arkeText(.button).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(ArkeUI.blue, in: Capsule()).contentShape(Rectangle())
+                    }.accessibilityIdentifier(isLast ? "detail.done" : "detail.next")
                 }.padding(.top, 16).padding(.bottom, 16)
             }
             .buttonStyle(.plain).foregroundStyle(ink).padding(.horizontal, 20)
@@ -156,16 +184,6 @@ struct PlaceDetails: View {
 
     }
 
-    private func navigation(_ title: String, offset: Int, enabled: Bool, id: String, primary: Bool) -> some View {
-        Button {
-            if let index, ideas.indices.contains(index + offset) { selectedID = ideas[index + offset].id }
-        } label: {
-            Text(title).arkeText(.button).foregroundStyle(primary ? .white : ink)
-                .frame(maxWidth: .infinity, minHeight: 48)
-                .background(primary ? ArkeUI.blue : ArkeUI.insetSurface(colorScheme), in: Capsule())
-                .contentShape(Rectangle())
-        }.disabled(!enabled).opacity(enabled ? 1 : 0.4).accessibilityIdentifier(id)
-    }
 }
 
 #if DEBUG

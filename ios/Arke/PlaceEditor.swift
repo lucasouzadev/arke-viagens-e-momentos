@@ -6,6 +6,7 @@ struct PlaceEditor: View {
     let saveError: String?
     let onSave: (PlaceDraft) -> Void
     let onCancel: () -> Void
+    let original: PlaceIdea?
     @State private var draft = PlaceDraft()
     @State private var reviewing = false
     @State private var submitted = false
@@ -14,6 +15,19 @@ struct PlaceEditor: View {
     private enum Field { case name, address, note }
     private var ink: Color { Color(uiColor: .label) }
     private var actionInk: Color { colorScheme == .dark ? ink : ArkeUI.blue }
+    private var hasChanges: Bool {
+        guard let original else { return !draft.isEmpty }
+        return draft.normalized != PlaceDraft(id: original.id, name: original.name, address: original.address, note: original.note)
+    }
+
+    init(initialIdea: PlaceIdea? = nil, saving: Bool, saveError: String?, onSave: @escaping (PlaceDraft) -> Void, onCancel: @escaping () -> Void) {
+        original = initialIdea
+        self.saving = saving
+        self.saveError = saveError
+        self.onSave = onSave
+        self.onCancel = onCancel
+        _draft = State(initialValue: initialIdea.map { PlaceDraft(id: $0.id, name: $0.name, address: $0.address, note: $0.note) } ?? PlaceDraft())
+    }
 
     var body: some View {
         ArkeFloatingSheet(dismissIdentifier: "place.dismiss", enabled: !saving, onDismiss: cancel) {
@@ -26,7 +40,7 @@ struct PlaceEditor: View {
                                 .contentShape(Rectangle())
                         }
                         .disabled(saving).accessibilityIdentifier("place.cancel")
-                        Text(reviewing ? "Revisar lugar" : "Adicionar lugar")
+                        Text(reviewing ? "Revisar lugar" : (original == nil ? "Adicionar lugar" : "Editar lugar"))
                             .arkeText(.contextTitle).foregroundStyle(ink)
                             .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
@@ -74,7 +88,7 @@ struct PlaceEditor: View {
                                     .contentShape(Rectangle())
                             }
                             .disabled(saving).accessibilityIdentifier("place.edit")
-                            primary(saving ? "Salvando…" : "Salvar neste aparelho", identifier: "place.save") { onSave(draft.normalized) }
+                            primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
                             Text("Esta ideia ficará apenas neste aparelho, sem backup. Desinstalar o app pode removê-la. O endereço não será pesquisado nem marcado no mapa nesta etapa.")
                                 .arkeText(.caption).frame(maxWidth: .infinity, alignment: .leading)
                         } else {
@@ -107,12 +121,13 @@ struct PlaceEditor: View {
         }
         .tint(actionInk)
         .presentationDetents([.fraction(0.94)])
-        .interactiveDismissDisabled(!draft.isEmpty || saving)
+        .interactiveDismissDisabled(hasChanges || saving)
     }
 
     private func cancel() {
         field = nil
-        if draft.isEmpty { onCancel() } else { confirmingDiscard = true }
+        guard !saving else { return }
+        if !hasChanges { onCancel() } else { confirmingDiscard = true }
     }
 
     private func input(_ title: String, text: Binding<String>, height: CGFloat, lines: ClosedRange<Int>, focus: Field, identifier: String) -> some View {
