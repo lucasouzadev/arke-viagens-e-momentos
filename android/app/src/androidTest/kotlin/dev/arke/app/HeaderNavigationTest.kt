@@ -37,7 +37,7 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho de teste")
         compose.onNodeWithTag("place.review").performClick()
         compose.onNodeWithText("Informe um endereço ou referência.").assertExists()
-        compose.onNodeWithTag("place.cancel").performClick()
+        compose.onNodeWithTag("place.dismiss").performClick()
         compose.onNodeWithText("Continuar editando").performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho de teste")
         compose.onNodeWithTag("place.cancel").performClick()
@@ -93,13 +93,20 @@ class HeaderNavigationTest {
         handle.assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
     }
 
-    @Test fun floatingDetailsDismissWithSwipeAndSystemBack() {
+    @Test fun floatingDetailsDismissWithSwipe() {
         compose.activityRule.scenario.onActivity { it.intent.putExtra("capturePlaceDetails", true) }
         compose.activityRule.scenario.recreate()
         val handle = compose.onNodeWithTag("detail.dismiss")
-        handle.assertIsDisplayed().performTouchInput { swipe(center, center + Offset(0f, 600f), 600) }
+        handle.assertIsDisplayed()
+        val distance = compose.activity.resources.displayMetrics.heightPixels - 100f - handle.fetchSemanticsNode().boundsInRoot.center.y
+        handle.performTouchInput { swipe(center, center + Offset(0f, distance), 350) }
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.title").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
+        compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
+    }
+
+    @Test fun floatingDetailsDismissWithSystemBack() {
+        compose.activityRule.scenario.onActivity { it.intent.putExtra("capturePlaceDetails", true) }
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("detail.title").assertIsDisplayed()
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)

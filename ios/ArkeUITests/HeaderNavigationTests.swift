@@ -14,6 +14,8 @@ final class HeaderNavigationTests: XCTestCase {
         app.buttons["home.panelMenu"].tap()
         app.buttons["Detalhes"].tap()
         for title in ["Gastos", "Cofrinho", "Avaliações", "Memórias", "Planejamento"] {
+            expectation(for: NSPredicate { _, _ in clock.isHittable }, evaluatedWith: clock)
+            waitForExpectations(timeout: 5)
             XCTAssertTrue(clock.isHittable)
             clock.tap()
             let option = app.buttons[title].firstMatch
@@ -47,7 +49,7 @@ final class HeaderNavigationTests: XCTestCase {
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
         app.buttons["place.review"].tap()
         XCTAssertTrue(app.staticTexts["Informe um endereço ou referência."].exists)
-        app.buttons["place.cancel"].tap()
+        app.buttons["place.dismiss"].tap()
         app.buttons["Continuar editando"].tap()
         XCTAssertEqual(name.value as? String, "Rascunho de teste")
         app.buttons["place.cancel"].tap()
