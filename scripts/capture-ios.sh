@@ -37,6 +37,7 @@ while IFS=$'\t' read -r size device model; do
     trap 'kill -INT "$recorder" 2>/dev/null || true; wait "$recorder" 2>/dev/null || true' EXIT
     if ! xcodebuild -project ios/Arke.xcodeproj -scheme Arke -configuration Debug \
       -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO \
+      -test-timeouts-enabled YES -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 180 \
       -derivedDataPath build/ios -resultBundlePath build/HeaderUI.xcresult \
       CODE_SIGNING_ALLOWED=NO test; then
       # Preserve the actual failure state rather than relaunching into the initial UI.

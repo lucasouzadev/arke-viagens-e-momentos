@@ -33,7 +33,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 @Composable
 fun TravelMap(modifier: Modifier = Modifier) {
     if (!BuildConfig.MAPS_CONFIGURED) {
-        Column(modifier.padding(20.dp).arkeScrollEdges().verticalScroll(rememberScrollState())) {
+        Column(modifier.padding(20.dp).arkeScrollEdges().verticalScroll(rememberScrollState()).padding(top = 12.dp, bottom = 24.dp)) {
             Text(stringResource(R.string.map_pending), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Text(stringResource(R.string.map_pending_detail))
@@ -73,7 +73,7 @@ fun TravelMap(modifier: Modifier = Modifier) {
         uiSettings = MapUiSettings(myLocationButtonEnabled = false, mapToolbarEnabled = false),
     )
     TextButton(onClick = { if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) locate() else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
-        modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)) { Text("Minha localização") }
+        modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) { Text("Minha localização") }
     }
     if (message != null) AlertDialog(onDismissRequest = { message = null }, title = { Text("Minha localização") }, text = { Text(message.orEmpty()) }, confirmButton = { TextButton(onClick = { message = null }) { Text("Entendi") } })
 }

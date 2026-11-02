@@ -109,11 +109,11 @@ struct PlaceEditor: View {
                     .buttonStyle(.plain).foregroundStyle(ink).padding(.bottom, 16)
                     .padding(.bottom, 32)
                         }
-                        .padding(.bottom, keyboardOverlap)
-                        .background(KeyboardScrollOverlap(overlap: $keyboardOverlap).allowsHitTesting(false))
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .accessibilityIdentifier("place.fields").arkeScrollEdges()
+                    .padding(.bottom, keyboardOverlap)
+                    .background(KeyboardScrollOverlap(overlap: $keyboardOverlap).allowsHitTesting(false))
 
                 }
                 .padding(.horizontal, ArkeUI.margin)
@@ -208,7 +208,7 @@ private struct EditorFieldLabelStyle: LabelStyle {
     }
 }
 
-/// Fill only keyboard overlap not already handled by the native scroll insets.
+/// Measure the stable outer viewport before reserving space for the keyboard.
 private struct KeyboardScrollOverlap: UIViewRepresentable {
     @Binding var overlap: CGFloat
     func makeUIView(context: Context) -> KeyboardViewportProbe {
@@ -243,15 +243,12 @@ private final class KeyboardViewportProbe: UIView {
     override func layoutSubviews() { super.layoutSubviews(); updateOverlap() }
     private func updateOverlap() {
         guard let window else { return }
-        var ancestor = superview
-        while let candidate = ancestor, !(candidate is UIScrollView) { ancestor = candidate.superview }
-        guard let scroll = ancestor as? UIScrollView else { return }
-        let viewport = scroll.convert(scroll.bounds, to: window)
-        let keyboard = window.convert(keyboardFrame, from: nil)
+        let viewport = convert(bounds, to: window)
+        let keyboard = keyboardFrame.isNull ? CGRect.null : window.convert(keyboardFrame, from: nil)
         // Floating keyboards keep their native interaction; reserve no full-width band.
         let intersection = viewport.intersection(keyboard)
         let covered = intersection.isNull || intersection.width < viewport.width * 0.8 ? 0 : intersection.height
-        let value = max(0, covered - scroll.adjustedContentInset.bottom)
+        let value = max(0, covered)
         guard abs(value - lastOverlap) > 1 else { return }
         lastOverlap = value
         DispatchQueue.main.async { [weak self] in self?.changed?(value) }
