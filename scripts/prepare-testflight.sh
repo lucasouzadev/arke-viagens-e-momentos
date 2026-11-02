@@ -23,7 +23,10 @@ for variable, name in [
     except Exception:
         raise SystemExit(f'Invalid Base64 in {variable}') from None
 PY
-security cms -D -i "$DISTRIBUTION_DIR/profile.mobileprovision" > "$DISTRIBUTION_DIR/profile.plist"
+if ! security cms -D -i "$DISTRIBUTION_DIR/profile.mobileprovision" > "$DISTRIBUTION_DIR/profile.plist"; then
+  echo '::error::APPLE_PROVISIONING_PROFILE_BASE64 did not decode to a readable Apple provisioning profile. Replace it with Base64 of the original App Store Connect .mobileprovision file.'
+  exit 1
+fi
 python3 scripts/validate-testflight-profile.py
 keychain_password=$(openssl rand -hex 24)
 echo "::add-mask::$keychain_password"
