@@ -11,6 +11,7 @@ struct PlaceEditor: View {
     @State private var reviewing = false
     @State private var submitted = false
     @State private var confirmingDiscard = false
+    @State private var showingInfo = false
     @FocusState private var field: Field?
     private enum Field { case name, address, note }
     private var ink: Color { Color(uiColor: .label) }
@@ -45,13 +46,24 @@ struct PlaceEditor: View {
                             .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
                             .accessibilityIdentifier("place.title")
-                        Color.clear.frame(width: 76, height: 1).accessibilityHidden(true)
+                        Button { field = nil; showingInfo = true } label: {
+                            Image(systemName: "info.circle").font(.system(size: 22))
+                                .frame(width: 48, height: 48)
+                                .background(ArkeUI.insetSurface(colorScheme), in: Circle())
+                        }.frame(width: 76, alignment: .trailing)
+                        .accessibilityLabel("Informações sobre salvar lugares").accessibilityIdentifier("place.info")
+                        .popover(isPresented: $showingInfo) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Sobre sua ideia").arkeText(.contextTitle)
+                                Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.").arkeText(.body)
+                                    .accessibilityIdentifier("place.infoText")
+                                Button("Entendi") { showingInfo = false }.frame(minHeight: 48).accessibilityIdentifier("place.infoDismiss")
+                            }.foregroundStyle(ink).frame(width: 240).padding(20).presentationCompactAdaptation(.popover)
+                        }
                     }
                     .buttonStyle(.plain).padding(.top, 24)
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
-                            Text(reviewing ? "Confira sua ideia" : "O lugar que você quer conhecer")
-                                .arkeText(.body).fontWeight(.semibold).accessibilityAddTraits(.isHeader)
                             if reviewing {
                                 summary("Nome do lugar", value: draft.normalized.name, height: 56)
                                 summary("Endereço ou referência", value: draft.normalized.address, height: 96)
@@ -83,21 +95,17 @@ struct PlaceEditor: View {
                     VStack(spacing: 12) {
                         if reviewing {
                             Button { reviewing = false } label: {
-                                Text("Editar informações").arkeText(.button).foregroundStyle(actionInk)
+                                Text("Editar informações").arkeText(.button).foregroundStyle(ink)
                                     .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
-                                    .contentShape(Rectangle())
+                                    .background(ArkeUI.insetSurface(colorScheme), in: Capsule()).contentShape(Rectangle())
                             }
                             .disabled(saving).accessibilityIdentifier("place.edit")
                             primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
-                            Text("Esta ideia ficará apenas neste aparelho, sem backup. Desinstalar o app pode removê-la. O endereço não será pesquisado nem marcado no mapa nesta etapa.")
-                                .arkeText(.caption).frame(maxWidth: .infinity, alignment: .leading)
                         } else {
                             primary("Revisar lugar", identifier: "place.review") {
                                 submitted = true
                                 if draft.issue == nil { field = nil; reviewing = true }
                             }
-                            Text("Nome e endereço são obrigatórios. Você não precisa criar uma viagem agora.")
-                                .arkeText(.caption).frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                     .buttonStyle(.plain).foregroundStyle(ink).padding(.bottom, 16)
@@ -132,7 +140,8 @@ struct PlaceEditor: View {
 
     private func input(_ title: String, text: Binding<String>, height: CGFloat, lines: ClosedRange<Int>, focus: Field, identifier: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).arkeText(.label)
+            Label(title, systemImage: title == "Nome do lugar" ? "bookmark.fill" : (title == "Endereço ou referência" ? "mappin" : "text.alignleft"))
+                .arkeText(.label).labelStyle(EditorFieldLabelStyle())
             TextField(title, text: text, prompt: Text(""), axis: focus == .name ? .horizontal : .vertical)
                 .arkeText(.body).focused($field, equals: focus)
                 .lineLimit(lines).textInputAutocapitalization(focus == .name ? .words : .sentences)
@@ -146,7 +155,8 @@ struct PlaceEditor: View {
 
     private func summary(_ title: String, value: String, height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).arkeText(.label)
+            Label(title, systemImage: title == "Nome do lugar" ? "bookmark.fill" : (title == "Endereço ou referência" ? "mappin" : "text.alignleft"))
+                .arkeText(.label).labelStyle(EditorFieldLabelStyle())
             Text(value).arkeText(.body)
                 .padding(16).frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
                 .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
@@ -157,7 +167,7 @@ struct PlaceEditor: View {
         Button(action: action) {
             Text(title).arkeText(.button).foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
-                .background(ArkeUI.blue, in: RoundedRectangle(cornerRadius: ArkeUI.fieldRadius))
+                .background(ArkeUI.blue, in: Capsule())
                 .contentShape(Rectangle())
         }
         .disabled(saving).opacity(saving ? 0.6 : 1).accessibilityIdentifier(identifier)
@@ -172,6 +182,15 @@ private extension PlaceDraftIssue {
         case .addressRequired: "Informe um endereço ou referência."
         case .addressTooLong: "Use até 240 caracteres no endereço."
         case .noteTooLong: "Use até 1.000 caracteres na nota."
+        }
+    }
+}
+
+private struct EditorFieldLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 12) {
+            configuration.icon.foregroundStyle(Color(uiColor: .tertiaryLabel)).frame(width: 24).accessibilityHidden(true)
+            configuration.title
         }
     }
 }

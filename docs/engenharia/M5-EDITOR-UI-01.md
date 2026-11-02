@@ -1,0 +1,7 @@
+# M5-EDITOR-UI-01 — Paridade visual do editor
+
+02/11/2026. Correção autorizada pelas quatro capturas no chat. Adicionar/editar/revisar recebem cabeçalho central com i, ícones semânticos discretos nos labels persistentes e ações em cápsula. Cancelar permanece à esquerda conforme guia comum; alça externa, cartão flutuante e fade preservados. Removidos título expositivo e avisos permanentes no rodapé; orientações de obrigatoriedade, armazenamento local/sem backup e ausência de associação ao mapa ficam no i. Erros de validação/gravação continuam no corpo. Dados/IO/IDs e proteção de descarte inalterados.
+
+Escopo: PlaceEditor nas duas plataformas, testes UI e documentação. Sem dependências, rede, permissões, migração ou mídia externa. Risco P2: teclado, overflow e interação de informação; verificar builds/lint/regressão/capturas em Actions antes de declarar aprovado. Fonte ampliada, leitores de tela, aparelho físico e profiling não executados. Reversão de apresentação preserva snapshots v1. PR #2 rascunho, sem merge/release.
+
+Estado: implementação preparada; validação nativa e capturas novas pendentes. Gates G-01/02/03/08/09/10/13/15 revisados no alcance visual: direção autorizada, sem nova fronteira de dados, mesma persistência, rollback preserva arquivos e preferência privada apenas no chat. G-04/05/06/07/12/14 aguardam execução/inspeção; G-11 profiling não executado. Nenhum resultado anterior valida esta fonte.

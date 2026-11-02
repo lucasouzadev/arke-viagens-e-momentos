@@ -44,3 +44,5 @@ A fração do sheet do editor é uma intenção visual sobre a área disponível
 ## Critério de revisão
 
 Comparar sempre iOS/Android por fluxo, em claro/escuro e tamanhos próximos. Verificar alça, posição de Cancelar, centralização do título, rótulos, largura/altura dos campos, rodapé, safe areas e teclado. Uma tela que passa isoladamente, mas muda a organização em outra plataforma, precisa de ajuste. Evidências e limites: [M5-PARITY-01](../engenharia/M5-PARITY-01.md).
+
+Editor/revisão também seguem M5-EDITOR-UI-01: i no topo direito, Cancelar à esquerda, título central, labels persistentes com ícones discretos e ações preenchidas em cápsula. Orientações permanentes ficam no i; erros continuam visíveis no corpo.

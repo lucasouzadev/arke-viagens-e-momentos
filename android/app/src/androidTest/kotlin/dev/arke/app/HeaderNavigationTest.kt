@@ -32,6 +32,9 @@ class HeaderNavigationTest {
             compose.onNodeWithTag("place.cancel").fetchSemanticsNode().boundsInRoot.center.x <
                 compose.onNodeWithTag("place.title").fetchSemanticsNode().boundsInRoot.center.x,
         )
+        compose.onNodeWithTag("place.info").performClick()
+        compose.onNodeWithTag("place.infoText").assertIsDisplayed()
+        compose.onNodeWithTag("place.infoDismiss").performClick()
         compose.onNodeWithTag("place.review").performClick()
         compose.onNodeWithText("Informe o nome do lugar.").assertExists()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho de teste")

@@ -41,6 +41,9 @@ final class HeaderNavigationTests: XCTestCase {
         let editorTitle = app.staticTexts["place.title"]
         XCTAssertTrue(editorTitle.waitForExistence(timeout: 5))
         XCTAssertLessThan(app.buttons["place.cancel"].frame.midX, editorTitle.frame.midX)
+        app.buttons["place.info"].tap()
+        XCTAssertTrue(app.staticTexts["place.infoText"].waitForExistence(timeout: 5))
+        app.buttons["place.infoDismiss"].tap()
         app.buttons["place.review"].tap()
         XCTAssertTrue(app.staticTexts["Informe o nome do lugar."].exists)
         let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch

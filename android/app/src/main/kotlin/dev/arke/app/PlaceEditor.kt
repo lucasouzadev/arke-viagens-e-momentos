@@ -5,6 +5,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -51,6 +53,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     var reviewing by rememberSaveable { mutableStateOf(false) }
     var submitted by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by remember { mutableStateOf(false) }
+    var showingInfo by remember { mutableStateOf(false) }
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
     val sheetColor = arkeSheetColor()
@@ -83,7 +86,19 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     Modifier.weight(1f).testTag("place.title").semantics { heading() },
                     style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
                 )
-                Spacer(Modifier.width(76.dp))
+                Box(Modifier.width(76.dp), contentAlignment = Alignment.CenterEnd) {
+                    IconButton(onClick = { focus.clearFocus(); keyboard?.hide(); showingInfo = true },
+                        modifier = Modifier.size(48.dp).background(arkeInsetColor(), CircleShape).testTag("place.info")) {
+                        Icon(painterResource(R.drawable.ic_info), "Informações sobre salvar lugares")
+                    }
+                    DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
+                        Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("Sobre sua ideia", style = MaterialTheme.typography.titleMedium)
+                            Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.", modifier = Modifier.testTag("place.infoText"))
+                            TextButton(onClick = { showingInfo = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("place.infoDismiss")) { Text("Entendi") }
+                        }
+                    }
+                }
             }
             Column(
                 Modifier.fillMaxWidth().weight(1f)
@@ -99,7 +114,6 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     .padding(top = 24.dp, bottom = 48.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text(stringResource(if (reviewing) R.string.check_idea else R.string.place_section), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                 if (reviewing) {
                     PlaceSummary(stringResource(R.string.place_name), draft.normalized().name, 56.dp)
                     PlaceSummary(stringResource(R.string.place_address), draft.normalized().address, 96.dp)
@@ -118,21 +132,19 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 if (reviewing) {
                     TextButton(
                         colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.edit"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).background(arkeInsetColor(), CircleShape).testTag("place.edit"),
                     ) { Text(stringResource(R.string.edit_information)) }
                     Button(
-                        onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = RoundedCornerShape(12.dp),
+                        onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.save"),
                     ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
-                    Text(stringResource(R.string.place_local_notice), style = MaterialTheme.typography.bodySmall)
                 } else {
                     Button(onClick = {
                         submitted = true
                         if (draft.issue == null) { focus.clearFocus(); keyboard?.hide(); reviewing = true }
-                    }, enabled = !saving, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
+                    }, enabled = !saving, shape = CircleShape, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
                         Text(stringResource(R.string.review_place))
                     }
-                    Text(stringResource(R.string.place_required_notice), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -152,7 +164,11 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
 private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit, minHeight: Dp, minLines: Int, maxLines: Int, saving: Boolean, tag: String) {
     val focus = LocalFocusManager.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(if (label == stringResource(R.string.place_name)) R.drawable.ic_bookmark else if (label == stringResource(R.string.place_address)) R.drawable.ic_pin else R.drawable.ic_note), null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(24.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium)
+        }
         BasicTextField(
             value = value, onValueChange = onChange, enabled = !saving,
             singleLine = maxLines == 1, minLines = minLines, maxLines = maxLines,
@@ -170,7 +186,11 @@ private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit,
 @Composable
 private fun PlaceSummary(label: String, value: String, minHeight: Dp) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(if (label == stringResource(R.string.place_name)) R.drawable.ic_bookmark else if (label == stringResource(R.string.place_address)) R.drawable.ic_pin else R.drawable.ic_note), null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(24.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium)
+        }
         Text(value, style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).background(arkeInsetColor(), RoundedCornerShape(12.dp)).padding(16.dp))
     }
