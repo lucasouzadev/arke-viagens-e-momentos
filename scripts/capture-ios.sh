@@ -32,6 +32,11 @@ while IFS=$'\t' read -r size device model; do
       CODE_SIGNING_ALLOWED=NO test; then
       # Preserve the actual failure state rather than relaunching into the initial UI.
       xcrun simctl io "$device" screenshot "$output/ios-ui-test-failure.png"
+      # XCTest can terminate the app before simctl captures. Export its exact
+      # in-test diagnostic attachments as original PNGs as well.
+      if xcrun xcresulttool export attachments --path build/HeaderUI.xcresult --output-path "$output/failure-attachments"; then
+        find "$output/failure-attachments" -name '*.png' -exec cp {} "$output/" \;
+      fi
       exit 1
     fi
   fi

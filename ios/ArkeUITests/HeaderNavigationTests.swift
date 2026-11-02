@@ -265,13 +265,15 @@ final class HeaderNavigationTests: XCTestCase {
 
     private func replaceText(in field: XCUIElement, with value: String, app: XCUIApplication) {
         field.tap()
-        field.press(forDuration: 1.2)
-        let selectAll = app.descendants(matching: .any).matching(NSPredicate(
-            format: "label IN %@", ["Select All", "Selecionar Tudo", "Selecionar tudo"]
-        )).firstMatch
-        XCTAssertTrue(selectAll.waitForExistence(timeout: 5), "Native Select All must be available before replacing existing text")
-        selectAll.tap()
+        // Each fixture is one paragraph; use the system paragraph-selection gesture.
+        field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         field.typeText(value)
+        if field.value as? String != value {
+            print(app.debugDescription)
+            let capture = XCTAttachment(screenshot: app.screenshot())
+            capture.lifetime = .keepAlways
+            add(capture)
+        }
         XCTAssertEqual(field.value as? String, value)
     }
 }
