@@ -111,6 +111,25 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.title").assertIsDisplayed()
         val automation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
         automation.waitForIdle(200, 5_000)
+        // The API 35 CI image can show a launcher ANR over the app. Recover only
+        // that identified infrastructure dialog; an Arke ANR must still fail.
+        fun findText(node: android.view.accessibility.AccessibilityNodeInfo?, text: String): android.view.accessibility.AccessibilityNodeInfo? {
+            if (node == null) return null
+            if (node.text?.toString() == text) return node
+            for (index in 0 until node.childCount) {
+                findText(node.getChild(index), text)?.let { return it }
+            }
+            return null
+        }
+        val activeWindow = automation.rootInActiveWindow
+        if (activeWindow?.packageName?.toString() == "android" &&
+            findText(activeWindow, "Pixel Launcher isn't responding") != null) {
+            org.junit.Assert.assertTrue("Close only the known emulator launcher ANR",
+                findText(activeWindow, "Close app")?.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK) == true)
+        }
+        compose.waitUntil(5_000) {
+            automation.rootInActiveWindow?.packageName?.toString() == compose.activity.packageName
+        }
         val before = automation.rootInActiveWindow?.let { "${it.packageName}/${it.className}" }
         val beforeCapture = automation.executeShellCommand("screencap -p /sdcard/arke-back-before.png")
         android.os.ParcelFileDescriptor.AutoCloseInputStream(beforeCapture).use { it.readBytes() }
