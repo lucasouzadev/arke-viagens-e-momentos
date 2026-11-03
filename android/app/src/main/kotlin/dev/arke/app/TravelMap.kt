@@ -26,7 +26,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.rememberUpdatedMarkerState
+import com.google.maps.android.compose.MarkerState
 import androidx.compose.ui.window.DialogProperties
 import dev.arke.core.PlaceIdea
 import com.google.maps.android.compose.ComposeMapColorScheme
@@ -80,8 +80,9 @@ fun TravelMap(modifier: Modifier = Modifier, pins: List<Pair<LocalMapPin, String
         uiSettings = MapUiSettings(myLocationButtonEnabled = false, mapToolbarEnabled = false),
     ) {
         pins.forEach { (pin, name) ->
-            key(pin.ideaID) {
-                Marker(state = rememberUpdatedMarkerState(LatLng(pin.latitude, pin.longitude)), title = name)
+            key(pin.ideaID, pin.latitude, pin.longitude) {
+                val marker = remember { MarkerState(position = LatLng(pin.latitude, pin.longitude)) }
+                Marker(state = marker, title = name)
             }
         }
     }
@@ -135,7 +136,10 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
                     Text("Toque no mapa para posicionar a marca.")
                     GoogleMap(Modifier.fillMaxWidth().height(220.dp), cameraPositionState = camera,
                         onMapClick = { point = it }) {
-                        point?.let { Marker(state = rememberUpdatedMarkerState(it), title = idea.name) }
+                        point?.let { coordinate ->
+                            val marker = remember(coordinate) { MarkerState(position = coordinate) }
+                            Marker(state = marker, title = idea.name)
+                        }
                     }
                 } else {
                     Text("O mapa está indisponível. A ideia continua salva no aparelho.")
