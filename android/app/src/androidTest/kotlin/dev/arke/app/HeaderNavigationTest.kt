@@ -30,7 +30,7 @@ class HeaderNavigationTest {
     }
 
     private fun returnToPlaceFields() {
-        compose.onNodeWithTag("place.edit").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithTag("place.edit").assertIsDisplayed().performClick()
         try {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.name").fetchSemanticsNodes().size == 1 }
         } catch (failure: Throwable) {
@@ -97,7 +97,7 @@ class HeaderNavigationTest {
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
         compose.onNodeWithTag("place.review").performScrollTo().performClick()
-        compose.onNodeWithTag("place.save").performScrollTo().performClick()
+        compose.onNodeWithTag("place.save").performClick()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.onActivity { activity -> androidx.lifecycle.ViewModelProvider(activity)[PlaceIdeasViewModel::class.java].load() }
@@ -131,7 +131,7 @@ class HeaderNavigationTest {
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu atualizado")
         compose.onNodeWithTag("place.review").performScrollTo().performClick()
-        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performScrollTo().performClick()
+        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.title").fetchSemanticsNodes().isEmpty() }
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isNotEmpty() }

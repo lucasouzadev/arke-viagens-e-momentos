@@ -185,8 +185,22 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 }
                 }
                 if (saveError != null) Text(saveError, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.saveError"))
-            Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (reviewing) {
+                if (!reviewing) {
+                    Button(onClick = {
+                        submitted = true
+                        if (draft.issue == null) {
+                            focus.clearFocus()
+                            keyboard?.hide()
+                            reviewing = true
+                        }
+                    }, enabled = !saving && !loadingCover, shape = CircleShape,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
+                        Text(stringResource(R.string.review_place))
+                    }
+                }
+            }
+            if (reviewing) {
+                Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(
                         colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).background(arkeInsetColor(), CircleShape).testTag("place.edit"),
@@ -195,15 +209,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                         onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.save"),
                     ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
-                } else {
-                    Button(onClick = {
-                        submitted = true
-                        if (draft.issue == null) { focus.clearFocus(); keyboard?.hide(); reviewing = true }
-                    }, enabled = !saving && !loadingCover, shape = CircleShape, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
-                        Text(stringResource(R.string.review_place))
-                    }
                 }
-            }
             }
         }
     }
