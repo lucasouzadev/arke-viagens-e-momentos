@@ -125,7 +125,7 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporário")
         compose.onNodeWithTag("place.cancel").performClick()
         compose.onNodeWithTag("place.discard").performClick()
-        compose.onNodeWithText("Museu de teste").assertExists()
+        compose.onNodeWithTag("home.ideaName").assertTextEquals("Museu de teste")
         edit.performScrollTo().performClick()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Museu atualizado")
         compose.onNodeWithTag("place.address").performScrollTo().performTextReplacement("Nova entrada, 200")

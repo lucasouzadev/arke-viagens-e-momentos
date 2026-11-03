@@ -99,7 +99,7 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                 }) {
                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).testTag("home.ideaName"))
                         IconButton(onClick = { pendingUpdate = null; pendingRequest = null; editing = idea }, enabled = state.ready && !state.busy,
                             modifier = Modifier.size(48.dp).testTag("place.update.${idea.id}")) {
                             Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.edit_place_label, idea.name))
