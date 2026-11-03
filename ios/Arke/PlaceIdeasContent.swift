@@ -76,13 +76,13 @@ struct PlaceIdeasContent: View {
                 Task { if await store.update(draft, replacing: original) { editing = nil } }
             }, onCancel: { editing = nil; Task { await store.load() } })
         }
-        .alert("Excluir ideia?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+        .alert("Excluir ideia?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), presenting: deleting) { idea in
             Button("Excluir", role: .destructive) {
-                if let id = deleting?.id { onDelete(id) }
+                onDelete(idea.id)
                 deleting = nil
             }
             Button("Cancelar", role: .cancel) { deleting = nil }
-        } message: {
+        } message: { _ in
             Text("Esta ideia será removida deste aparelho.")
         }
     }
