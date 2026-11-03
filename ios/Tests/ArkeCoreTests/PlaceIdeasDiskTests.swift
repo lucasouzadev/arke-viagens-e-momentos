@@ -2,6 +2,28 @@ import XCTest
 @testable import ArkeCore
 
 final class PlaceIdeasDiskTests: XCTestCase {
+    func testPinSurvivesReopenAndUnlinkWithoutChangingIdeas() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let disk = PlaceIdeasDisk(directory: directory)
+        let ideas = try await disk.add(PlaceDraft(id: "garden", name: "Jardim", address: "Centro"))
+        let trip = LocalPinTripChoice.create(id: "weekend", title: "Fim de semana")
+        let saved = try await disk.savePin(ideaID: "garden", latitude: -23, longitude: -46, trip: trip)
+        let repeated = try await disk.savePin(ideaID: "garden", latitude: -23, longitude: -46, trip: trip)
+        XCTAssertEqual(repeated, saved)
+        XCTAssertEqual(saved.pins.count, 1)
+        XCTAssertEqual(saved.trips.count, 1)
+        let reopened = PlaceIdeasDisk(directory: directory)
+        let loaded = try await reopened.loadPinPlan()
+        XCTAssertEqual(loaded, saved)
+        let unlinked = try await reopened.savePin(ideaID: "garden", latitude: -23, longitude: -46, trip: .none)
+        XCTAssertNil(unlinked.pins.first?.tripID)
+        XCTAssertEqual(unlinked.pins.first?.latitude, -23)
+        XCTAssertEqual(unlinked.trips, saved.trips)
+        let preserved = try await reopened.load()
+        XCTAssertEqual(preserved, ideas)
+    }
+
     func testUpdateKeepsIdentityOrderAndRejectsStaleOrMissingIdeas() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

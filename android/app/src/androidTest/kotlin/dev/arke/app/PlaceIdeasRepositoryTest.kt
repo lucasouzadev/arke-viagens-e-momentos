@@ -12,6 +12,28 @@ import java.io.File
 import java.util.UUID
 
 class PlaceIdeasRepositoryTest {
+    @Test fun pinSurvivesReopenAndUnlinkWithoutChangingIdeas() = runBlocking {
+        val (context, directory) = isolatedContext()
+        try {
+            val repository = PlaceIdeasRepository(context)
+            val ideas = repository.add(PlaceDraft("garden", "Jardim", "Centro"))
+            val trip = LocalPinTripChoice.Create("weekend", "Fim de semana")
+            val saved = repository.savePin("garden", -23.0, -46.0, trip)
+            assertEquals(saved, repository.savePin("garden", -23.0, -46.0, trip))
+            assertEquals(1, saved.pins.size)
+            assertEquals(1, saved.trips.size)
+            val reopened = PlaceIdeasRepository(context)
+            assertEquals(saved, reopened.loadPinPlan())
+            val unlinked = reopened.savePin("garden", -23.0, -46.0, LocalPinTripChoice.None)
+            assertNull(unlinked.pins.single().tripID)
+            assertEquals(-23.0, unlinked.pins.single().latitude, 0.0)
+            assertEquals(saved.trips, unlinked.trips)
+            assertEquals(ideas, reopened.load())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     @Test fun updateKeepsIdentityOrderAndRejectsStaleOrMissingIdeas() = runBlocking {
         val (context, directory) = isolatedContext()
         try {

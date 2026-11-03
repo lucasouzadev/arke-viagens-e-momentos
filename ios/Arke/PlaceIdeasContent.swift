@@ -4,11 +4,27 @@ struct PlaceIdeasContent: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: PlaceIdeasStore
     let onDelete: (String) -> Void
+    let onPin: (PlaceIdea) -> Void
     var onDetailsVisibilityChanged: (Bool) -> Void = { _ in }
+    @Binding var focusedID: String?
     @State private var deleting: PlaceIdea?
     @State private var selected: PlaceIdea?
     @State private var editing: PlaceIdea?
     @State private var editSaveAttempted = false
+
+    @ViewBuilder
+    private func neighbor(_ idea: PlaceIdea?, icon: String) -> some View {
+        if let idea {
+            Button { focusedID = idea.id } label: {
+                Label(idea.name, systemImage: icon)
+                    .lineLimit(1)
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Selecionar \(idea.name)")
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -16,8 +32,27 @@ struct PlaceIdeasContent: View {
                 Text("Guarde seu próximo lugar com +").arkeText(.body)
                     .foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 48)
             } else {
-                ForEach(store.ideas) { idea in
-                    VStack(alignment: .leading, spacing: 8) {
+                let index = store.ideas.firstIndex { $0.id == focusedID } ?? 0
+                let idea = store.ideas[index]
+                let previous = index > 0 ? store.ideas[index - 1] : nil
+                let next = index + 1 < store.ideas.count ? store.ideas[index + 1] : nil
+                if store.ideas.count > 1 {
+                    HStack {
+                        neighbor(previous, icon: "chevron.left")
+                        Spacer()
+                        neighbor(next, icon: "chevron.right")
+                    }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(idea.name).arkeText(.contextTitle).frame(maxWidth: .infinity, alignment: .leading)
+                            Button { editSaveAttempted = false; editing = idea } label: {
+                                Image(systemName: "pencil").font(.system(size: 20)).frame(width: 48, height: 48).contentShape(Rectangle())
+                            }.buttonStyle(.plain).disabled(store.busy || !store.ready)
+                                .accessibilityLabel("Editar \(idea.name)").accessibilityIdentifier("place.update.\(idea.id)")
+                        }
+                        Text(idea.address).foregroundStyle(.secondary)
+                        if !idea.note.isEmpty { Text(idea.note).lineLimit(3) }
                         if let cover = idea.cover, let image = UIImage(data: cover) {
                             GeometryReader { geometry in
                                 Image(uiImage: image).resizable().scaledToFill()
@@ -30,15 +65,7 @@ struct PlaceIdeasContent: View {
                             }
                             .accessibilityHidden(true)
                         }
-                        HStack {
-                            Text(idea.name).arkeText(.contextTitle).frame(maxWidth: .infinity, alignment: .leading)
-                            Button { editSaveAttempted = false; editing = idea } label: {
-                                Image(systemName: "pencil").font(.system(size: 20)).frame(width: 48, height: 48).contentShape(Rectangle())
-                            }.buttonStyle(.plain).disabled(store.busy || !store.ready)
-                                .accessibilityLabel("Editar \(idea.name)").accessibilityIdentifier("place.update.\(idea.id)")
-                        }
-                        Text(idea.address).foregroundStyle(.secondary)
-                        if !idea.note.isEmpty { Text(idea.note).lineLimit(3) }
+                        Button { onPin(idea) } label: { Label("Marcar no mapa", systemImage: "mappin") }
                         HStack(spacing: 12) {
                             Button { selected = idea } label: {
                                 Label("Abrir", systemImage: "arrow.up.right").arkeText(.button)
@@ -59,25 +86,19 @@ struct PlaceIdeasContent: View {
                         }
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        RoundedRectangle(cornerRadius: 24).fill(ArkeUI.insetSurface(colorScheme))
-                            .overlay {
-                                if let cover = idea.cover, let image = UIImage(data: cover) {
-                                    GeometryReader { geometry in
-                                        Image(uiImage: image).resizable().scaledToFill()
-                                            .frame(width: geometry.size.width, height: geometry.size.height)
-                                            .clipped()
-                                            .overlay(ArkeUI.insetSurface(colorScheme).opacity(0.83))
-                                    }.accessibilityHidden(true)
-                                }
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
-                    }
-                }
+                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
+                    .simultaneousGesture(DragGesture(minimumDistance: 28).onEnded { value in
+                        let movement = value.translation
+                        guard abs(movement.width) > abs(movement.height) * 1.5 else { return }
+                        if let target = movement.width < 0 ? next : previous { focusedID = target.id }
+                    })
             }
         }
         .padding(.bottom, 24)
         .onChange(of: selected != nil || editing != nil) { _, visible in onDetailsVisibilityChanged(visible) }
+        .onChange(of: store.ideas, initial: true) { _, ideas in
+            if !ideas.contains(where: { $0.id == focusedID }) { focusedID = ideas.first?.id }
+        }
         .onDisappear { onDetailsVisibilityChanged(false) }
         .sheet(item: $selected) { idea in
             PlaceDetails(ideas: store.ideas, initialID: idea.id, onClose: { selected = nil })

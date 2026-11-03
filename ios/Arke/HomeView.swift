@@ -8,6 +8,10 @@ struct HomeView: View {
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
     @StateObject private var location = ForegroundLocation()
     @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)))
+    @State private var pinPlan: LocalPinPlan?
+    @State private var pinIdea: PlaceIdea?
+    @State private var focusedIdeaID: String?
+    @State private var mapExpanded = false
     @State private var panelHeight: CGFloat?
     @State private var panelOrigin: CGFloat?
     @Namespace private var mapSearchTransition
@@ -35,14 +39,66 @@ struct HomeView: View {
             Text("Arke").arkeText(.appTitle)
             Text("Onde vamos?").arkeText(.screenTitle)
             GeometryReader { geometry in
+                let restingHeight = panelHeight ?? mapHeight(in: geometry.size.height)
+                let expandedHeight = min(geometry.size.height, max(restingHeight, geometry.size.height - 52))
                 VStack(spacing: 8) {
+                    Color.clear.frame(height: restingHeight).accessibilityHidden(true)
+
+                    panelMenu
+                        .highPriorityGesture(panelDrag(in: geometry.size.height))
+                        .opacity(mapExpanded ? 0 : 1)
+                        .allowsHitTesting(!mapExpanded)
+                        .accessibilityHidden(mapExpanded)
+                        .zIndex(1)
+
+                    VStack(spacing: 12) {
+                        cardHeader
+                        Divider()
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 12) {
+                                if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
+                                if let error = places.error, !showingAddPlace {
+                                    Text(error).foregroundStyle(Color(uiColor: .systemRed))
+                                    Button("Tentar novamente") { Task { await places.load() } }
+                                }
+                                if places.ready {
+                                    if state.context == .planning {
+                                        PlaceIdeasContent(store: places, onDelete: { id in
+                                            savedNotice = false
+                                            Task { await places.remove(id: id) }
+                                        }, onPin: { pinIdea = $0 }, onDetailsVisibilityChanged: { showingSavedDetails = $0 }, focusedID: $focusedIdeaID)
+                                    } else {
+                                        Text("Em breve.")
+                                        Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
+                                    }
+                                } else if places.busy { ProgressView("Abrindo seus lugares…") }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(maxHeight: .infinity)
+                        .accessibilityIdentifier("home.contentBody")
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+                    .clipShape(.rect(cornerRadius: 20))
+                    .offset(y: mapExpanded ? 12 : 0)
+                    .allowsHitTesting(!mapExpanded)
+                    .accessibilityHidden(mapExpanded)
+                }
+                .overlay(alignment: .top) {
                     Map(position: $camera) {
                         UserAnnotation()
+                        ForEach(pinPlan?.pins ?? [], id: \.ideaID) { pin in
+                            if let idea = places.ideas.first(where: { $0.id == pin.ideaID }) {
+                                Marker(idea.name, coordinate: CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude))
+                            }
+                        }
                         if let searchPin { Marker(item: searchPin) }
                     }
                         .mapStyle(.standard)
                         .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
-                        .frame(height: panelHeight ?? mapHeight(in: geometry.size.height))
+                        .frame(height: mapExpanded ? expandedHeight : restingHeight)
                         .clipShape(.rect(cornerRadius: 30))
                         .overlay {
                             RoundedRectangle(cornerRadius: 30)
@@ -68,44 +124,36 @@ struct HomeView: View {
                             }
                             .padding(.horizontal, 12).padding(.bottom, 28)
                         }
+                        .overlay(alignment: .topLeading) {
+                            if state.context == .planning,
+                               let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
+                                Label(idea.name, systemImage: "bookmark")
+                                    .font(.subheadline.weight(.semibold)).lineLimit(1)
+                                    .padding(10).background(.regularMaterial, in: Capsule())
+                                    .padding(.leading, 12).padding(.trailing, 68).padding(.top, 18)
+                                    .accessibilityLabel("Ideia selecionada: \(idea.name)")
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                        .overlay(alignment: .topTrailing) {
+                            Button {
+                                withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
+                                    mapExpanded.toggle()
+                                }
+                            } label: {
+                                Image(systemName: mapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                                    .frame(width: 44, height: 44)
+                            }
+                            .modifier(MapLocationButtonStyle())
+                            .accessibilityLabel(mapExpanded ? "Recolher mapa" : "Expandir mapa")
+                            .accessibilityIdentifier("home.expandMap")
+                            .padding(12)
+                        }
                         .onReceive(location.$coordinate) { coordinate in
                             if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
                         }
-
-                    panelMenu
-                        .highPriorityGesture(panelDrag(in: geometry.size.height))
-                        .zIndex(1)
-
-                    VStack(spacing: 12) {
-                        cardHeader
-                        Divider()
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 12) {
-                                if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
-                                if let error = places.error, !showingAddPlace {
-                                    Text(error).foregroundStyle(Color(uiColor: .systemRed))
-                                    Button("Tentar novamente") { Task { await places.load() } }
-                                }
-                                if places.ready {
-                                    if state.context == .planning {
-                                        PlaceIdeasContent(store: places, onDelete: { id in
-                                            savedNotice = false
-                                            Task { await places.remove(id: id) }
-                                        }, onDetailsVisibilityChanged: { showingSavedDetails = $0 })
-                                    } else {
-                                        Text("Em breve.")
-                                        Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
-                                    }
-                                } else if places.busy { ProgressView("Abrindo seus lugares…") }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .frame(maxHeight: .infinity).arkeScrollEdges()
-                        .accessibilityIdentifier("home.contentBody")
-                    }
-                    .padding(20)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
                 }
+                .clipped()
             }
         }
         .alert("Minha localização", isPresented: Binding(get: { location.message != nil }, set: { if !$0 { location.message = nil } })) {
@@ -148,6 +196,18 @@ struct HomeView: View {
             .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: false))
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+        }
+        .task { pinPlan = try? await places.loadPinPlan() }
+        .sheet(item: $pinIdea) { idea in
+            PinEditor(idea: idea, places: places) { plan in
+                pinPlan = plan
+                if let pin = plan.pins.first(where: { $0.ideaID == idea.id }) {
+                    camera = .region(MKCoordinateRegion(
+                        center: CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude),
+                        span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
+                }
+                pinIdea = nil
+            }
         }
         .sheet(isPresented: $showingAddPlace) {
             PlaceEditor(saving: places.busy, saveError: places.error, onSave: { draft in
@@ -428,6 +488,79 @@ private struct MapSearchMotion: ViewModifier {
             }
         } else {
             content
+        }
+    }
+}
+
+
+private struct PinEditor: View {
+    let idea: PlaceIdea
+    let places: PlaceIdeasStore
+    let onSaved: (LocalPinPlan) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var camera: MapCameraPosition = .automatic
+    @State private var point: CLLocationCoordinate2D?
+    @State private var plan: LocalPinPlan?
+    @State private var tripID: String?
+    @State private var title = ""
+    @State private var newTripID = UUID().uuidString
+    @State private var creating = false
+    @State private var busy = false
+    @State private var error: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(idea.name) {
+                    Text(idea.address)
+                    Text("Mova o mapa para posicionar a marca no centro.")
+                    Map(position: $camera)
+                        .onMapCameraChange(frequency: .continuous) { point = $0.region.center }
+                        .overlay { Image(systemName: "mappin").font(.title).allowsHitTesting(false) }
+                        .frame(height: 230)
+                }
+                Section("Viagem") {
+                    Picker("Vínculo", selection: $tripID) {
+                        Text("Sem viagem").tag(nil as String?)
+                        ForEach(plan?.trips ?? [], id: \.id) { trip in
+                            Text(trip.title).tag(Optional(trip.id))
+                        }
+                    }.disabled(creating)
+                    Toggle("Criar viagem", isOn: $creating)
+                    if creating { TextField("Nome da viagem", text: $title) }
+                }
+                if let error { Text(error).foregroundStyle(.red) }
+                Button("Confirmar ponto e salvar Pin") { save() }
+                    .disabled(point == nil || plan == nil || busy || (creating && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+            }
+            .navigationTitle("Marcar no mapa")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() }.disabled(busy) } }
+            .interactiveDismissDisabled(busy)
+            .task {
+                do {
+                    let loaded = try await places.loadPinPlan()
+                    if let pin = loaded.pins.first(where: { $0.ideaID == idea.id }) {
+                        let center = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
+                        point = center
+                        tripID = pin.tripID
+                        camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
+                    }
+                    plan = loaded
+                } catch { self.error = "Não foi possível abrir os Pins." }
+            }
+        }
+    }
+
+    private func save() {
+        guard let point, !busy else { return }
+        let choice: LocalPinTripChoice = creating ? .create(id: newTripID, title: title) : tripID.map { .existing($0) } ?? .none
+        busy = true
+        error = nil
+        Task {
+            defer { busy = false }
+            do {
+                onSaved(try await places.savePin(id: idea.id, latitude: point.latitude, longitude: point.longitude, trip: choice))
+            } catch { self.error = "Não foi possível salvar o Pin. Tente novamente." }
         }
     }
 }

@@ -12,6 +12,16 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
+data class LocalMapPin(val ideaID: String, val latitude: Double, val longitude: Double, val tripID: String?)
+data class LocalPinTrip(val id: String, val title: String)
+data class LocalPinPlan(val pins: List<LocalMapPin>, val trips: List<LocalPinTrip>)
+
+sealed interface LocalPinTripChoice {
+    data object None : LocalPinTripChoice
+    data class Existing(val id: String) : LocalPinTripChoice
+    data class Create(val id: String, val title: String) : LocalPinTripChoice
+}
+
 class PlaceIdeasRepository(context: Context) {
     private val file = AtomicFile(File(context.noBackupFilesDir, "place-ideas-v1.json"))
     companion object { private val lock = Mutex() }
@@ -51,6 +61,69 @@ class PlaceIdeasRepository(context: Context) {
         lock.withLock { read().filterNot { it.id == id }.also { write(it) } }
     }
 
+    private val pinFile = AtomicFile(File(context.noBackupFilesDir, "pin-plan-v1.json"))
+
+    suspend fun loadPinPlan(): LocalPinPlan = withContext(Dispatchers.IO) {
+        lock.withLock { readPinPlan() }
+    }
+
+    suspend fun savePin(ideaID: String, latitude: Double, longitude: Double, trip: LocalPinTripChoice): LocalPinPlan =
+        withContext(Dispatchers.IO) {
+            lock.withLock {
+                require(latitude in -90.0..90.0 && longitude in -180.0..180.0 && read().any { it.id == ideaID })
+                val previous = readPinPlan()
+                val trips = previous.trips.toMutableList()
+                val tripID = when (trip) {
+                    LocalPinTripChoice.None -> null
+                    is LocalPinTripChoice.Existing -> trip.id.also { id -> check(trips.any { it.id == id }) }
+                    is LocalPinTripChoice.Create -> {
+                        val title = trip.title.trim()
+                        require(trip.id.isNotBlank() && title.isNotEmpty() && title.length <= 120)
+                        val existing = trips.firstOrNull { it.id == trip.id }
+                        if (existing == null) trips.add(LocalPinTrip(trip.id, title))
+                        else check(existing.title == title)
+                        trip.id
+                    }
+                }
+                val pin = LocalMapPin(ideaID, latitude, longitude, tripID)
+                val pins = previous.pins.toMutableList()
+                val index = pins.indexOfFirst { it.ideaID == ideaID }
+                if (index < 0) pins.add(pin) else pins[index] = pin
+                val pinRows = JSONArray()
+                pins.forEach {
+                    pinRows.put(JSONObject().put("ideaID", it.ideaID).put("latitude", it.latitude)
+                        .put("longitude", it.longitude).put("tripID", it.tripID ?: JSONObject.NULL))
+                }
+                val tripRows = JSONArray()
+                trips.forEach { tripRows.put(JSONObject().put("id", it.id).put("title", it.title)) }
+                writeAtomic(pinFile, JSONObject().put("pins", pinRows).put("trips", tripRows).toString().toByteArray(Charsets.UTF_8))
+                LocalPinPlan(pins.toList(), trips.toList())
+            }
+        }
+
+    private fun readPinPlan(): LocalPinPlan {
+        val bytes = try {
+            pinFile.openRead().use { check(it.channel.size() <= 4_194_304); it.readBytes() }
+        } catch (error: java.io.FileNotFoundException) {
+            if (pinFile.baseFile.exists() || File(pinFile.baseFile.path + ".bak").exists()) throw error
+            return LocalPinPlan(emptyList(), emptyList())
+        }
+        val data = JSONObject(bytes.toString(Charsets.UTF_8))
+        val pins = data.getJSONArray("pins")
+        val trips = data.getJSONArray("trips")
+        return LocalPinPlan(
+            (0 until pins.length()).map { index ->
+                val row = pins.getJSONObject(index)
+                LocalMapPin(row.getString("ideaID"), row.getDouble("latitude"), row.getDouble("longitude"),
+                    if (row.isNull("tripID")) null else row.getString("tripID"))
+            },
+            (0 until trips.length()).map { index ->
+                val row = trips.getJSONObject(index)
+                LocalPinTrip(row.getString("id"), row.getString("title"))
+            },
+        )
+    }
+
     private fun read(): List<PlaceIdea> {
         val bytes = try { file.openRead().use { check(it.channel.size() <= 4_194_304); it.readBytes() } }
         catch (error: java.io.FileNotFoundException) {
@@ -74,6 +147,11 @@ class PlaceIdeasRepository(context: Context) {
         val array = JSONArray()
         ideas.forEach { array.put(JSONObject().put("id", it.id).put("name", it.name).put("address", it.address).put("note", it.note).put("link", it.link).put("cover", it.cover)) }
         val bytes = JSONObject().put("version", 1).put("ideas", array).toString().toByteArray(Charsets.UTF_8)
+        writeAtomic(file, bytes)
+        check(read() == ideas) { "Write verification failed" }
+    }
+
+    private fun writeAtomic(file: AtomicFile, bytes: ByteArray) {
         check(bytes.size <= 4_194_304)
         val stream = file.startWrite()
         try {
@@ -81,7 +159,6 @@ class PlaceIdeasRepository(context: Context) {
             stream.flush()
             stream.fd.sync()
             file.finishWrite(stream)
-            check(read() == ideas) { "Write verification failed" }
         }
         catch (error: Exception) { file.failWrite(stream); throw error }
     }

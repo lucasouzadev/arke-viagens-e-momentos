@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.arke.core.PlaceDraft
 import androidx.compose.material3.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -38,12 +40,16 @@ import dev.arke.core.PlaceIdea
 
 @Composable
 fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea, String) -> Unit, onEditCancel: () -> Unit,
-    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onDelete: (String) -> Unit) {
+    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onFocus: (String?) -> Unit, onPin: (PlaceIdea) -> Unit, onDelete: (String) -> Unit) {
+    var focusedID by rememberSaveable { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf<PlaceIdea?>(null) }
     var selectedID by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by rememberSaveable(stateSaver = IdeaSaver) { mutableStateOf<PlaceIdea?>(null) }
     var pendingUpdate by rememberSaveable(stateSaver = PendingDraftSaver) { mutableStateOf<PlaceDraft?>(null) }
     var pendingRequest by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.ideas, focusedID) {
+        onFocus(state.ideas.firstOrNull { it.id == focusedID }?.id ?: state.ideas.firstOrNull()?.id)
+    }
     LaunchedEffect(selectedID, editing) { onDetailsVisibilityChanged(selectedID != null || editing != null) }
     LaunchedEffect(state, pendingUpdate, pendingRequest) {
         val pending = pendingUpdate
@@ -59,18 +65,38 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
         Text("Guarde seu próximo lugar com +", style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), textAlign = TextAlign.Center)
     } else {
-        state.ideas.forEach { idea ->
+        val index = state.ideas.indexOfFirst { it.id == focusedID }.coerceAtLeast(0)
+        val idea = state.ideas[index]
+        val previous = state.ideas.getOrNull(index - 1)
+        val next = state.ideas.getOrNull(index + 1)
+        if (state.ideas.size > 1) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                if (previous != null) TextButton(onClick = { focusedID = previous.id }, modifier = Modifier.weight(1f)) {
+                    Text("‹ ${previous.name}", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.width(8.dp))
+                if (next != null) TextButton(onClick = { focusedID = next.id }, modifier = Modifier.weight(1f)) {
+                    Text("${next.name} ›", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+        run {
             key(idea.id) {
                 Spacer(Modifier.height(16.dp))
                 val shape = RoundedCornerShape(24.dp)
                 val surface = arkeInsetColor()
                 val cover = remember(idea.cover) { decodePlaceCover(idea.cover) }
-                Box(Modifier.fillMaxWidth().clip(shape).background(surface)) {
-                    if (cover != null) {
-                        Image(cover.asImageBitmap(), contentDescription = null,
-                            modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop)
-                        Box(Modifier.matchParentSize().background(surface.copy(alpha = 0.83f)))
-                    }
+                Box(Modifier.fillMaxWidth().clip(shape).background(surface).pointerInput(previous?.id, next?.id) {
+                    var distance = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { distance = 0f },
+                        onDragEnd = {
+                            val target = if (distance < -28.dp.toPx()) next else if (distance > 28.dp.toPx()) previous else null
+                            if (target != null) focusedID = target.id
+                        },
+                        onHorizontalDrag = { _, delta -> distance += delta },
+                    )
+                }) {
                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -81,6 +107,12 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                     }
                     Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    if (cover != null) {
+                        Image(cover.asImageBitmap(), contentDescription = null,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(148.dp)
+                                .clip(RoundedCornerShape(12.dp)), contentScale = ContentScale.Fit)
+                    }
+                    TextButton(onClick = { onPin(idea) }) { Text("Marcar no mapa") }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         val openLabel = stringResource(R.string.view_place_details_label, idea.name)
                         TextButton(onClick = { selectedID = idea.id },

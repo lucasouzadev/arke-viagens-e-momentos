@@ -2,6 +2,7 @@ package dev.arke.app
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
@@ -22,7 +23,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalDensity
@@ -34,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.arke.core.PlaceIdea
 import dev.arke.core.HomeState
 import dev.arke.core.PanelDetent
 import dev.arke.core.TravelContext
@@ -51,6 +55,15 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
+    var pinPlan by remember { mutableStateOf<LocalPinPlan?>(null) }
+    var revealedPin by remember { mutableStateOf<LocalMapPin?>(null) }
+    var pinIdea by remember { mutableStateOf<PlaceIdea?>(null) }
+    LaunchedEffect(places) {
+        try { pinPlan = places.loadPinPlan() }
+        catch (error: Exception) { if (error is kotlinx.coroutines.CancellationException) throw error }
+    }
+    var focusedIdeaID by remember { mutableStateOf<String?>(null) }
+    var mapExpanded by remember { mutableStateOf(false) }
     var showingSavedDetails by remember { mutableStateOf(false) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
     var showingDetailPreview by rememberSaveable { mutableStateOf(captureDetails) }
@@ -78,7 +91,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
         ) {
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.tagline), style = MaterialTheme.typography.headlineMedium)
-            BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+            BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
                 val density = LocalDensity.current
                 val minContentHeight = (160 * density.fontScale).dp
                 val availableHeight = maxHeight
@@ -97,6 +110,11 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     if (dragHeight == null) position.animateTo(restingPx)
                 }
                 val mapHeight = with(density) { (dragHeight ?: position.value).toDp() }
+                val mapExtension by animateDpAsState(
+                    if (mapExpanded) (availableHeight - mapHeight - 52.dp).coerceAtLeast(0.dp) else 0.dp,
+                    label = "mapExpansion",
+                )
+                val contentRecess by animateDpAsState(if (mapExpanded) 12.dp else 0.dp, label = "contentRecess")
                 val dragModifier = Modifier.draggable(
                     orientation = Orientation.Vertical,
                     state = rememberDraggableState { delta ->
@@ -114,29 +132,26 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         dragHeight = null
                     },
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth().height(mapHeight)
-                            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.42f), RoundedCornerShape(30.dp)),
-                        shape = RoundedCornerShape(30.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    ) { TravelMap(Modifier.fillMaxSize()) }
+                Column(
+                    modifier = if (mapExpanded) Modifier.clearAndSetSemantics {} else Modifier,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Spacer(Modifier.height(mapHeight))
 
                     Box(Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                         DetentMenu(state.detent, dragModifier) { state = state.setDetent(it) }
                     }
 
                     Card(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        modifier = Modifier.fillMaxWidth().weight(1f).offset(y = contentRecess),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     ) {
-                        Column(Modifier.padding(20.dp)) {
+                        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
                             CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
                             HorizontalDivider(Modifier.padding(vertical = 12.dp))
-                            Column(Modifier.weight(1f).arkeScrollEdges().testTag("home.contentBody").verticalScroll(rememberScrollState())) {
+                            Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {
                                 if (savedNotice) Text(stringResource(R.string.saved_place_notice), modifier = Modifier.testTag("place.savedNotice"), style = MaterialTheme.typography.bodySmall)
                                 if (placeState.error != null && !showingAddPlace) {
                                     Text(placeState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
@@ -145,7 +160,8 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                 if (placeState.ready) {
                                     if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState,
                                         onUpdate = places::update, onEditCancel = places::load,
-                                        onDetailsVisibilityChanged = { showingSavedDetails = it }) { id -> savedNotice = false; places.remove(id) }
+                                        onDetailsVisibilityChanged = { showingSavedDetails = it },
+                                        onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         Text("Em breve.")
                                         TextButton(onClick = { state = state.selectContext(TravelContext.PLANNING) }) { Text(stringResource(R.string.view_places)) }
@@ -156,7 +172,53 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         }
                     }
                 }
+                Card(
+                    modifier = Modifier.fillMaxWidth().height(mapHeight + mapExtension)
+                        .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.42f), RoundedCornerShape(30.dp)),
+                    shape = RoundedCornerShape(30.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                 ) {
+                    Box(Modifier.fillMaxSize()) {
+                        TravelMap(Modifier.fillMaxSize(), pins = pinPlan?.pins.orEmpty().mapNotNull { pin ->
+                            placeState.ideas.firstOrNull { it.id == pin.ideaID }?.let { pin to it.name }
+                        }, revealPin = revealedPin)
+                        val focusedIdea = placeState.ideas.firstOrNull { it.id == focusedIdeaID }
+                        if (state.context == TravelContext.PLANNING && focusedIdea != null) {
+                            Surface(
+                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 18.dp, end = 72.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            ) {
+                                Text(
+                                    focusedIdea.name,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                        FilledTonalIconButton(
+                            onClick = { mapExpanded = !mapExpanded },
+                            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).testTag("home.expandMap"),
+                        ) {
+                            Text(
+                                if (mapExpanded) "↘" else "↗",
+                                modifier = Modifier.clearAndSetSemantics {
+                                    contentDescription = if (mapExpanded) "Recolher mapa" else "Expandir mapa"
+                                },
+                            )
+                        }
+                    }
+                }
             }
+        }
+    }
+    pinIdea?.let { idea ->
+        PinEditor(idea, places, onClose = { pinIdea = null }) { plan ->
+            pinPlan = plan
+            revealedPin = plan.pins.firstOrNull { it.ideaID == idea.id }
+            pinIdea = null
         }
     }
     if (BuildConfig.DEBUG && showingDetailPreview) {
