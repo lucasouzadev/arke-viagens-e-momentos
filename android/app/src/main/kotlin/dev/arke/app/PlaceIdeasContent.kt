@@ -20,6 +20,10 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.text.style.TextAlign
 import dev.arke.core.PlaceDraft
 import androidx.compose.material3.*
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.Saver
@@ -58,30 +62,40 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
         state.ideas.forEach { idea ->
             key(idea.id) {
                 Spacer(Modifier.height(16.dp))
-                Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(24.dp)).padding(16.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { pendingUpdate = null; pendingRequest = null; editing = idea }, enabled = state.ready && !state.busy,
-                        modifier = Modifier.size(48.dp).testTag("place.update.${idea.id}")) {
-                        Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.edit_place_label, idea.name))
+                val shape = RoundedCornerShape(24.dp)
+                val surface = arkeInsetColor()
+                val cover = remember(idea.cover) { decodePlaceCover(idea.cover) }
+                Box(Modifier.fillMaxWidth().clip(shape).background(surface)) {
+                    if (cover != null) {
+                        Image(cover.asImageBitmap(), contentDescription = null,
+                            modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+                        Box(Modifier.matchParentSize().background(surface.copy(alpha = 0.83f)))
                     }
-                }
-                Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    val openLabel = stringResource(R.string.view_place_details_label, idea.name)
-                    TextButton(onClick = { selectedID = idea.id },
-                        colors = ButtonDefaults.textButtonColors(contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary),
-                        contentPadding = PaddingValues(0.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                        .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) {
-                        Text("Abrir ↗", Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { pendingUpdate = null; pendingRequest = null; editing = idea }, enabled = state.ready && !state.busy,
+                            modifier = Modifier.size(48.dp).testTag("place.update.${idea.id}")) {
+                            Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.edit_place_label, idea.name))
+                        }
                     }
-                    val deleteLabel = stringResource(R.string.delete_place) + ": " + idea.name
-                    IconButton(
-                        onClick = { deleting = idea }, enabled = !state.busy,
-                        modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("place.delete.${idea.id}").semantics { contentDescription = deleteLabel },
-                    ) { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) }
-                }
+                    Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        val openLabel = stringResource(R.string.view_place_details_label, idea.name)
+                        TextButton(onClick = { selectedID = idea.id },
+                            colors = ButtonDefaults.textButtonColors(contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary),
+                            contentPadding = PaddingValues(0.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                            .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) {
+                            Text("Abrir ↗", Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                        }
+                        val deleteLabel = stringResource(R.string.delete_place) + ": " + idea.name
+                        IconButton(
+                            onClick = { deleting = idea }, enabled = !state.busy,
+                            modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("place.delete.${idea.id}").semantics { contentDescription = deleteLabel },
+                        ) { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) }
+                    }
+                    }
                 }
             }
         }
@@ -109,13 +123,13 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
 }
 
 private val IdeaSaver = Saver<PlaceIdea?, List<String>>(
-    save = { idea -> idea?.let { listOf(it.id, it.name, it.address, it.note) } },
-    restore = { PlaceIdea(it[0], it[1], it[2], it[3]) },
+    save = { idea -> idea?.let { listOf(it.id, it.name, it.address, it.note, it.link, it.cover) } },
+    restore = { PlaceIdea(it[0], it[1], it[2], it[3], it.getOrElse(4) { "" }, it.getOrElse(5) { "" }) },
 )
 
 private val PendingDraftSaver = Saver<PlaceDraft?, List<String>>(
-    save = { draft -> draft?.let { listOf(it.id, it.name, it.address, it.note) } },
-    restore = { PlaceDraft(it[0], it[1], it[2], it[3]) },
+    save = { draft -> draft?.let { listOf(it.id, it.name, it.address, it.note, it.link, it.cover) } },
+    restore = { PlaceDraft(it[0], it[1], it[2], it[3], it.getOrElse(4) { "" }, it.getOrElse(5) { "" }) },
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -169,6 +183,10 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                         Column(Modifier.fillMaxWidth().background(insetColor, RoundedCornerShape(24.dp)).padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)) {
                             DetailContentRow(idea.address, R.drawable.ic_pin, stringResource(R.string.place_address), "detail.address")
+                            dev.arke.core.webLink(idea.link)?.let { link ->
+                                val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                                TextButton(onClick = { runCatching { uriHandler.openUri(link) } }) { Text("Abrir link") }
+                            }
                             if (idea.note.isNotEmpty()) DetailContentRow(idea.note, R.drawable.ic_note, stringResource(R.string.place_note), "detail.note")
                         }
                     } else Text(stringResource(R.string.place_unavailable))
