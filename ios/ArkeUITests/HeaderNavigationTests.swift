@@ -1,27 +1,20 @@
 import XCTest
+import CoreLocation
 
 final class HeaderNavigationTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    func testClockChangesAllContextsWithoutChangingPanel() {
+    func testInlineNavigationChangesContextWithoutChangingPanel() {
         let app = XCUIApplication()
         app.launch()
-        let clock = app.buttons["home.contextMenu"]
-        XCTAssertTrue(clock.waitForExistence(timeout: 15))
+        let next = app.staticTexts["home.contextTitle"]
+        XCTAssertTrue(next.waitForExistence(timeout: 15))
         XCTAssertEqual(app.buttons.matching(identifier: "home.panelMenu").count, 1)
-        if !app.buttons["home.panelMenu"].isHittable { print(app.debugDescription) }
-        XCTAssertTrue(app.buttons["home.panelMenu"].isHittable)
         app.buttons["home.panelMenu"].tap()
         app.buttons["Detalhes"].tap()
-        for title in ["Gastos", "Cofrinho", "Avaliações", "Memórias", "Planejamento"] {
-            expectation(for: NSPredicate { _, _ in clock.isHittable }, evaluatedWith: clock)
-            waitForExpectations(timeout: 5)
-            XCTAssertTrue(clock.isHittable)
-            clock.tap()
-            let wheel = app.pickerWheels.firstMatch
-            XCTAssertTrue(wheel.waitForExistence(timeout: 5))
-            wheel.adjust(toPickerWheelValue: title)
-            app.buttons["Concluído"].tap()
+        for (index, title) in ["Gastos", "Cofrinho", "Avaliações", "Memórias", "Avaliações"].enumerated() {
+            XCTAssertTrue(next.isHittable)
+            if index == 4 { next.swipeRight() } else { next.swipeLeft() }
             let selectedTitle = NSPredicate(format: "label == %@", title)
             expectation(for: selectedTitle, evaluatedWith: app.staticTexts["home.contextTitle"])
             waitForExpectations(timeout: 5)
@@ -33,7 +26,7 @@ final class HeaderNavigationTests: XCTestCase {
 
     func testAddPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
         let app = XCUIApplication()
-        app.launch()
+        app.activate()
         let addButton = app.buttons["home.addPlace"]
         XCTAssertTrue(addButton.waitForExistence(timeout: 15))
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
@@ -53,12 +46,12 @@ final class HeaderNavigationTests: XCTestCase {
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
         tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Informe um endereço ou referência."].exists)
-        app.buttons["place.dismiss"].tap()
+        app.buttons["place.cancel"].tap()
         app.buttons["Continuar editando"].tap()
         XCTAssertEqual(name.value as? String, "Rascunho de teste")
         app.buttons["place.cancel"].tap()
         app.buttons["Descartar"].tap()
-        XCTAssertTrue(app.buttons["home.contextMenu"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].waitForExistence(timeout: 5))
     }
 
     func testSaveReviewReopenAndConfirmedDelete() {
@@ -160,7 +153,7 @@ final class HeaderNavigationTests: XCTestCase {
         let distance = app.frame.height * 0.35
         XCTAssertTrue(handle.isHittable)
         let window = app.coordinate(withNormalizedOffset: .zero)
-        var start = window.withOffset(CGVector(dx: handle.frame.midX, dy: handle.frame.midY))
+        var start = window.withOffset(CGVector(dx: handle.frame.midX, dy: handle.frame.minY + 4))
         start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -distance)))
         expectation(for: NSPredicate(format: "value == %@", "Detalhes"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
@@ -170,7 +163,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(handle.value as? String, "Detalhes")
         XCTAssertEqual(app.staticTexts["home.contextTitle"].label, "Planejamento")
         XCTAssertTrue(handle.isHittable)
-        start = window.withOffset(CGVector(dx: handle.frame.midX, dy: handle.frame.midY))
+        start = window.withOffset(CGVector(dx: handle.frame.midX, dy: handle.frame.minY + 4))
         start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)))
         print("Panel after downward drag: \(String(describing: handle.value))")
         let dragCapture = XCTAttachment(screenshot: app.screenshot())
@@ -188,15 +181,15 @@ final class HeaderNavigationTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--capture-place-details"]
         app.launch()
-        let handle = app.buttons["detail.dismiss"]
+        let handle = app.otherElements["detail.dismiss.card"]
         XCTAssertTrue(handle.waitForExistence(timeout: 15))
         let window = app.coordinate(withNormalizedOffset: .zero)
-        let start = window.withOffset(CGVector(dx: handle.frame.midX, dy: handle.frame.midY))
+        let start = window.withOffset(CGVector(dx: handle.frame.midX, dy: handle.frame.minY + 4))
         let end = window.withOffset(CGVector(dx: handle.frame.midX, dy: app.frame.maxY - 30))
         start.press(forDuration: 0.1, thenDragTo: end)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
-        XCTAssertTrue(app.buttons["home.contextMenu"].isHittable)
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].isHittable)
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
     }
 
@@ -212,7 +205,6 @@ final class HeaderNavigationTests: XCTestCase {
         body.swipeUp()
         XCTAssertLessThan(note.frame.minY, originalY)
         XCTAssertTrue(app.buttons["detail.next"].isHittable)
-        XCTAssertTrue(app.buttons["detail.dismiss"].isHittable)
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
     }
@@ -229,7 +221,6 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(card.frame.minX, app.frame.minX)
         XCTAssertLessThanOrEqual(card.frame.maxX, app.frame.maxX)
         XCTAssertLessThan(card.frame.maxY, app.frame.maxY)
-        XCTAssertGreaterThanOrEqual(app.buttons["detail.dismiss"].frame.minY + 1, card.frame.minY)
         XCTAssertLessThan(app.staticTexts["detail.title"].frame.minX, app.buttons["detail.info"].frame.minX)
         XCTAssertEqual(app.staticTexts["detail.title"].frame.midX, card.frame.midX, accuracy: 1)
         XCTAssertEqual(app.staticTexts["detail.name"].frame.minX, app.staticTexts["detail.address"].frame.minX, accuracy: 1)
@@ -243,13 +234,12 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         XCTAssertGreaterThan(app.buttons["detail.next"].frame.width, card.frame.width * 0.8)
-        XCTAssertTrue(app.buttons["detail.dismiss"].isHittable)
-        let firstCloseY = app.buttons["detail.dismiss"].frame.minY
+        let firstCloseY = card.frame.minY
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
         expectation(for: NSPredicate { _, _ in
-            app.buttons["detail.dismiss"].frame.minY > firstCloseY + 20
-        }, evaluatedWith: app.buttons["detail.dismiss"])
+            card.frame.minY > firstCloseY + 20
+        }, evaluatedWith: card)
         waitForExpectations(timeout: 5)
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 2 de 2")
         XCTAssertFalse(app.buttons["detail.next"].exists)
@@ -262,7 +252,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         app.buttons["detail.next"].tap()
         app.buttons["detail.done"].tap()
-        XCTAssertTrue(app.buttons["home.contextMenu"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["home.contextTitle"].label, "Planejamento")
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
     }
@@ -302,6 +292,56 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Lugar com toque amplo"].exists)
         app.buttons["place.cancel"].tap()
         app.buttons["Descartar"].tap()
+    }
+
+    func testLocationRequiresTapAndAllowsDeniedRetry() {
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .location)
+        app.launch()
+        let locate = app.buttons["home.location"]
+        XCTAssertTrue(locate.waitForExistence(timeout: 15))
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertFalse(springboard.alerts.firstMatch.exists)
+        locate.tap()
+        let permission = springboard.alerts.firstMatch
+        XCTAssertTrue(permission.waitForExistence(timeout: 10))
+        let deny = permission.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Don")).firstMatch
+        XCTAssertTrue(deny.exists)
+        deny.tap()
+        XCTAssertTrue(locate.isHittable)
+        locate.tap()
+        XCTAssertTrue(app.alerts["Minha localização"].waitForExistence(timeout: 5))
+        app.alerts["Minha localização"].buttons["Entendi"].tap()
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].isHittable)
+        app.terminate()
+        app.resetAuthorizationStatus(for: .location)
+    }
+
+    @MainActor
+    func testLocationCentersOnSimulatedPosition() {
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .location)
+        XCUIDevice.shared.location = XCUILocation(location: CLLocation(latitude: 37.334886, longitude: -122.008988))
+        defer { XCUIDevice.shared.location = nil }
+        app.launch()
+        let locate = app.buttons["home.location"]
+        XCTAssertTrue(locate.waitForExistence(timeout: 15))
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertFalse(springboard.alerts.firstMatch.exists)
+        locate.tap()
+        let permission = springboard.alerts.firstMatch
+        XCTAssertTrue(permission.waitForExistence(timeout: 10))
+        let allow = permission.buttons["Allow Once"]
+        XCTAssertTrue(allow.exists)
+        allow.tap()
+        expectation(for: NSPredicate(format: "value == %@", "Localização disponível"), evaluatedWith: locate)
+        waitForExpectations(timeout: 20)
+        XCTAssertFalse(app.alerts["Minha localização"].exists)
+        let locationCapture = XCTAttachment(screenshot: app.screenshot())
+        locationCapture.lifetime = .keepAlways
+        add(locationCapture)
+        app.terminate()
+        app.resetAuthorizationStatus(for: .location)
     }
 
     private func tapEditorAction(_ identifier: String, app: XCUIApplication) {

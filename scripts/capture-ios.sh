@@ -27,6 +27,20 @@ if compact:
     print('compact\t' + compact['udid'] + '\t' + compact['name'])
 PY
 
+stop_recording() {
+  printf 'Stopping simulator recording (PID %s)\n' "$recorder"
+  kill -INT "$recorder" 2>/dev/null || true
+  for attempt in {1..15}; do
+    kill -0 "$recorder" 2>/dev/null || break
+    sleep 1
+  done
+  if kill -0 "$recorder" 2>/dev/null; then
+    printf 'Simulator recorder did not stop after SIGINT; ending it.\n'
+    kill -KILL "$recorder" 2>/dev/null || true
+  fi
+  wait "$recorder" 2>/dev/null || true
+}
+
 while IFS=$'\t' read -r size device model; do
   printf '%s: %s\n' "$size" "$model"
   xcrun simctl boot "$device" || true
@@ -40,9 +54,11 @@ PY
   xcrun simctl status_bar "$device" override --time '9:41' --batteryState charged --batteryLevel 100
   xcrun simctl install "$device" build/ios/Build/Products/Debug-iphonesimulator/Arke.app
   if [ "$size" = standard ]; then
-    xcrun simctl io "$device" recordVideo --codec=h264 "$output/ios-qa-interactions.mov" &
+    # An asynchronous Bash command may inherit SIGINT as ignored.
+    python3 -c 'import os, signal, sys; signal.signal(signal.SIGINT, signal.SIG_DFL); os.execvp(sys.argv[1], sys.argv[1:])' \
+      xcrun simctl io "$device" recordVideo --codec=h264 "$output/ios-qa-interactions.mov" &
     recorder=$!
-    trap 'kill -INT "$recorder" 2>/dev/null || true; wait "$recorder" 2>/dev/null || true' EXIT
+    trap stop_recording EXIT
     if ! xcodebuild -project ios/Arke.xcodeproj -scheme Arke -configuration Debug \
       -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO \
       -test-timeouts-enabled YES -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 180 \
@@ -57,8 +73,7 @@ PY
       fi
       exit 1
     fi
-    kill -INT "$recorder" 2>/dev/null || true
-    wait "$recorder" 2>/dev/null || true
+    stop_recording
     trap - EXIT
   fi
   for theme in light dark; do

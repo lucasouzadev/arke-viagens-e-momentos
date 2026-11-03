@@ -1,5 +1,20 @@
 package dev.arke.app
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.FocusRequester
@@ -21,9 +36,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -43,23 +55,42 @@ import dev.arke.core.PlaceDraftIssue
 import dev.arke.core.PlaceIdea
 
 private val DraftSaver = Saver<PlaceDraft, List<String>>(
-    save = { listOf(it.id, it.name, it.address, it.note) },
-    restore = { PlaceDraft(it[0], it[1], it[2], it[3]) },
+    save = { listOf(it.id, it.name, it.address, it.note, it.link, it.cover) },
+    restore = { PlaceDraft(it[0], it[1], it[2], it[3], it.getOrElse(4) { "" }, it.getOrElse(5) { "" }) },
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Unit, onCancel: () -> Unit, initialIdea: PlaceIdea? = null) {
-    val baseline = remember(initialIdea) { initialIdea?.let { PlaceDraft(it.id, it.name, it.address, it.note) } ?: PlaceDraft() }
+    val baseline = remember(initialIdea) { initialIdea?.let { PlaceDraft(it.id, it.name, it.address, it.note, it.link, it.cover) } ?: PlaceDraft() }
     var draft by rememberSaveable(stateSaver = DraftSaver) { mutableStateOf(baseline) }
     val hasChanges = if (initialIdea == null) !draft.isEmpty else draft.normalized() != baseline.normalized()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var loadingCover by remember { mutableStateOf(false) }
+    var coverError by remember { mutableStateOf(false) }
+    val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        if (uri != null) {
+            loadingCover = true
+            coverError = false
+            scope.launch {
+                try {
+                    val cover = withContext(Dispatchers.IO) { readPlaceCover(context.contentResolver, uri) }
+                    if (cover == null) coverError = true else draft = draft.copy(cover = cover)
+                } finally {
+                    loadingCover = false
+                }
+            }
+        }
+    }
     var reviewing by rememberSaveable { mutableStateOf(false) }
+    val editorScroll = rememberScrollState()
+    LaunchedEffect(reviewing) { editorScroll.scrollTo(0) }
     var submitted by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by remember { mutableStateOf(false) }
     var showingInfo by remember { mutableStateOf(false) }
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
-    val sheetColor = arkeSheetColor()
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     fun cancel() {
@@ -111,24 +142,38 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
             }
             Column(
                 Modifier.fillMaxWidth().weight(1f)
-                    .drawWithContent {
-                        drawContent()
-                        drawRect(Brush.verticalGradient(colors = listOf(sheetColor, Color.Transparent), startY = 0f, endY = 12.dp.toPx()))
-                        drawRect(Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, sheetColor),
-                            startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f),
-                            endY = size.height,
-                        ))
-                    }
-                    .verticalScroll(rememberScrollState()).testTag("place.fields")
-                    .padding(top = 24.dp, bottom = 48.dp),
+                    .verticalScroll(editorScroll).testTag("place.fields")
+                    .padding(top = 16.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                if (!reviewing || draft.cover.isNotEmpty()) {
+                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(20.dp)).padding(16.dp)) {
+                        val cover = remember(draft.cover) { decodePlaceCover(draft.cover) }
+                        if (cover != null) {
+                            Image(cover.asImageBitmap(), contentDescription = null,
+                                modifier = Modifier.size(width = 112.dp, height = 80.dp), contentScale = ContentScale.Crop)
+                        }
+                        if (!reviewing) {
+                            TextButton(enabled = !saving && !loadingCover, onClick = {
+                                picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                            }) { Text(if (cover == null) "Adicionar foto de capa" else "Trocar foto de capa") }
+                            if (cover != null) {
+                                TextButton(enabled = !saving && !loadingCover, onClick = {
+                                    draft = draft.copy(cover = "")
+                                    coverError = false
+                                }) { Text("Remover foto") }
+                            }
+                            if (loadingCover) Text("Carregando foto…")
+                            if (coverError) Text("Não foi possível abrir esta foto.", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
                 Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(24.dp)).padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 if (reviewing) {
                     PlaceSummary(stringResource(R.string.place_name), draft.normalized().name, 56.dp)
                     PlaceSummary(stringResource(R.string.place_address), draft.normalized().address, 96.dp)
+                    if (draft.link.isNotBlank()) PlaceSummary("Link", draft.link.trim(), 48.dp)
                     PlaceSummary(stringResource(R.string.place_note), draft.normalized().note.ifEmpty { stringResource(R.string.no_note) }, 120.dp)
                 } else {
                     PlaceInput(stringResource(R.string.place_name), draft.name, { draft = draft.copy(name = it) }, 56.dp, 1, 1, saving, "place.name")
@@ -136,14 +181,30 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     PlaceInput(stringResource(R.string.place_address), draft.address, { draft = draft.copy(address = it) }, 96.dp, 2, 4, saving, "place.address")
                     HorizontalDivider()
                     PlaceInput(stringResource(R.string.place_note), draft.note, { draft = draft.copy(note = it) }, 120.dp, 3, 6, saving, "place.note")
+                    HorizontalDivider()
+                    PlaceInput("Link opcional", draft.link, { draft = draft.copy(link = it) }, 48.dp, 1, 1, saving, "place.link")
                     if (submitted) draft.issue?.let { issue ->
                         Text(stringResource(issue.message()), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.validation"))
                     }
                 }
                 }
                 if (saveError != null) Text(saveError, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.saveError"))
-            Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (reviewing) {
+                if (!reviewing) {
+                    Button(onClick = {
+                        submitted = true
+                        if (draft.issue == null) {
+                            focus.clearFocus()
+                            keyboard?.hide()
+                            reviewing = true
+                        }
+                    }, enabled = !saving && !loadingCover, shape = CircleShape,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
+                        Text(stringResource(R.string.review_place))
+                    }
+                }
+            }
+            if (reviewing) {
+                Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(
                         colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).background(arkeInsetColor(), CircleShape).testTag("place.edit"),
@@ -152,15 +213,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                         onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.save"),
                     ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
-                } else {
-                    Button(onClick = {
-                        submitted = true
-                        if (draft.issue == null) { focus.clearFocus(); keyboard?.hide(); reviewing = true }
-                    }, enabled = !saving, shape = CircleShape, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
-                        Text(stringResource(R.string.review_place))
-                    }
                 }
-            }
             }
         }
     }
@@ -192,7 +245,7 @@ private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions(capitalization = if (maxLines == 1) KeyboardCapitalization.Words else KeyboardCapitalization.Sentences, imeAction = if (maxLines == 1) ImeAction.Next else ImeAction.Default),
             keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
-            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight)
+            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).padding(start = 36.dp, end = 4.dp)
                 .focusRequester(requester).testTag(tag).semantics { contentDescription = label },
         )
     }
@@ -216,5 +269,36 @@ private fun PlaceDraftIssue.message(): Int = when (this) {
     PlaceDraftIssue.NAME_TOO_LONG -> R.string.name_too_long
     PlaceDraftIssue.ADDRESS_REQUIRED -> R.string.address_required
     PlaceDraftIssue.ADDRESS_TOO_LONG -> R.string.address_too_long
+    PlaceDraftIssue.INVALID_LINK -> R.string.invalid_place_link
     PlaceDraftIssue.NOTE_TOO_LONG -> R.string.note_too_long
+}
+
+internal fun decodePlaceCover(encoded: String): Bitmap? {
+    if (encoded.isEmpty() || encoded.length > 88_000) return null
+    return runCatching {
+        val bytes = Base64.decode(encoded, Base64.NO_WRAP)
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    }.getOrNull()
+}
+
+private fun readPlaceCover(resolver: android.content.ContentResolver, uri: Uri): String? {
+    return runCatching {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        val largest = maxOf(bounds.outWidth, bounds.outHeight)
+        if (largest <= 0) return null
+        val options = BitmapFactory.Options()
+        while (largest / options.inSampleSize.coerceAtLeast(1) > 960) {
+            options.inSampleSize = options.inSampleSize.coerceAtLeast(1) * 2
+        }
+        val bitmap = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
+        val output = ByteArrayOutputStream()
+        for (quality in listOf(68, 48, 30)) {
+            output.reset()
+            if (bitmap.compress(Bitmap.CompressFormat.JPEG, quality, output) && output.size() <= 65_000) {
+                return Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
+            }
+        }
+        null
+    }.getOrNull()
 }

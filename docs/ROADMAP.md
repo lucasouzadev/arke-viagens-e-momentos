@@ -1,6 +1,6 @@
 # ROADMAP — Plano principal do Arke
 
-**QA da beta em validação — 02/11/2026:** [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md): correções implementadas; Android 18 testes/20 PNGs aprovados na fonte 70f623b. Reprodução iPhone 14/iOS 27 em preparação; sem nova beta/merge. Resultado e limites em STATUS.
+**QA da beta em revisão — 02/11/2026:** [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md): fluxos UI, viewport/teclado e posição simulada verificados em iPhone 14/iOS 27; Android aprovado, 40 PNGs em pares inspecionados. CI final aprovada com 38 testes na fonte 3ba7343. Sem nova beta/merge; limites manuais e fontes em STATUS.
 
 **Primeira beta enviada — 02/11/2026:** M5-TESTFLIGHT-01 teve validação/upload Apple aceitos para 0.0.1 (8.1), fonte 90c1e5d. Processamento, grupo e instalação ainda não verificados; sem release pública/merge. Evidências em STATUS e contrato.
 
@@ -163,5 +163,6 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-DETAILS-UI-03](engenharia/M5-DETAILS-UI-03.md) | Sheet de detalhes compacto e agrupado | Em revisão; CI e 32 PNGs verificados no PR #2 |
 | [M5-FLOATING-01](engenharia/M5-FLOATING-01.md) | Cartões flutuantes, recuo e cabeçalho simplificado | 32 testes e 32 PNGs verificados; em revisão no PR #2, limites no contrato |
 | [M5-EDIT-01](engenharia/M5-EDIT-01.md) | Navegação limpa e edição segura de ideias | 34 testes e 40 PNGs verificados; em revisão no PR #2, limites no contrato |
+| [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md) | Correções do QA da beta e posição pessoal contextual | Em revisão: fluxos/40 PNGs/posição simulada verificados; CI aprovada; matriz manual pendente no contrato |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.

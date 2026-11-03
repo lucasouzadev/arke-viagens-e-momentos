@@ -53,16 +53,15 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("place.discard").performClick()
     }
 
-    @Test fun clockChangesAllContextsWithoutChangingPanel() {
+    @Test fun inlineNavigationChangesContextWithoutChangingPanel() {
         compose.onNodeWithTag("home.panelMenu").performClick()
         compose.onNodeWithTag("detent.DETAILS").performClick()
-        val contexts = listOf("EXPENSES" to "Gastos", "SAVINGS" to "Cofrinho", "REVIEWS" to "Avaliações", "MEMORIES" to "Memórias", "PLANNING" to "Planejamento")
-        for ((id, title) in contexts) {
-            compose.onNodeWithTag("home.contextMenu").performClick()
-            compose.onNodeWithTag("home.contextWheel").performScrollToNode(hasTestTag("context.$id"))
-            compose.onNodeWithTag("context.$id").performClick()
-            compose.waitForIdle()
-            compose.onNodeWithText("Concluído").performClick()
+        val contexts = listOf("EXPENSES" to "Gastos", "SAVINGS" to "Cofrinho", "REVIEWS" to "Avaliações", "MEMORIES" to "Memórias", "REVIEWS" to "Avaliações")
+        for ((index, entry) in contexts.withIndex()) {
+            val title = entry.second
+            compose.onNodeWithTag("home.contextTitle").performTouchInput {
+                if (index == contexts.lastIndex) swipeRight() else swipeLeft()
+            }
             compose.onNodeWithTag("home.contextTitle").assertTextEquals(title)
             compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Detalhes")
         }
@@ -101,7 +100,7 @@ class HeaderNavigationTest {
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
         compose.onNodeWithTag("place.review").performScrollTo().performClick()
-        compose.onNodeWithTag("place.save").performScrollTo().performClick()
+        compose.onNodeWithTag("place.save").performClick()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.onActivity { activity -> androidx.lifecycle.ViewModelProvider(activity)[PlaceIdeasViewModel::class.java].load() }
@@ -135,7 +134,7 @@ class HeaderNavigationTest {
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu atualizado")
         compose.onNodeWithTag("place.review").performScrollTo().performClick()
-        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performScrollTo().performClick()
+        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.title").fetchSemanticsNodes().isEmpty() }
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isNotEmpty() }

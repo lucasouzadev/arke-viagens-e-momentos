@@ -10,13 +10,16 @@ struct HomeView: View {
     @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)))
     @State private var panelHeight: CGFloat?
     @State private var panelOrigin: CGFloat?
+    @Namespace private var mapSearchTransition
+    @State private var showingMapSearch = false
+    @State private var searchPin: MKMapItem?
     @State private var showingAddPlace = false
     @State private var showingDetailPreview = false
     @State private var showingEditPreview = false
     @State private var showingSavedDetails = false
     @State private var savedNotice = false
     @StateObject private var places = PlaceIdeasStore()
-    @State private var showingContextPicker = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showingPanelPicker = false
     @ScaledMetric(relativeTo: .headline) private var minimumContentHeight: CGFloat = 160
 
@@ -33,17 +36,37 @@ struct HomeView: View {
             Text("Onde vamos?").arkeText(.screenTitle)
             GeometryReader { geometry in
                 VStack(spacing: 8) {
-                    Map(position: $camera) { UserAnnotation() }
+                    Map(position: $camera) {
+                        UserAnnotation()
+                        if let searchPin { Marker(item: searchPin) }
+                    }
                         .mapStyle(.standard)
                         .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
                         .frame(height: panelHeight ?? mapHeight(in: geometry.size.height))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .contentShape(RoundedRectangle(cornerRadius: 20))
-                        .overlay(alignment: .bottomTrailing) {
-                            Button { location.request() } label: {
-                                Image(systemName: "location.fill").frame(width: 48, height: 48)
-                                    .background(.regularMaterial, in: Circle())
-                            }.padding(12).accessibilityLabel("Minha localização")
+                        .clipShape(.rect(cornerRadius: 30))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 30)
+                                .strokeBorder(.white.opacity(0.44), lineWidth: 1)
+                                .shadow(color: .white.opacity(0.75), radius: 7)
+                                .allowsHitTesting(false)
+                        }
+                        .overlay(alignment: .bottom) {
+                            HStack(spacing: 6) {
+                                Button { showingMapSearch = true } label: {
+                                    Label("Buscar lugares", systemImage: "magnifyingglass")
+                                        .font(.subheadline).frame(maxWidth: .infinity, minHeight: 34)
+                                }
+                                .modifier(MapLocationButtonStyle(isPill: true))
+                                .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
+                                Button { location.request() } label: {
+                                    Image(systemName: "location.fill").frame(width: 36, height: 36)
+                                }
+                                .modifier(MapLocationButtonStyle())
+                                .accessibilityLabel("Minha localização")
+                                .accessibilityIdentifier("home.location")
+                                .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
+                            }
+                            .padding(.horizontal, 12).padding(.bottom, 28)
                         }
                         .onReceive(location.$coordinate) { coordinate in
                             if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
@@ -115,6 +138,17 @@ struct HomeView: View {
                 onSave: { _ in }, onCancel: { showingEditPreview = false })
         }
         #endif
+        .sheet(isPresented: $showingMapSearch) {
+            MapPlaceSearch { item in
+                searchPin = item
+                camera = .region(MKCoordinateRegion(center: item.placemark.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.035, longitudeDelta: 0.035)))
+                showingMapSearch = false
+            }
+            .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: false))
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
         .sheet(isPresented: $showingAddPlace) {
             PlaceEditor(saving: places.busy, saveError: places.error, onSave: { draft in
                 Task {
@@ -126,53 +160,65 @@ struct HomeView: View {
     }
 
     private var cardHeader: some View {
-        HStack(spacing: 8) {
+        ZStack(alignment: .leading) {
+            let options = TravelContext.allCases
+            let index = options.firstIndex(of: state.context) ?? 0
+            HStack(spacing: 4) {
+                contextPreview(index - 1)
+                Text(state.context.title)
+                    .arkeText(.contextTitle)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("home.contextTitle")
+                contextPreview(index + 1)
+            }
+            .contentShape(Rectangle())
+            .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                selectContext(index + (value.translation.width < 0 ? 1 : -1))
+            })
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: selectContext(index + 1)
+                case .decrement: selectContext(index - 1)
+                @unknown default: break
+                }
+            }
             Button { showingAddPlace = true } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 24, weight: .medium))
                     .frame(width: 48, height: 48)
-                    .contentShape(Rectangle())
+                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
             }
             .disabled(!places.ready || places.busy)
             .accessibilityLabel("Adicionar lugar")
             .accessibilityIdentifier("home.addPlace")
 
-            Text(state.context.title)
-                .arkeText(.contextTitle)
-                .foregroundStyle(Color(uiColor: .label))
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity)
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("home.contextTitle")
-
-            Button { showingContextPicker = true } label: {
-                Image(systemName: "clock")
-                    .font(.system(size: 24))
-                    .frame(width: 48, height: 48)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel("Trocar contexto")
-            .accessibilityValue(state.context.title)
-            .accessibilityIdentifier("home.contextMenu")
-            .sheet(isPresented: $showingContextPicker) {
-                VStack(spacing: 12) {
-                    Text("Escolha o contexto").arkeText(.contextTitle).padding(.top, 20)
-                    Picker("Contexto", selection: $contextValue) {
-                        ForEach(TravelContext.allCases, id: \.self) { context in
-                            Text(context.title).tag(context.rawValue).accessibilityIdentifier("context." + context.rawValue)
-                        }
-                    }.pickerStyle(.wheel).accessibilityIdentifier("home.contextWheel")
-                    Button { showingContextPicker = false } label: {
-                        Text("Concluído").arkeText(.button).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .background(ArkeUI.blue, in: Capsule()).contentShape(Rectangle())
-                    }.buttonStyle(.plain).padding(.horizontal, 20).padding(.bottom, 20)
-                }.presentationDetents([.height(320)]).presentationDragIndicator(.visible)
-            }
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
+        .sensoryFeedback(.selection, trigger: contextValue)
+    }
+
+    private func selectContext(_ index: Int) {
+        guard TravelContext.allCases.indices.contains(index) else { return }
+        contextValue = TravelContext.allCases[index].rawValue
+    }
+
+    private func contextPreview(_ index: Int) -> some View {
+        let options = TravelContext.allCases
+        return Text(options.indices.contains(index) ? options[index].title : "")
+            .font(.caption.weight(.semibold)).lineLimit(1)
+            .frame(width: 56).opacity(0.34).accessibilityHidden(true)
+    }
+
+    private func settlePanel(_ detent: PanelDetent) {
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
+            detentValue = detent.rawValue
+            panelHeight = nil
+            panelOrigin = nil
+        }
     }
 
     private var panelMenu: some View {
@@ -203,9 +249,7 @@ struct HomeView: View {
         .confirmationDialog("Proporção atual: \(state.detent.title)", isPresented: $showingPanelPicker, titleVisibility: .visible) {
             ForEach(PanelDetent.allCases, id: \.self) { detent in
                 Button(detent.title + (detent == state.detent ? " ✓" : "")) {
-                    var next = state
-                    next.setDetent(detent)
-                    detentValue = next.detent.rawValue
+                    settlePanel(detent)
                 }
             }
             Button("Cancelar", role: .cancel) {}
@@ -227,18 +271,14 @@ struct HomeView: View {
                 let closest = PanelDetent.allCases.min {
                     abs(mapHeight(for: $0, in: height) - target) < abs(mapHeight(for: $1, in: height) - target)
                 }
-                var transaction = Transaction(); transaction.disablesAnimations = true
-                withTransaction(transaction) {
-                    if let closest { detentValue = closest.rawValue }
-                    panelHeight = nil; panelOrigin = nil
-                }
+                settlePanel(closest ?? state.detent)
             }
     }
 
     private func movePanel(towardMap: Bool) {
         let ordered: [PanelDetent] = [.details, .balanced, .explore]
         guard let index = ordered.firstIndex(of: state.detent) else { return }
-        detentValue = ordered[min(2, max(0, index + (towardMap ? 1 : -1)))].rawValue
+        settlePanel(ordered[min(2, max(0, index + (towardMap ? 1 : -1)))])
     }
 
     private func clampedMapHeight(_ value: CGFloat, in height: CGFloat) -> CGFloat {
@@ -312,6 +352,82 @@ private final class ForegroundLocation: NSObject, ObservableObject, CLLocationMa
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor [weak self] in
             self?.message = "Não foi possível obter sua posição agora. Tente novamente."; self?.requested = false
+        }
+    }
+}
+
+private struct MapLocationButtonStyle: ViewModifier {
+    var isPill = false
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.buttonStyle(.glass).buttonBorderShape(isPill ? .capsule : .circle)
+        } else {
+            content.background(.regularMaterial, in: Capsule())
+        }
+    }
+}
+
+private struct MapPlaceSearch: View {
+    let onSelect: (MKMapItem) -> Void
+    @State private var query = ""
+    @State private var results: [MKMapItem] = []
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let message { Text(message).foregroundStyle(.secondary) }
+                ForEach(results.indices, id: \.self) { index in
+                    let item = results[index]
+                    Button { onSelect(item) } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.name ?? "Lugar")
+                            if let address = item.placemark.title {
+                                Text(address).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Buscar lugares")
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Nome ou endereço")
+            .arkeScrollEdges()
+        }
+        .task(id: query) {
+            results = []
+            message = nil
+            let phrase = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard phrase.count >= 2 else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(350))
+                let request = MKLocalSearch.Request()
+                request.naturalLanguageQuery = phrase
+                let response = try await MKLocalSearch(request: request).start()
+                try Task.checkCancellation()
+                results = response.mapItems
+                if results.isEmpty { message = "Nenhum lugar encontrado." }
+            } catch {
+                if !Task.isCancelled { message = "Não foi possível buscar. Tente novamente." }
+            }
+        }
+    }
+}
+
+private struct MapSearchMotion: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let namespace: Namespace.ID
+    let isSource: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 18, *), !reduceMotion {
+            if isSource {
+                content.matchedTransitionSource(id: "map.search", in: namespace)
+            } else {
+                content.navigationTransition(.zoom(sourceID: "map.search", in: namespace))
+            }
+        } else {
+            content
         }
     }
 }

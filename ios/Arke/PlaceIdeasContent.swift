@@ -18,6 +18,18 @@ struct PlaceIdeasContent: View {
             } else {
                 ForEach(store.ideas) { idea in
                     VStack(alignment: .leading, spacing: 8) {
+                        if let cover = idea.cover, let image = UIImage(data: cover) {
+                            GeometryReader { geometry in
+                                Image(uiImage: image).resizable().scaledToFill()
+                                    .frame(width: geometry.size.width - 20, height: geometry.size.height - 20)
+                                    .clipped().padding(10)
+                            }
+                            .frame(height: 148)
+                            .background {
+                                Color(uiColor: .systemBackground).mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
+                            }
+                            .accessibilityHidden(true)
+                        }
                         HStack {
                             Text(idea.name).arkeText(.contextTitle).frame(maxWidth: .infinity, alignment: .leading)
                             Button { editSaveAttempted = false; editing = idea } label: {
@@ -47,7 +59,20 @@ struct PlaceIdeasContent: View {
                         }
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
+                    .background {
+                        RoundedRectangle(cornerRadius: 24).fill(ArkeUI.insetSurface(colorScheme))
+                            .overlay {
+                                if let cover = idea.cover, let image = UIImage(data: cover) {
+                                    GeometryReader { geometry in
+                                        Image(uiImage: image).resizable().scaledToFill()
+                                            .frame(width: geometry.size.width, height: geometry.size.height)
+                                            .clipped()
+                                            .overlay(ArkeUI.insetSurface(colorScheme).opacity(0.83))
+                                    }.accessibilityHidden(true)
+                                }
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                    }
                 }
             }
         }
@@ -63,13 +88,13 @@ struct PlaceIdeasContent: View {
                 Task { if await store.update(draft, replacing: original) { editing = nil } }
             }, onCancel: { editing = nil; Task { await store.load() } })
         }
-        .alert("Excluir ideia?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+        .alert("Excluir ideia?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), presenting: deleting) { idea in
             Button("Excluir", role: .destructive) {
-                if let id = deleting?.id { onDelete(id) }
+                onDelete(idea.id)
                 deleting = nil
             }
             Button("Cancelar", role: .cancel) { deleting = nil }
-        } message: {
+        } message: { _ in
             Text("Esta ideia será removida deste aparelho.")
         }
     }
@@ -93,7 +118,7 @@ struct PlaceDetails: View {
     private var ink: Color { Color(uiColor: .label) }
 
     var body: some View {
-        ArkeFloatingSheet(dismissIdentifier: "detail.dismiss", onDismiss: onClose) {
+        ArkeFloatingSheet(dismissIdentifier: "detail.dismiss") {
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
                     Color.clear.frame(width: 48, height: 1).accessibilityHidden(true)
@@ -133,6 +158,9 @@ struct PlaceDetails: View {
                             }.padding(.horizontal, 20)
                             VStack(alignment: .leading, spacing: 20) {
                                 contentRow(icon: "mappin", value: idea.address, label: "Endereço", identifier: "detail.address")
+                                if let url = PlaceDraft.webURL(idea.link) {
+                                    Link(destination: url) { Label("Abrir link", systemImage: "link") }
+                                }
                                 if !idea.note.isEmpty {
                                     contentRow(icon: "text.alignleft", value: idea.note, label: "Nota", identifier: "detail.note")
                                 }
@@ -142,7 +170,7 @@ struct PlaceDetails: View {
                             Text("Este lugar não está mais disponível.").arkeText(.body)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 24).padding(.bottom, 48)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 16).padding(.bottom, 8)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                         if abs(contentHeight - height) > 1 { contentHeight = height }
                     }
@@ -169,7 +197,7 @@ struct PlaceDetails: View {
             }
             .buttonStyle(.plain).foregroundStyle(ink).padding(.horizontal, 20)
         }
-        .presentationDetents([.height(max(300, contentHeight + 204))])
+        .presentationDetents([.height(max(300, contentHeight + 152))])
     }
 
     private func contentRow(icon: String, value: String, label: String, identifier: String) -> some View {
@@ -192,3 +220,16 @@ enum DetailCapture {
     ]
 }
 #endif
+
+private struct StampEdge: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path(rect)
+        let radius: CGFloat = 4
+        for x in stride(from: rect.minX + 12, to: rect.maxX - 8, by: 12) {
+            for y in [rect.minY, rect.maxY] {
+                path.addEllipse(in: CGRect(x: x - radius, y: y - radius, width: 8, height: 8))
+            }
+        }
+        return path
+    }
+}

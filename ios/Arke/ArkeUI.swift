@@ -53,33 +53,22 @@ extension View {
 
 /// Native sheet presentation with its visible card inset from the system edges.
 struct ArkeFloatingSheet<Content: View>: View {
-    @Environment(\.colorScheme) private var colorScheme
     let dismissIdentifier: String
-    let onDismiss: () -> Void
-    let enabled: Bool
     let content: Content
 
-    init(dismissIdentifier: String, enabled: Bool = true, onDismiss: @escaping () -> Void, @ViewBuilder content: () -> Content) {
+    init(dismissIdentifier: String, @ViewBuilder content: () -> Content) {
         self.dismissIdentifier = dismissIdentifier
-        self.onDismiss = onDismiss
-        self.enabled = enabled
         self.content = content()
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            Button(action: onDismiss) {
-                Capsule().fill(.secondary).frame(width: 36, height: 4)
-                    .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
-            }.buttonStyle(.plain).disabled(!enabled)
-                .accessibilityLabel("Recolher painel").accessibilityIdentifier(dismissIdentifier)
             content
         }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(dismissIdentifier + ".card")
-            .presentationBackground(ArkeUI.sheetSurface(colorScheme))
-            .presentationDragIndicator(.hidden)
-            .presentationCornerRadius(36)
+            .presentationDragIndicator(.visible)
+            .presentationContentInteraction(.scrolls)
     }
 }
 
@@ -98,14 +87,10 @@ extension View {
 
 struct ArkeScrollEdges: ViewModifier {
     func body(content: Content) -> some View {
-        content.scrollIndicators(.hidden).mask {
-            GeometryReader { geometry in
-                VStack(spacing: 0) {
-                    LinearGradient(colors: [.clear, .white], startPoint: .top, endPoint: .bottom).frame(height: min(12, geometry.size.height * 0.12))
-                    Rectangle()
-                    LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom).frame(height: min(24, geometry.size.height * 0.12))
-                }
-            }.allowsHitTesting(false).accessibilityHidden(true)
+        if #available(iOS 26, *) {
+            content.scrollIndicators(.hidden).scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
+        } else {
+            content.scrollIndicators(.hidden)
         }
     }
 }

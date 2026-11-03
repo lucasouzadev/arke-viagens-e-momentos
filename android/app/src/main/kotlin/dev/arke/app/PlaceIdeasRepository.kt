@@ -63,7 +63,7 @@ class PlaceIdeasRepository(context: Context) {
         val array = snapshot.getJSONArray("ideas")
         val ideas = (0 until array.length()).map { index ->
             val value = array.getJSONObject(index)
-            PlaceIdea(value.getString("id"), value.getString("name"), value.getString("address"), value.getString("note"))
+            PlaceIdea(value.getString("id"), value.getString("name"), value.getString("address"), value.getString("note"), value.optString("link", ""), value.optString("cover", ""))
         }
         check(ideas.map { it.id }.toSet().size == ideas.size)
         check(ideas.all { it.id.isNotEmpty() && PlaceDraft(it.id, it.name, it.address, it.note).issue == null })
@@ -72,7 +72,7 @@ class PlaceIdeasRepository(context: Context) {
 
     private fun write(ideas: List<PlaceIdea>) {
         val array = JSONArray()
-        ideas.forEach { array.put(JSONObject().put("id", it.id).put("name", it.name).put("address", it.address).put("note", it.note)) }
+        ideas.forEach { array.put(JSONObject().put("id", it.id).put("name", it.name).put("address", it.address).put("note", it.note).put("link", it.link).put("cover", it.cover)) }
         val bytes = JSONObject().put("version", 1).put("ideas", array).toString().toByteArray(Charsets.UTF_8)
         check(bytes.size <= 4_194_304)
         val stream = file.startWrite()
