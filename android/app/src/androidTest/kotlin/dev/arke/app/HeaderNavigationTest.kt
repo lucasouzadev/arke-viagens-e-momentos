@@ -30,7 +30,7 @@ class HeaderNavigationTest {
     }
 
     private fun returnToPlaceFields() {
-        compose.onNodeWithTag("place.edit").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("place.edit").performScrollTo().assertIsDisplayed().performClick()
         try {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.name").fetchSemanticsNodes().size == 1 }
         } catch (failure: Throwable) {
@@ -46,7 +46,7 @@ class HeaderNavigationTest {
             click(Offset(width * 0.8f, height * 0.8f))
         }
         compose.onNodeWithTag("place.name").assertIsFocused().performTextInput("Lugar com toque amplo")
-        compose.onNodeWithTag("place.address").performScrollTo().performTextInput("ReferÃªncia para teste")
+        compose.onNodeWithTag("place.address").performScrollTo().performTextInput("Referência para teste")
         compose.onNodeWithTag("place.review").performScrollTo().assertIsDisplayed().performClick()
         compose.onNodeWithText("Lugar com toque amplo").assertExists()
         compose.onNodeWithTag("place.cancel").performClick()
@@ -78,7 +78,7 @@ class HeaderNavigationTest {
         compose.onNodeWithText("Informe o nome do lugar.").assertExists()
         compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho de teste")
         compose.onNodeWithTag("place.review").performScrollTo().performClick()
-        compose.onNodeWithText("Informe um endereÃ§o ou referÃªncia.").assertExists()
+        compose.onNodeWithText("Informe um endereço ou referência.").assertExists()
         compose.onNodeWithTag("place.dismiss").performClick()
         compose.onNodeWithText("Continuar editando").performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho de teste")
@@ -107,19 +107,19 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.address").assertTextEquals("Rua de teste, 100")
         compose.onNodeWithTag("detail.previous").assertDoesNotExist()
         compose.onNodeWithTag("detail.next").assertDoesNotExist()
-        compose.onNodeWithTag("detail.done").assertTextEquals("ConcluÃ­do").performClick()
+        compose.onNodeWithTag("detail.done").assertTextEquals("Concluído").performClick()
         val edit = compose.onNodeWithContentDescription("Editar Museu de teste")
         edit.performScrollTo().performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
         compose.onNodeWithTag("place.cancel").performClick()
         compose.onNodeWithText("Descartar rascunho?").assertDoesNotExist()
         edit.performScrollTo().performClick()
-        compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho temporÃ¡rio")
+        compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho temporário")
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporÃ¡rio")
+        compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporário")
         compose.onNodeWithTag("place.cancel").performClick()
         compose.onNodeWithText("Continuar editando").performClick()
-        compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporÃ¡rio")
+        compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporário")
         compose.onNodeWithTag("place.cancel").performClick()
         compose.onNodeWithTag("place.discard").performClick()
         compose.onNodeWithText("Museu de teste").assertExists()
@@ -131,7 +131,7 @@ class HeaderNavigationTest {
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu atualizado")
         compose.onNodeWithTag("place.review").performScrollTo().performClick()
-        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alteraÃ§Ãµes").performScrollTo().performClick()
+        compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.title").fetchSemanticsNodes().isEmpty() }
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isNotEmpty() }
@@ -271,7 +271,7 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.name").assertTextEquals("Museu dos caminhos")
         compose.onNodeWithTag("detail.name").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Lugar 2 de 2"))
         compose.onNodeWithTag("detail.next").assertDoesNotExist()
-        compose.onNodeWithTag("detail.done").assertTextEquals("ConcluÃ­do").assertIsEnabled()
+        compose.onNodeWithTag("detail.done").assertTextEquals("Concluído").assertIsEnabled()
         val back = compose.onNodeWithTag("detail.previous")
         back.assertContentDescriptionEquals("Anterior")
         org.junit.Assert.assertTrue(compose.onNodeWithTag("detail.done").fetchSemanticsNode().boundsInRoot.width > back.fetchSemanticsNode().boundsInRoot.width * 2)

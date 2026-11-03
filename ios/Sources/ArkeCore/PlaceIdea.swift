@@ -48,8 +48,7 @@ public struct PlaceDraft: Equatable, Sendable {
         if value.address.isEmpty { return .addressRequired }
         if value.address.unicodeScalars.count > 240 { return .addressTooLong }
         if value.note.unicodeScalars.count > 1000 { return .noteTooLong }
-        if let link = value.link
-        cover = value.cover, !link.isEmpty, Self.webURL(link) == nil { return .invalidLink }
+        if let link = value.link, !link.isEmpty, Self.webURL(link) == nil { return .invalidLink }
         return nil
     }
 }

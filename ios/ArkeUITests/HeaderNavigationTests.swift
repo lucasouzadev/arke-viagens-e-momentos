@@ -22,7 +22,7 @@ final class HeaderNavigationTests: XCTestCase {
             XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Detalhes")
         }
         app.buttons["home.panelMenu"].tap()
-        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado âœ“")).firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
     }
 
     func testAddPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
@@ -46,7 +46,7 @@ final class HeaderNavigationTests: XCTestCase {
         name.typeText("Rascunho de teste")
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
         tapEditorAction("place.review", app: app)
-        XCTAssertTrue(app.staticTexts["Informe um endereÃ§o ou referÃªncia."].exists)
+        XCTAssertTrue(app.staticTexts["Informe um endereço ou referência."].exists)
         app.buttons["place.cancel"].tap()
         app.buttons["Continuar editando"].tap()
         XCTAssertEqual(name.value as? String, "Rascunho de teste")
@@ -85,7 +85,7 @@ final class HeaderNavigationTests: XCTestCase {
         openDetails.tap()
         XCTAssertTrue(app.staticTexts["detail.name"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu de teste")
-        XCTAssertEqual(app.staticTexts["detail.address"].label, "EndereÃ§o: Rua de teste, 100")
+        XCTAssertEqual(app.staticTexts["detail.address"].label, "Endereço: Rua de teste, 100")
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         XCTAssertFalse(app.buttons["detail.next"].exists)
         app.buttons["detail.done"].tap()
@@ -100,11 +100,11 @@ final class HeaderNavigationTests: XCTestCase {
         edit.tap()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
-        name.typeText(" temporÃ¡rio")
+        name.typeText(" temporário")
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
         app.buttons["place.cancel"].tap()
         app.buttons["Continuar editando"].tap()
-        XCTAssertTrue((name.value as? String)?.contains("temporÃ¡rio") == true)
+        XCTAssertTrue((name.value as? String)?.contains("temporário") == true)
         app.buttons["place.cancel"].tap()
         app.buttons["Descartar"].tap()
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
@@ -119,7 +119,7 @@ final class HeaderNavigationTests: XCTestCase {
         tapEditorAction("place.edit", app: app)
         XCTAssertEqual(name.value as? String, "Museu atualizado")
         tapEditorAction("place.review", app: app)
-        XCTAssertEqual(app.buttons["place.save"].label, "Salvar alteraÃ§Ãµes")
+        XCTAssertEqual(app.buttons["place.save"].label, "Salvar alterações")
         tapEditorAction("place.save", app: app)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["place.title"])
         waitForExpectations(timeout: 10)
@@ -130,7 +130,7 @@ final class HeaderNavigationTests: XCTestCase {
         if !updatedDetails.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
         updatedDetails.tap()
         XCTAssertTrue(app.staticTexts["detail.address"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["detail.address"].label, "EndereÃ§o: Nova entrada, 200")
+        XCTAssertEqual(app.staticTexts["detail.address"].label, "Endereço: Nova entrada, 200")
         app.buttons["detail.done"].tap()
         let delete = app.buttons["Excluir Museu atualizado"]
         if !delete.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
@@ -150,7 +150,7 @@ final class HeaderNavigationTests: XCTestCase {
         let handle = app.buttons["home.panelMenu"]
         XCTAssertTrue(handle.waitForExistence(timeout: 15))
         handle.tap()
-        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado âœ“")).firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
         let distance = app.frame.height * 0.35
         XCTAssertTrue(handle.isHittable)
         let window = app.coordinate(withNormalizedOffset: .zero)
@@ -173,7 +173,7 @@ final class HeaderNavigationTests: XCTestCase {
         expectation(for: NSPredicate(format: "value == %@", "Explorar"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
         handle.tap()
-        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado âœ“")).firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
         expectation(for: NSPredicate(format: "value == %@", "Equilibrado"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
     }
@@ -244,7 +244,7 @@ final class HeaderNavigationTests: XCTestCase {
         waitForExpectations(timeout: 5)
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 2 de 2")
         XCTAssertFalse(app.buttons["detail.next"].exists)
-        XCTAssertEqual(app.buttons["detail.done"].label, "ConcluÃ­do")
+        XCTAssertEqual(app.buttons["detail.done"].label, "Concluído")
         XCTAssertEqual(app.buttons["detail.previous"].label, "Lugar anterior")
         XCTAssertGreaterThan(app.buttons["detail.done"].frame.width, app.buttons["detail.previous"].frame.width * 2)
         XCTAssertFalse(app.staticTexts["detail.note"].exists)
@@ -278,7 +278,7 @@ final class HeaderNavigationTests: XCTestCase {
         let address = app.textViews["place.address"]
         XCTAssertTrue(address.exists)
         address.tap()
-        address.typeText("ReferÃªncia para teste")
+        address.typeText("Referência para teste")
         XCTAssertLessThanOrEqual(app.scrollViews["place.fields"].frame.maxY, app.keyboards.firstMatch.frame.minY + 1)
         let note = app.textViews["place.note"]
         for _ in 0..<4 {
@@ -311,8 +311,8 @@ final class HeaderNavigationTests: XCTestCase {
         deny.tap()
         XCTAssertTrue(locate.isHittable)
         locate.tap()
-        XCTAssertTrue(app.alerts["Minha localizaÃ§Ã£o"].waitForExistence(timeout: 5))
-        app.alerts["Minha localizaÃ§Ã£o"].buttons["Entendi"].tap()
+        XCTAssertTrue(app.alerts["Minha localização"].waitForExistence(timeout: 5))
+        app.alerts["Minha localização"].buttons["Entendi"].tap()
         XCTAssertTrue(app.buttons["home.contextNext"].isHittable)
         app.terminate()
         app.resetAuthorizationStatus(for: .location)
@@ -335,9 +335,9 @@ final class HeaderNavigationTests: XCTestCase {
         let allow = permission.buttons["Allow Once"]
         XCTAssertTrue(allow.exists)
         allow.tap()
-        expectation(for: NSPredicate(format: "value == %@", "LocalizaÃ§Ã£o disponÃ­vel"), evaluatedWith: locate)
+        expectation(for: NSPredicate(format: "value == %@", "Localização disponível"), evaluatedWith: locate)
         waitForExpectations(timeout: 20)
-        XCTAssertFalse(app.alerts["Minha localizaÃ§Ã£o"].exists)
+        XCTAssertFalse(app.alerts["Minha localização"].exists)
         let locationCapture = XCTAttachment(screenshot: app.screenshot())
         locationCapture.lifetime = .keepAlways
         add(locationCapture)

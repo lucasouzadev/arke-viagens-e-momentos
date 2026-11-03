@@ -41,7 +41,7 @@ struct HomeView: View {
                         if let searchPin { Marker(item: searchPin) }
                     }
                         .mapStyle(.standard)
-                        .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localizaÃ§Ã£o.")
+                        .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
                         .frame(height: panelHeight ?? mapHeight(in: geometry.size.height))
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .contentShape(RoundedRectangle(cornerRadius: 20))
@@ -58,9 +58,9 @@ struct HomeView: View {
                             Button { location.request() } label: {
                                 Image(systemName: "location.fill").frame(width: 48, height: 48)
 
-                            }.padding(12).accessibilityLabel("Minha localizaÃ§Ã£o")
+                            }.padding(12).accessibilityLabel("Minha localização")
                                 .accessibilityIdentifier("home.location")
-                                .accessibilityValue(location.coordinate == nil ? "" : "LocalizaÃ§Ã£o disponÃ­vel")
+                                .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
                         }
                         .onReceive(location.$coordinate) { coordinate in
                             if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
@@ -90,7 +90,7 @@ struct HomeView: View {
                                         Text("Em breve.")
                                         Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
                                     }
-                                } else if places.busy { ProgressView("Abrindo seus lugaresâ€¦") }
+                                } else if places.busy { ProgressView("Abrindo seus lugares…") }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -102,7 +102,7 @@ struct HomeView: View {
                 }
             }
         }
-        .alert("Minha localizaÃ§Ã£o", isPresented: Binding(get: { location.message != nil }, set: { if !$0 { location.message = nil } })) {
+        .alert("Minha localização", isPresented: Binding(get: { location.message != nil }, set: { if !$0 { location.message = nil } })) {
             Button("Entendi", role: .cancel) { location.message = nil }
         } message: { Text(location.message ?? "") }
         .arkeText(.body)
@@ -234,10 +234,10 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
-        .accessibilityLabel("Ajustar proporÃ§Ã£o")
+        .accessibilityLabel("Ajustar proporção")
         .accessibilityValue(state.detent.title)
         .accessibilityIdentifier("home.panelMenu")
-        .accessibilityHint("Arraste para ajustar ou toque para escolher a proporÃ§Ã£o.")
+        .accessibilityHint("Arraste para ajustar ou toque para escolher a proporção.")
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: movePanel(towardMap: true)
@@ -246,10 +246,10 @@ struct HomeView: View {
             }
         }
         .accessibilityAction(named: "Mostrar mais mapa") { movePanel(towardMap: true) }
-        .accessibilityAction(named: "Expandir conteÃºdo") { movePanel(towardMap: false) }
-        .confirmationDialog("ProporÃ§Ã£o atual: \(state.detent.title)", isPresented: $showingPanelPicker, titleVisibility: .visible) {
+        .accessibilityAction(named: "Expandir conteúdo") { movePanel(towardMap: false) }
+        .confirmationDialog("Proporção atual: \(state.detent.title)", isPresented: $showingPanelPicker, titleVisibility: .visible) {
             ForEach(PanelDetent.allCases, id: \.self) { detent in
-                Button(detent.title + (detent == state.detent ? " âœ“" : "")) {
+                Button(detent.title + (detent == state.detent ? " ✓" : "")) {
                     settlePanel(detent)
                 }
             }
@@ -308,8 +308,8 @@ private extension TravelContext {
         case .planning: "Planejamento"
         case .expenses: "Gastos"
         case .savings: "Cofrinho"
-        case .reviews: "AvaliaÃ§Ãµes"
-        case .memories: "MemÃ³rias"
+        case .reviews: "Avaliações"
+        case .memories: "Memórias"
         }
     }
 }
@@ -336,8 +336,8 @@ private final class ForegroundLocation: NSObject, ObservableObject, CLLocationMa
         switch manager.authorizationStatus {
         case .notDetermined: manager.requestWhenInUseAuthorization()
         case .authorizedWhenInUse, .authorizedAlways: manager.requestLocation()
-        case .denied, .restricted: message = "Permita a localizaÃ§Ã£o nos Ajustes para mostrar sua posiÃ§Ã£o. VocÃª pode continuar explorando o mapa."
-        @unknown default: message = "LocalizaÃ§Ã£o indisponÃ­vel. VocÃª pode continuar explorando o mapa."
+        case .denied, .restricted: message = "Permita a localização nos Ajustes para mostrar sua posição. Você pode continuar explorando o mapa."
+        @unknown default: message = "Localização indisponível. Você pode continuar explorando o mapa."
         }
     }
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -352,7 +352,7 @@ private final class ForegroundLocation: NSObject, ObservableObject, CLLocationMa
     }
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor [weak self] in
-            self?.message = "NÃ£o foi possÃ­vel obter sua posiÃ§Ã£o agora. Tente novamente."; self?.requested = false
+            self?.message = "Não foi possível obter sua posição agora. Tente novamente."; self?.requested = false
         }
     }
 }
