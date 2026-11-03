@@ -1,5 +1,15 @@
 # AGENTS.md — Regras centrais do Arke
 
+> **QA autorizado — 02/11/2026:** M5-QA-FIX-01 implementa o QA da beta em ambas as plataformas. Pedido atual substitui alça externa/CTA fixo e autoriza localização pessoal somente em primeiro plano, solicitada por toque e sem armazenamento/compartilhamento. Sem merge, configuração Google Cloud automática ou envio de nova beta sem disparo aprovado.
+
+> **Primeiro TestFlight — 02/11/2026:** autorização explícita no chat para assinar e enviar a primeira build beta, após configuração privada dos seis secrets no environment `ios-testflight`. [M5-TESTFLIGHT-01](docs/engenharia/M5-TESTFLIGHT-01.md) substitui as restrições históricas de assinatura/upload apenas nesse recorte. Sem merge, publicação App Store/Play Store ou convites automáticos. Execuções futuras exigem disparo explícito.
+
+> **Exceção de fase — 31/10/2026:** o responsável autorizou iniciar ambas as bases nativas e compilar no GitHub Actions. [ADR-009](docs/decisoes/ADR-009.md) e [M5-BOOTSTRAP-01](docs/engenharia/M5-BOOTSTRAP-01.md) autorizam somente a fundação inicial, testes e builds de verificação. As restrições documentation-first abaixo continuam para o restante não autorizado; não bloquear novamente esta tarefa por instruções históricas. Sem merge, assinatura de distribuição ou release automático.
+
+> **Recorte seguinte autorizado:** [ADR-010](docs/decisoes/ADR-010.md) e [M5-PREVIEW-01](docs/engenharia/M5-PREVIEW-01.md) autorizam Apple Maps/Google Maps sem GPS e capturas reais em simuladores. Somente PNGs de evidência podem ser enviados pelo Actions; sem binários de distribuição. Google Cloud/chave Android ainda indisponíveis, sem criação automática de conta/faturamento.
+
+> **Continuidade de fluxos — 01/11/2026:** [M5-PLACES-01](docs/engenharia/M5-PLACES-01.md) e [ADR-011](docs/decisoes/ADR-011.md) delimitam editor/revisão/cancelamento, ideias escritas pessoais no aparelho e exclusão confirmada. Sem Pin geográfico, geocoding, GPS, conta, grupo, sync ou rede nova. Persistência local não aprova os contratos M3. Manter arquivos de dados existentes em reversões; sem merge/release automático.
+
 Este arquivo é o ponto de entrada obrigatório para agents de documentação, design, iOS, Android, backend, revisão e CI. Não substitui as especificações; indica **onde encontrar a fonte de verdade** e o que pode ser alterado.
 
 ## 0. Comece sempre aqui
@@ -64,3 +74,9 @@ Uma tarefa termina somente com escopo/aceite atendidos, documentos e links coere
 | Como especificar uma tarefa? | [TASK-CONTRACT](docs/agents/TASK-CONTRACT.md) |
 | O que mudou para o público? | [CHANGELOG](CHANGELOG.md) · [CHANGELOG-GUIDE](docs/agents/CHANGELOG-GUIDE.md) |
 | Como aparecerá no app? | [NEWS-MODAL](docs/releases/NEWS-MODAL.md) — futuro, não implementado |
+
+**Paridade obrigatória — 01/11/2026:** [DESIGN-006](docs/design/DESIGN-006.md) orienta as duas plataformas. Alça visível em sheets, Cancelar no topo esquerdo, mesma hierarquia de ações/campos e métricas-base de texto/espaçamento. APIs e materiais continuam nativos; não usar diferenças de plataforma para mudar a organização do fluxo. Revisar pares de capturas antes de avançar.
+
+**Consulta de ideias — 01/11/2026:** [M5-DETAILS-01](docs/engenharia/M5-DETAILS-01.md) delimita detalhes de ideias locais, navegação finita e retorno à home. Sem edição de dados, Pin/geocoding ou persistência nova; exemplos de captura apenas em memória e Debug.
+
+**Teste em aparelho — 02/11/2026:** autorização explícita para gerar APK debug no Actions em M5-DEVICE-01, como artifact temporário para testes. Esta exceção substitui a restrição somente PNG nesse recorte. Sem publicação em lojas, assinatura de produção ou envio automático ao TestFlight.

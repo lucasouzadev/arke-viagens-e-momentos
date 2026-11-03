@@ -1,0 +1,67 @@
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chore/development-kickoff]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    if: >-
+      github.repository == 'lucasouzadev/arke-viagens-e-momentos' &&
+      github.actor == 'lucasouzadev' &&
+      (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[testflight]'))
+    environment: ios-testflight
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      BUILD_NUMBER: ${{ github.run_number }}.${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Check distribution toolchain and core tests
+        run: |
+          echo "DISTRIBUTION_DIR=$RUNNER_TEMP/arke-testflight" >> "$GITHUB_ENV"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          swift test --package-path ios
+          python3 -m unittest discover -s scripts/tests -p 'test_apple_upload.py'
+          plutil -lint ios/Arke/PrivacyInfo.xcprivacy
+      - name: Prepare private signing material
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_BASE64: ${{ secrets.ASC_PRIVATE_KEY_BASE64 }}
+        run: bash scripts/prepare-testflight.sh
+      - name: Archive, validate and upload beta
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: bash scripts/upload-testflight.sh
+      - name: Remove private signing material
+        if: always()
+        run: |
+          if [ -f "$DISTRIBUTION_DIR/distribution.keychain-db" ]; then
+            security delete-keychain "$DISTRIBUTION_DIR/distribution.keychain-db"
+          fi
+          if [ -f "$DISTRIBUTION_DIR/installed-profile-path" ]; then
+            profile_path=$(cat "$DISTRIBUTION_DIR/installed-profile-path")
+            case "$profile_path" in
+              "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision) rm -f -- "$profile_path" ;;
+              *) exit 1 ;;
+            esac
+          fi
+          test "$DISTRIBUTION_DIR" = "$RUNNER_TEMP/arke-testflight"
+          rm -rf -- "$DISTRIBUTION_DIR"

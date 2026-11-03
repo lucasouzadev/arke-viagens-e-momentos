@@ -1,12 +1,18 @@
 # ROADMAP — Plano principal do Arke
 
-**Documento canônico e único de planejamento.** Não criar ROADMAP-V2, ROADMAP-FINAL nem cópias por agente. Revisão proposta em 27/10/2026, pendente de integração do PR documental. Para andamento factual leia [STATUS](STATUS.md); para continuidade leia [HANDOFF](agents/HANDOFF.md).
+**QA da beta em validação — 02/11/2026:** [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md): correções implementadas; Android 18 testes/20 PNGs aprovados na fonte 70f623b. Reprodução iPhone 14/iOS 27 em preparação; sem nova beta/merge. Resultado e limites em STATUS.
+
+**Primeira beta enviada — 02/11/2026:** M5-TESTFLIGHT-01 teve validação/upload Apple aceitos para 0.0.1 (8.1), fonte 90c1e5d. Processamento, grupo e instalação ainda não verificados; sem release pública/merge. Evidências em STATUS e contrato.
+
+**Recorte beta autorizado em 02/11/2026:** [M5-TESTFLIGHT-01](engenharia/M5-TESTFLIGHT-01.md), primeira assinatura/upload TestFlight em ambiente protegido, além do APK debug de M5-DEVICE-01. Substitui limites históricos apenas para teste em aparelhos; sem merge ou publicação em lojas. Em andamento.
+
+**Documento canônico e único de planejamento.** Não criar ROADMAP-V2, ROADMAP-FINAL nem cópias por agente. Base documental integrada pelo PR #1 em 28/10/2026; atualizado em 31/10/2026 para a fundação nativa autorizada. Para andamento factual leia [STATUS](STATUS.md); para continuidade leia [HANDOFF](agents/HANDOFF.md).
 
 ## 1. Objetivo e fronteira atual
 
 O Arke é um app de planejamento de viagens solo ou em grupo com uma home de **dois cartões** (mapa, navegação e conteúdo); iOS SwiftUI Liquid nos controles e Android Compose Flat; um azul opaco, restante da aparência automática do dispositivo. [Visão](produto/VISAO.md) · [ADRs](decisoes/README.md).
 
-**Fase atual: somente documentação.** M5 (código de app) e workflows de publicação estão explicitamente bloqueados até nova autorização. Planejar algo não concede permissão de executar.
+**Fase atual: fundação nativa delimitada em andamento.** [ADR-009](decisoes/ADR-009.md) autoriza [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md), ambas as bases e CI de compilação. Propostas M1–M4 continuam pendentes; workflows de publicação, assinatura e release não estão autorizados.
 
 ## 2. Convenções de trabalho
 
@@ -24,14 +30,14 @@ Tarefas usam IDs **M{n}-ÁREA-NN**, contrato [TASK-CONTRACT](agents/TASK-CONTRAC
 
 | Marco | Propósito | Dependências | Estado factual |
 | --- | --- | --- | --- |
-| **M0 — Governança e documentação** | Orientar agents, consolidar roadmap/status/changelog, fechar decisões | docs e ADRs existentes | **Em revisão no PR #1** |
+| **M0 — Governança e documentação** | Orientar agents, consolidar roadmap/status/changelog, fechar decisões | docs e ADRs existentes | **Documentação integrada no PR #1** |
 | **M1 — Contratos de UX/UI** | Detalhar relógio, carrossel, Pins, dois cartões, motion e acessibilidade | M0 + decisões de design pendentes | Planejado |
 | **M2 — Arquitetura nativa** | Desenhar módulos, fronteiras e equivalência iOS/Android, persistência e mapa | M0 e contratos mínimos de M1 | Planejado |
 | **M3 — Domínio e colaboração** | Formalizar Trip, Place, Pin, grupo, gasto, cofrinho, avaliação, stamp | M0 e decisões de privacidade/finanças | Planejado |
 | **M4 — Qualidade e distribuição** | Gates verificáveis, CI seguro futuro, plano TestFlight/APK e release | M1–M3 especificados | Planejado, **sem configurar pipelines** |
-| **M5 — Implementação nativa** | Código SwiftUI/Compose, testes reais, builds | M1–M4 aprovados + autorização explícita | **Bloqueado** |
+| **M5 — Implementação nativa** | Fundação SwiftUI/Compose e CI de verificação | ADR-009; demais features dependem dos contratos específicos | **Fundação em andamento** |
 
-Marcos documentais podem evoluir em paralelo **quando não dependerem de decisões contraditórias**. M5 não é desbloqueado por passagem do tempo ou fechamento automático do PR.
+Marcos documentais podem evoluir em paralelo **quando não dependerem de decisões contraditórias**. M5 recebeu somente a autorização delimitada em ADR-009; o merge #1 não aprova propostas por associação.
 
 ## 4. Backlog por marco
 
@@ -96,7 +102,7 @@ Marcos documentais podem evoluir em paralelo **quando não dependerem de decisõ
 
 ### M5 — Execução
 
-**Bloqueado:** implementação SwiftUI/Compose e builds só após autorização explícita, aceites e gates. Nenhuma tarefa executável aqui tem permissão automática.
+**Recorte autorizado:** [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md), fundação das duas bases, testes e compilação GitHub Actions. Em andamento; aceite depende de execução real. Mapa/Pins, dados e demais features continuam dependentes de decisões e contratos próprios.
 
 ## 5. Relação com documentação anterior (sem duplicar roadmap)
 
@@ -122,7 +128,7 @@ A fundação de documentos para agents, produto, design, dados, segurança e qua
 
 - [x] Fonte única de roadmap, protocolos obrigatórios, STATUS/HANDOFF e changelog preparados em branch.
 - [x] Contratos iniciais de UX/UI, domínio, permissões, offline, segurança e jurídico preparados como propostas.
-- [ ] Revisar PR #1 e confirmar integração à `main` quando autorizado.
+- [x] Integração do PR #1 confirmada em 28/10/2026, commit `24007b0`; propostas não são aprovadas por associação.
 - [ ] Resolver design, identidade, grupos, sync, mapa e licenças, **sem transformar hipótese em decisão**.
 - [ ] Aprovar a arquitetura e testes específicos antes de autorizar o primeiro código de aplicativo.
 
@@ -130,11 +136,32 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 
 ## 8. Gates para implementação
 
-- [ ] M0 aprovado e integrado.
+- [x] Pacote documental M0 integrado via PR #1; demais propostas preservadas como pendentes.
 - [ ] Contratos mínimos M1/M2/M3 aprovados com pendências explícitas.
 - [ ] Política de mapas, privacidade, sync e financiamento informativo definida.
 - [ ] Matriz QA e segurança de build aprovada.
-- [ ] Autorização expressa para iniciar app nativo e CI.
+- [x] Autorização expressa para a fundação iOS/Android e CI de compilação (ADR-009); nenhuma distribuição autorizada.
 - [ ] Nenhuma decisão aceita contradita.
 
 [AGENTS](../AGENTS.md) · [STATUS](STATUS.md) · [HANDOFF](agents/HANDOFF.md) · [Índice](INDEX.md).
+
+## 9. Primeira execução autorizada — 31/10/2026
+
+| Tarefa | Entrega | Estado |
+| --- | --- | --- |
+| [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md) | Bases SwiftUI/Compose, home inicial, testes e CI | Builds/testes aprovados; revisão visual/acessibilidade pendentes no PR #2 |
+| [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) | Apple Maps iOS, Google Maps Android e capturas reais de simuladores | 8 PNGs originais inspecionados e CI aprovada; mapa Google real bloqueado por chave/projeto; contraste tratado em M5-UI-02 |
+| M5-UI-02, no contrato M5-PREVIEW-01 | Cartões sem contorno e correção de labels no escuro | Implementado/verificado em CI e 8 PNGs; disponível no PR #2, sem merge |
+| [M5-HEADER-01](engenharia/M5-HEADER-01.md) | +/contexto central/relógio, cabeçalho fora do scroll | Implementado no PR #2; testes de toque e oito capturas verificados, sem merge |
+| [M5-TONES-01](engenharia/M5-TONES-01.md) | Fundo/cartão em tons semânticos distintos | CI e oito PNGs verificados no PR #2, sem merge |
+| [M5-HANDLE-01](engenharia/M5-HANDLE-01.md) | Puxador entre cartões | Implementado/verificado: 3 testes UI por plataforma e oito capturas no PR #2, sem merge |
+| [M5-PLACES-01](engenharia/M5-PLACES-01.md) | Adicionar/revisar ideias locais e excluir com confirmação | Implementado/verificado: 8 testes UI, persistência local e 16 capturas no PR #2, sem merge |
+| [M5-PARITY-01](engenharia/M5-PARITY-01.md) | Guia comum, paridade de home/sheets | Em revisão; CI e 16 PNGs verificados; obrigatório nos próximos fluxos |
+| [M5-FADE-01](engenharia/M5-FADE-01.md) | Transição inferior suave dos sheets | Em revisão; CI e 16 PNGs verificados no PR #2 |
+| [M5-DETAILS-01](engenharia/M5-DETAILS-01.md) | Abrir e percorrer ideias salvas | Em revisão; CI e 24 PNGs verificados no PR #2 |
+| [M5-DETAILS-UI-02](engenharia/M5-DETAILS-UI-02.md) | Detalhes mais limpos e informação sob demanda | Em revisão; CI e 24 PNGs verificados no PR #2 |
+| [M5-DETAILS-UI-03](engenharia/M5-DETAILS-UI-03.md) | Sheet de detalhes compacto e agrupado | Em revisão; CI e 32 PNGs verificados no PR #2 |
+| [M5-FLOATING-01](engenharia/M5-FLOATING-01.md) | Cartões flutuantes, recuo e cabeçalho simplificado | 32 testes e 32 PNGs verificados; em revisão no PR #2, limites no contrato |
+| [M5-EDIT-01](engenharia/M5-EDIT-01.md) | Navegação limpa e edição segura de ideias | 34 testes e 40 PNGs verificados; em revisão no PR #2, limites no contrato |
+
+[Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.

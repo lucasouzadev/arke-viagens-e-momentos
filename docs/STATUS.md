@@ -1,70 +1,89 @@
 # STATUS — Estado verificável do Arke
 
-**Atualizado em:** 27/10/2026. **Documento de controle** (não substitui decisões em ADR nem planejamento em ROADMAP).
+**M5-QA-FIX-01 em correção:** iPhone 14/iOS 27 confirmado; fonte d2410e0/run 41527925569 passou build/10 core e 5/8 UI. Três falhas de Revisar com teclado: ScrollView termina em y844 e teclado começa em y516. NavigationStack sozinho insuficiente. Novo candidato usa adaptador UIKit/keyboardLayoutGuide, sem observers/alturas manuais, e preserva oito testes com assert do viewport. Ajustes finais de paridade: Concluído preenchido/fade do seletor Android, nota resumida/ações em linha nos cartões, ícone Minha localização Android. Android anterior passou build/lint/6 core/12 instrumentados e 20 PNGs; alterações novas ainda exigem execução. JSON v1 preservado, sem nova beta/merge. Mapa Android real bloqueado pela chave; localização real/leitores/fontes ampliadas/aparelho físico não executados. [Contrato](engenharia/M5-QA-FIX-01.md).
 
-## Visão rápida
+**M5-QA-01 — análise da primeira beta:** [relatório](qualidade/QA-BETA-01.md). Vídeo de 104 s amostrado, incluindo sequência do gesto em intervalos de 250 ms; código das duas plataformas e duas capturas nativas existentes inspecionados. Confirmados problemas de composição dos sheets, foco/campos, CTA/teclado, alça customizada, menu de contexto e apresentação da lista. Piscada confirmada no vídeo iOS, causa exclusiva e reprodução Android pendentes. Pedido atual substitui alça externa/rodapé sempre fixo e pede posição pessoal em primeiro plano; implementação ainda não realizada. Nenhuma nova sessão interativa de simulador, teste ou distribuição nesta análise. Próximo: corrigir gesto/sheet nativo, editor, seletor por ponteiro/cartões e localização contextual, conforme matriz de aceite.
 
-- **Fase:** documentação antes de implementação ([ADR-005](decisoes/ADR-005.md)).
-- **Branch de trabalho documental:** `docs/design-004-ux-flows`.
-- **Revisão remota:** [PR #1](https://github.com/lucasouzadev/Arke---Viagens-e-momentos/pull/1), aberto; merge **não confirmado**.
-- **Código nativo de app:** não iniciado neste repositório.
-- **CI, TestFlight, APK, backend e deploy:** não configurados nesta fase.
-- **Decisões aceitas:** duas bases nativas, dois cartões, Pin independente, Cofrinho informativo, documentation-first, uma cor azul opaca e tema do dispositivo.
-- **Ainda propostas:** física detalhada, identidade final, stamps, grupos, finanças, permissões, fornecedor de mapa, modelo de dados final.
-- **Governança M0 em revisão:** [prompt universal](agents/PROMPT-OBRIGATORIO.md), [gates de qualidade](agents/QUALITY-GATES.md), [salvaguardas](agents/SAFEGUARDS.md), [modelo de risco](agents/THREAT-MODEL.md), arquitetura, acessibilidade, segurança e jurídico.
-- **Canário:** tratamento confirmado no chat; literal **não armazenado** no GitHub. O padrão pode ser levado a futuras sessões pelas preferências pessoais de cada agent, sob controle do responsável; não é possível validar perfis externos apenas pelo repositório.
-- **Verificações reais do conjunto M0:** texto, coerência de links e escopo documental; nenhum teste de segurança real, conformidade jurídica ou app nativo foi executado.
+**M5-TESTFLIGHT-01 — envio beta verificado:** [run 41491266745](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41491266745), fonte 90c1e5d, versão 0.0.1 (8.1), com.travel.arke. Xcode 26.3/SDK 26.2: dez core + seis testes do detector, profile/certificado, archive, verificação de orientações iPad, export, validação Apple e upload PASSARAM. Log contém VERIFY SUCCEEDED e UPLOAD SUCCEEDED, sem erros; detector confirmou ambos, limpeza always passou. Processamento Apple, seleção de grupo, instalação física e disponibilidade no TestFlight NÃO VERIFICADOS. Sem convite, merge ou publicação App Store/Play Store. Android da mesma fonte passou no job 125435400309 do run 41491276051, inclusive configuração de disco 2048M; iOS simulador dessa execução ainda em andamento no fechamento.
 
-## Milestones — status, não previsão
+Entradas seguintes preservam o histórico, inclusive falhas corrigidas.
 
-| Marco | Estado | Evidência / restrição |
-| --- | --- | --- |
-| M0 — governança agents e documentação | **em revisão** | `AGENTS.md`, ROADMAP unificado, workflow, handoff/status e changelog propostos neste PR |
-| M0 — baselines interdisciplinares | **em revisão** | prompt obrigatório, G-01..G-15, threat model, arquitetura, acessibilidade, segurança e jurídico na mesma branch |
-| M1 — contratos de UI | **planejado** | DESIGN-001/002/003 aprovados em conceito; DESIGN-004/005 propostos |
-| M2 — arquitetura nativa | **planejado** | direções SwiftUI/Compose documentadas; sem código |
-| M3 — domínio de viagens | **planejado** | entidades, grupo e finanças em proposta |
-| M3 — contratos de dados (propostos) | **em revisão documental** | Pin/Place/Trip, permissão granular e sync/offline especificados; nenhum backend ativo |
-| M4 — qualidade/distribuição | **planejado** | quality-gates especificados; sem workflows executáveis |
-| M5 — implementação | **bloqueado** | requer autorização explícita, contratos e ferramentas escolhidos |
+**M5-TESTFLIGHT-01 em correção de validação Apple:** profile/certificado atualizados passaram no run 41488404773 (da59b19), versão 0.0.1 (7.1). Dez core, archive e export passaram; Apple recusou pacote 409 por falta de PortraitUpsideDown para multitarefa iPad. Altool retornou zero e job ficou falsamente verde; upload NÃO aceito. Corrigidas orientações iPad, verificação do Info.plist arquivado e análise explícita das mensagens Apple; erro interrompe antes do upload. Seis testes do detector passaram localmente. Nova execução necessária; sem merge/publicação em loja.
 
-## Auditoria de cobertura documental — 27/10/2026
+**M5-ANDROID-CI-01 verificado no Android:** run [41485316048](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41485316048/job/125415765393), fonte 2523df3, passou build/core/lint e todos 11 instrumentados, incluindo edição/recriação/revisão/retorno/salvar/excluir. PNGs e APK gerados. Lint 0 erros/12 avisos, sem supressão. Ajuste só no teste. Tentativa manual 41485775132 falhou no boot por disco insuficiente antes dos testes; workflow agora limita userdata a 2048M e boot a 300s, mudança de infraestrutura ainda aguarda execução. [Contrato](engenharia/M5-ANDROID-CI-01.md). TestFlight aguarda profile correto; sem merge.
 
-**Conclusão:** a fundação documental necessária para organizar agents **está preparada na branch e disponível para revisão**. Não há necessidade de inventar novos documentos gerais antes de resolver as decisões listadas abaixo. **Isto não é certificação de segurança, conformidade ou prontidão de aplicativo.**
+**M5-TESTFLIGHT-01 bloqueado no arquivo de profile:** branch liberada e environment aprovado pelo responsável. Tentativa 2 do run 41482415419 executou Xcode 26.3 e passou dez testes core e lint de manifesto. Preparação privada falhou ao abrir o resultado de APPLE_PROVISIONING_PROFILE_BASE64 com security cms (decoder UNKNOWN -8183). Solicitada troca pelo Base64 do .mobileprovision App Store Connect original. Limpeza passou; archive/assinatura/exportação/upload NÃO EXECUTADOS. [Contrato](engenharia/M5-TESTFLIGHT-01.md). Native-checks 41482836190 tem falha Android no teste de edição e iOS em execução; não declarar sucesso atual com base no run anterior.
 
-| Frente | Cobertura atual | O que falta |
-| --- | --- | --- |
-| M0 — agentes e qualidade | AGENTS, prompt obrigatório, ROADMAP único, WORKFLOW, HANDOFF, STATUS, G-01..G-15, salvaguardas | **revisar e integrar PR #1** |
-| Produto e UX | Visão, cinco contextos, dois cartões, DESIGN-001 a 005, contrato M1 | validar detalhes propostos em dispositivos e aprovar estados/gestos |
-| Identidade | BRAND/THEME/STAMPS, um azul opaco e tema do dispositivo | escolher tom exato, ícones/assets e direitos |
-| Natividade | estratégia SwiftUI/MapKit + Compose/Android, fronteiras candidatas | decidir fornecedor de mapas Android e módulos definitivos |
-| Dados e grupo | M3-DATA-CONTRACT, PERMISSIONS, SYNC-OFFLINE e GROUP/FINANCE | decidir autenticação, papéis, retenção, convites e conflitos |
-| Segurança/jurídico | baseline OWASP, LGPD/LBI, análise de ameaças e licenças | revisão concreta por contexto antes de processar dados/lançar |
-| Qualidade e release | matriz QA, E2E futuro, estratégia CI/TestFlight/APK e novidades | implementação/testes reais **somente após autorização** |
+**APK gerado:** [CI ea8f264 aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41453817438), artifact arke-android-debug-apk baixado. SHA256 APK: d5f73c2ddd530b03daebb20b8face3e8b330f3a249988d6ce7298973969af584. Instalação física não executada. Fonte inclui M5-EDITOR-UI-02 com checks nativos aprovados; inspeção dos novos PNGs ainda pendente. Registros anteriores abaixo são históricos.
 
-### Decisões que desbloqueiam a próxima etapa
+**M5-DEVICE-01 em andamento:** APK debug autorizado como artifact temporário após validação Android; configuração privada Apple/TestFlight pendente. Assinatura Apple Developer ativa confirmada, sem credenciais no repositório. Sem merge/publicação em lojas.
 
-1. **Aprovação e merge do PR documental**, após revisão das propostas, sem tratar tudo como aceito por associação.
-2. **Design:** tom do azul, detalhes do relógio/carrossel e assets.
-3. **Domínio:** contas, convite, papéis, o que é pessoal versus compartilhado, exclusão/retenção e sincronização.
-4. **Infra e negócio:** provedor de mapas Android, política de offline, moedas/finanças e licença final de código/marca.
+**M5-EDITOR-UI-02 em validação:** X preenchido no lugar de Cancelar, campos/revisão agrupados e cartão flutuante com raio 36. Builds/testes/capturas da nova fonte pendentes; sem merge/release.
 
-Não confundir **“documentos existentes”** com **“decisões aprovadas”**. O Arke pode parar de produzir novos documentos gerais enquanto revisamos os existentes.
+**M5-EDITOR-UI-01 em validação:** adicionar/editar/revisar alinhados ao padrão visual dos detalhes, com i, menos texto permanente, ícones discretos e cápsulas. Builds/testes/capturas novos pendentes; sem merge/release.
 
-## Próxima decisão necessária
+**M5-EDIT-01 verificado e em revisão:** cabeçalho central, bookmark preenchido/alinhado, Próximo largo na primeira página, retorno por ícone e Concluído na última/unitária. Edição pela lista com campos preenchidos, descarte só quando alterado e update mantendo ID/ordem/outros registros; conflito/ausente recusados e retry idempotente. [Contrato](engenharia/M5-EDIT-01.md). [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41388017517), fonte `4ee4af0`: iOS 10 core + 7 UI; Android 6 core + 11 instrumentados; lint 0/9. 40 PNGs originais inspecionados; falhas anteriores de interação do teste iOS corrigidas sem mudar produto ou remover cenário. Snapshot v1 preservado, sem migração/rede nova. Fonte 200%, leitores de tela, IME Android manual, landscape/tablets, aparelho físico e profiling não executados. PR #2 rascunho, sem merge/release. Próximo: revisão visual humana e próximo contrato de planejamento.
 
-Revisar o **pacote documental M0** e o conteúdo aberto no [PR #1](https://github.com/lucasouzadev/Arke---Viagens-e-momentos/pull/1). **Não** declarar aprovado todo conteúdo do PR pelo simples fato de M0 ter sido solicitado.
+**M5-FLOATING-01 verificado e em revisão:** cartões flutuantes com margem inferior/quatro cantos, alça externa acessível e recuo da home; detalhes com título à esquerda, apenas i, ícone junto ao nome e ícones secundários suaves, sem contador visível. Editor conserva Cancelar/descarte. [Contrato](engenharia/M5-FLOATING-01.md). Android [aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41381270981), fonte `0fa908b`: 6 core + 10 instrumentados, incluindo Voltar com Arke em primeiro plano. iOS [aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41380227823), fonte `95987b8`, mesmo código iOS: 9 core + 7 UI. Lint 0 erros/9 avisos; 32 PNGs originais inspecionados. Aviso de travamento do Pixel Launcher diagnosticado e tratado exclusivamente no teste; sem alterar Voltar do app ou remover cenários. Dados/schema/IO intactos. Fonte 200%, leitores de tela, landscape/tablets, aparelho físico e profiling não executados. PR #2 rascunho, sem merge/release. Próximo: revisão visual humana e futuro contrato de edição segura.
 
-## Impedimentos
+**M5-DETAILS-UI-03 verificado:** detalhes com altura acompanhando conteúdo, cabeçalho circular, nome equilibrado, endereço/nota agrupados e navegação em cápsulas. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41360045740), fonte `493bb7063d22cc1dc26537dd284045eae3f9897c`: iOS 9 core + 6 UI; Android 6 core + 8 instrumentados; lint 0/9 anteriores. 32 PNGs originais inspecionados em pares, incluindo lugar sem nota. Testes verificam encolhimento e nota longa rolável. Android repetido após travamento do Pixel Launcher sobre a captura, sem alterar fonte; repetição aprovada. Limites e gates no contrato. Dados/IO/editor preservados. Fonte 200%, leitores de tela, landscape/tablets e profiling não executados. PR #2 rascunho, sem merge/release. Próximo: revisão visual humana e futuro contrato de edição segura.
 
-- Identidade gráfica e HEX definitivo de azul por validar.
-- Participantes e políticas de compartilhamento não definidos.
-- Mapa Android/provedor, offline e sync não decididos.
-- App não deve ser iniciado ainda.
-- Atualizações públicas de app só após release verificável.
+**M5-DETAILS-UI-02 verificado:** detalhes simplificados, X/i, contador integrado ao cabeçalho, nome em destaque, endereço/nota com ícones, informação sob demanda e navegação preenchida. Sheet mais claro que preenchimentos em ambos os temas, inclusive editor. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41353801111), fonte `b9582d23b6837fc60e2549b954193a7ceae12d28`: iOS 9 core + 5 UI, Android 6 core + 7 instrumentados; lint 0/9 (um P3 de título antigo sem uso); 24 PNGs originais inspecionados. Painel informativo abre/fecha e preserva seleção nos testes; sem captura estática do painel. Dados/IO intactos. Fonte 200%, leitores de tela, landscape/tablets e profiling não executados. PR #2 em rascunho, sem merge/release. Próximo: contrato de edição segura.
 
-## Auditoria da última mudança
+**M5-DETAILS-01 verificado:** abrir ideia salva, ler nome/endereço/nota, percorrer por Anterior/Próximo com contador/limites finitos e Fechar retornando à home. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41344099050), fonte `8858f3f8792ce0c0189991644aad5adede8762b6`: iOS 9 core + 5 UI, Android 6 core + 7 instrumentados; lint 0/8; 24 PNGs originais inspecionados. Exemplos de captura somente em memória/Debug; teste abre também ideia realmente salva. Dados/schema/IO inalterados. Fonte 200%, leitores de tela, landscape/tablets e profiling não executados. PR #2 segue rascunho, sem merge/release. Próximo: contrato de edição de ideia salva; mapa/geocoding permanecem separados.
 
-Revisão documental e verificação de links internos são aplicáveis. Testes de interface, simulador, Maestro/E2E, segurança operacional de builds e publicação de releases **não foram executados**. Ver [HANDOFF](agents/HANDOFF.md).
+**M5-FADE-01 verificado:** fade inferior de 32 pt/dp e espaço final de 48 no editor/revisão, sem corte seco junto às ações, em paridade iOS/Android. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41337689076), fonte `fd9d9d50da562592f136b82dd4dced224c5c337d`: iOS 9 core + 4 UI, Android 6 core + 6 instrumentados; lint 0/8; 16 PNGs originais inspecionados em pares. Android repetido por timeout de boot antes do app, sem alterar código. Dados/IO/fluxos preservados. Fonte 200%, leitores de tela, landscape/tablet e profiling não executados. Mesmo PR #2 em rascunho, sem merge/release; próximos sheets seguem DESIGN-006.
 
-**Manutenção:** o agent que avançar um milestone ou fizer handoff deve atualizar esta página na mesma alteração, com fatos e links — nunca estados otimistas.
+**M5-PARITY-01 verificado:** guia comum DESIGN-006/ADR-012 obrigatório para próximas telas. Home/editor/revisão com métricas equivalentes, alça visível, Cancelar à esquerda, título central, labels persistentes e CTA fixo. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41332236559), fonte `6b17366dc3f8e165b93a12a18f4e602aec154ab0`: iOS 9 core + 4 UI; Android 6 core + 6 instrumentados; lint 0/8. Dezesseis PNGs finais inspecionados em pares, padrão/compacto claro/escuro. Altura Android corrigida após inspeção; primeira tentativa final falhou no boot do emulador e foi repetida sem alteração de fonte. Sem dados/schema/IO novos. Limites: fonte 200%, leitores de tela, landscape/tablets e profiling não executados. PR #2 permanece rascunho, sem merge/release. Próximo: seleção/detalhes sob o guia comum.
+
+**M5-PLACES-01 verificado:** adicionar/revisar/corrigir/cancelar, ideias pessoais gravadas no aparelho e exclusão confirmada. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41326580725), fonte `e54cc6fde18f0851d4f3bc70a6546c81baf43914`. iOS: 9 core + 4 UI; Android: 6 core + 4 UI + 2 repositório; lint 0/8; 16 PNGs inspecionados. Sem geocoding/Pin/conta/rede nova; sem backup nesta etapa. Regras/limites e testes não executados no [contrato](engenharia/M5-PLACES-01.md). Próximo: contrato de seleção/detalhes e futura associação ao mapa. Mesma branch/PR #2 em rascunho, sem merge/release. Registros anteriores são históricos.
+
+**M5-HANDLE-01 verificado:** puxador vertical contínuo e encaixe nos três estados, com seletor por toque e ações acessíveis. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41310026574), fonte `f2e8f67496c6b6c21657f6295209f71371f76800`. Três testes UI e três unitários por plataforma aprovados; lint 0/8; oito PNGs padrão/compacto claro/escuro inspecionados. iOS corrigido após falha de retorno; repetição Android superou download inválido do SDK. Detalhes e limites em [contrato](engenharia/M5-HANDLE-01.md). Gestos testados nos aparelhos padrão; leitores de tela, fonte ampliada e landscape/tablet pendentes. Próximo: contrato do fluxo de adicionar lugar. Sem merge/release. Registros anteriores abaixo são históricos.
+
+
+**M5-TONES-01 verificado:** fundo/cartão com tons semânticos distintos nas duas plataformas, sem contorno/sombra ou alteração de layout. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41305472522), fonte `a2e4e0b354ef4d79851779cc7f8040a16812af35`. Builds, testes UI/unitários e lint aprovados; oito PNGs inspecionados. Contrato: [M5-TONES-01](engenharia/M5-TONES-01.md). Sem merge/release. Próximo: puxador entre cartões.
+
+**Atualizado em:** 01/11/2026. O andamento não substitui decisões de produto.
+
+## Situação verificada
+
+**M5-HEADER-01 verificado:** cabeçalho +/contexto central/relógio nas duas plataformas; seletor nativo por toque, preservando painel. “+” abre aviso, sem salvar dados. [CI aprovado](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41276436997), fonte `b9d7c2864f819e70403e2a6756af83448746c0ef`. Dois testes UI e três unitários por plataforma aprovados, lint 0 erros/8 avisos, oito capturas padrão/compacto claro/escuro inspecionadas. Próxima tarefa: puxador entre cartões. Leitores de tela, fonte ampliada, landscape/tablet e profiling pendentes. Google Maps real sem projeto/chave. Mesmo PR #2 em rascunho, sem merge/release. Contrato em docs/engenharia/M5-HEADER-01.md.
+
+**M5-UI-02 verificado:** cartões sem contorno no iOS/Android, sem sombras acrescentadas e com superfícies/spacing preservados. Labels escuros usam cores semânticas legíveis nas duas plataformas. [Builds/testes/lint/capturas aprovados](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41273311115), fonte `0683e8e1df10ef5bd2e53f381aa52bb71ed2cebb`; oito PNGs inspecionados. Contrato/gates no início de [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md). Layout inicial aprovado pelo responsável; esta alteração específica segue disponível no PR #2, sem merge.
+
+**Recorte atual:** [M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md), oito capturas reais geradas e inspecionadas na [execução aprovada](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41265098608), fonte `4128e2e`. Apple Maps renderizado no iPhone 16/SE, claro/escuro; Android Emulator API 35 executou o fallback sem chave em padrão/compacto, claro/escuro. Google Cloud ainda não existe, portanto mapa real Android continua bloqueado por configuração externa. O baixo contraste encontrado neste recorte anterior foi tratado em M5-UI-02; isso não equivale a aprovação global de acessibilidade.
+
+- O PR documental [#1](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/1) foi integrado em **28/10/2026**, commit `24007b08723ecf4df833ffc5b6a4e2ecc544c08b`. Os registros anteriores de PR aberto estavam desatualizados.
+- O responsável autorizou iniciar **ambas as bases nativas** e compilar no **GitHub Actions**: [ADR-009](decisoes/ADR-009.md).
+- Branch: `chore/development-kickoff`; tarefa [M5-BOOTSTRAP-01](engenharia/M5-BOOTSTRAP-01.md), com builds/testes aprovados, revisão visual pendente e sem merge desta implementação. [PR #2](https://github.com/lucasouzadev/arke-viagens-e-momentos/pull/2), em rascunho.
+- Projetos SwiftUI e Compose com home inicial de dois cartões, menus dos cinco contextos e três proporções de painel. MapKit iOS renderiza o mapa inicial; Google Maps Android tem integração compilada e fallback sem chave.
+- Testes de estado, lint Android e compilações iOS/Android **aprovados em CI**: [execução](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41260321973), fonte `8bfdbfa853dd796b7b8fef27e5822a5c992c144f`. **Build aprovado não equivale a app validado em dispositivo.**
+- Sem Google Maps autenticado, Pins, carrossel, gestos do relógio, viagem persistida, contas, grupos, backend, publicação, TestFlight ou release.
+
+## Marcos
+
+| Marco | Estado verificável |
+| --- | --- |
+| M0 | Pacote documental integrado via PR #1; isso não aprova todas as propostas anexas |
+| M1 | Estrutura aprovada preservada; detalhes de interação, azul final e validação visual pendentes |
+| M2 | Bases nativas e coleção de ideias escritas locais verificadas; Pin geográfico, persistência de viagens/grupos e sync pendentes |
+| M3 | Contratos de domínio, grupos, permissões e sync continuam propostos |
+| M4 | Workflow de verificação executado e aprovado nas duas plataformas; distribuição fora do escopo |
+| M5 | **Fundação e cabeçalho compilados/testados; capturas inspecionadas**, autorizada em ADR-009; demais features dependem de tarefas próprias |
+
+## Verificações e ambiente
+
+Clone limpo da main, histórico e integração do PR #1 verificados. JDK 17 local disponível; Java do PATH aponta para Java 8. SDK Android não encontrado nos locais verificados. Swift/Xcode não disponíveis no Windows. Gradle Wrapper oficial baixado e seu SHA-256 conferido; distribuição possui checksum fixado.
+
+Compilação nativa, testes unitários e lint Android aprovados. Oito screenshots atuais e inspeção estática padrão/compacta claro/escuro executadas; labels escuros corrigidos por cores semânticas em M5-UI-02. Interações do cabeçalho verificadas por testes UI; leitores de tela, fonte ampliada, landscape/tablet e profiling **NÃO EXECUTADOS**. Matrizes em [fundação](engenharia/M5-BOOTSTRAP-01.md) e [capturas/mapas](engenharia/M5-PREVIEW-01.md). Guia em [DEVELOPMENT](engenharia/DEVELOPMENT.md).
+
+Lint Android terminou com **0 erros e 8 avisos**: target/dependências anteriores aos mais recentes, regras de extração/backup e ícone de desenvolvimento, incluindo três avisos de versões de dependências de teste/BOM. Estão detalhados no contrato; não houve supressão. Definir regras de backup/transferência antes de persistir dados e revisar SDK/dependências antes de distribuição.
+
+## Pendências e próxima ação
+
+1. Revisar o PR #2, as evidências de CI e os avisos de manutenção do lint; manter rascunho até a revisão visual.
+2. Revisar a home em iOS/Android, claro/escuro, tamanhos distintos, fonte ampliada e VoiceOver/TalkBack.
+3. Configurar Google Cloud/Maps Android somente com decisão do responsável; provedor já escolhido em ADR-010. Aprovar o primeiro recorte de Pin, persistência/privacidade e interações.
+4. Resolver licença final, marca e requisitos de distribuição antes de lançamento. Nenhuma licença foi presumida.
+
+Não há merge automático nem aprovação geral de M1–M4. Continuidade em [HANDOFF](agents/HANDOFF.md); planejamento em [ROADMAP](ROADMAP.md).

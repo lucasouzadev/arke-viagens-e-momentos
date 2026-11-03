@@ -1,0 +1,75 @@
+name: Native checks
+
+on:
+  push:
+    branches: [chore/qa-android-retry]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4, MIT
+        with:
+          cmdline-tools-version: '12266719'
+          log-accepted-android-sdk-licenses: false
+      - name: Install Android SDK components
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Unit tests, lint and debug build
+        run: bash gradlew --no-daemon :core:test :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Report lint diagnostics
+        if: always()
+        run: |
+          report=app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt
+          if [ -f "$report" ]; then cat "$report"; fi
+      - name: Enable KVM for Android Emulator
+        run: sudo chmod 666 /dev/kvm
+      - name: Run app in Android Emulator and capture screens
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2, Apache-2.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disk-size: 2048M
+          emulator-boot-timeout: 300
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash scripts/capture-android.sh
+      - name: Upload Android screenshots
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: android-screenshots
+          path: build/screenshots/android/*.png
+          if-no-files-found: error
+          retention-days: 7
+
+
+      - name: Upload development APK for device testing
+        if: success() && github.ref == 'refs/heads/chore/qa-android-retry'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: arke-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

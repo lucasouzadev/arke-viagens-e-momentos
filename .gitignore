@@ -8,3 +8,15 @@ Thumbs.db
 .env.*
 !/.env.example
 __pycache__/
+.gradle/
+build/
+local.properties
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.jks
+*.keystore
+*.p12
+*.mobileprovision

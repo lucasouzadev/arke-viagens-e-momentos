@@ -1,8 +1,20 @@
 # Índice e maturidade da documentação
 
+[M5-QA-FIX-01 — correções de interação da beta](engenharia/M5-QA-FIX-01.md): implementação e validação, com [análise original](qualidade/QA-BETA-01.md).
+
+[M5-TESTFLIGHT-01 — primeira build beta](engenharia/M5-TESTFLIGHT-01.md) e [M5-DEVICE-01 — APK e teste em aparelho](engenharia/M5-DEVICE-01.md): recorte de distribuição de testes autorizado, sem publicação nas lojas.
+
+[M5-EDIT-01 — navegação limpa e edição segura de ideias](engenharia/M5-EDIT-01.md).
+
 **Documento de navegação do Arke.** ROADMAP é [único e canônico](ROADMAP.md); andamento em [STATUS](STATUS.md), continuação em [HANDOFF](agents/HANDOFF.md).
 
 ## Estados
+
+[M5-HEADER-01](engenharia/M5-HEADER-01.md) registra a implementação autorizada do cabeçalho (+/contexto/relógio) e seus testes nativos.
+
+[M5-PREVIEW-01](engenharia/M5-PREVIEW-01.md) registra mapas por plataforma e capturas em simuladores; [ADR-010](decisoes/ADR-010.md) aprova Apple Maps/Google Maps. Google Cloud/chave Android ainda pendentes.
+
+**Atualização — 31/10/2026:** as classificações históricas abaixo não aprovam propostas por associação. [ADR-009](decisoes/ADR-009.md) autoriza somente a fundação nativa e compilação; [contrato](engenharia/M5-BOOTSTRAP-01.md) e [guia de desenvolvimento](engenharia/DEVELOPMENT.md).
 
 - **Aprovado:** direção explicitamente aceita.
 - **Proposto:** ainda depende de decisão.
@@ -83,4 +95,23 @@
 
 **ADRs aceitos e decisões explícitas** → especificações aprovadas → propostas → tarefas/roadmap → STATUS factual → HANDOFF contextual. README e CHANGELOG comunicam o projeto e **não devem impor comportamento técnico novo**.
 
-Nenhuma funcionalidade de app, CI, release ou modal foi implementada com esta documentação.
+A documentação original não implementou aplicativo. A branch inicial de desenvolvimento acrescenta bases nativas e workflow de verificação, ainda sujeitos às evidências de [STATUS](STATUS.md). Sem release ou modal implementado.
+
+- [M5-TONES-01 — composição tonal](engenharia/M5-TONES-01.md): diferenciação das superfícies sem contornos.
+
+- [M5-HANDLE-01 — puxador](engenharia/M5-HANDLE-01.md): arrasto da faixa entre cartões.
+
+- [M5-PLACES-01 — ideias locais](engenharia/M5-PLACES-01.md): editor, revisão e armazenamento pessoal.
+
+- [DESIGN-006 — guia comum de UI/UX](design/DESIGN-006.md): paridade obrigatória entre iOS/Android.
+- [M5-PARITY-01](engenharia/M5-PARITY-01.md): implementação e provas da paridade.
+
+- [M5-FADE-01](engenharia/M5-FADE-01.md): transição inferior suave dos sheets.
+
+- [M5-DETAILS-01](engenharia/M5-DETAILS-01.md): seleção e leitura de ideias salvas.
+
+- [M5-DETAILS-UI-02](engenharia/M5-DETAILS-UI-02.md): detalhes mais limpos, ícones e informação por toque.
+
+- [M5-DETAILS-UI-03 — Sheet compacto](engenharia/M5-DETAILS-UI-03.md).
+
+- [M5-FLOATING-01 — Cartões flutuantes](engenharia/M5-FLOATING-01.md).

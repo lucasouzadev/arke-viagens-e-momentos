@@ -1,6 +1,6 @@
 # DESIGN-004 — Relógio, carrossel e física dos dois cartões
 
-**Status:** proposta de interação para revisão, não aprovada nem implementada.  
+**Status:** proposta de interação para revisão. Somente o puxador vertical entre cartões foi autorizado e implementado no recorte [M5-HANDLE-01](../engenharia/M5-HANDLE-01.md), com verificação nativa registrada; demais partes continuam propostas.
 **Dependências:** [DESIGN-001](DESIGN-001.md), [DESIGN-002](DESIGN-002.md), [DESIGN-003](DESIGN-003.md), [INTERACTIONS](INTERACTIONS.md).
 
 ## 1. Gramática espacial

@@ -1,6 +1,52 @@
 # Novidades do Arke
 
-Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no aplicativo. **O Arke ainda está em planejamento e não foi lançado.** As notas abaixo falam da organização do projeto — não são funcionalidades disponíveis para instalar.
+Aqui explicamos, sem termos técnicos, o que muda no projeto e, futuramente, no aplicativo. **O Arke está em desenvolvimento e não foi lançado.** As notas abaixo não são funcionalidades disponíveis para instalar.
+
+## Projeto em desenvolvimento — 2 de novembro de 2026
+
+- Reorganizamos os painéis com campos maiores, separadores e ações que acompanham a rolagem durante a escrita. A nova interface ainda está em validação.
+- Preparamos a seleção de contextos por encaixe, cartões para as ideias e o botão para mostrar sua posição no mapa, mediante permissão. O mapa Android ainda depende de configuração.
+
+- Enviamos a primeira versão de testes do iPhone para processamento da Apple. A liberação aos testadores ainda precisa ser conferida; o app não foi lançado nas lojas.
+
+- Simplificamos a navegação dos lugares e adicionamos a edição das ideias salvas neste aparelho.
+
+## Projeto em desenvolvimento — 1 de novembro de 2026
+
+- Ajustamos os painéis para aparecerem como cartões flutuantes, com cabeçalho mais simples e a tela de fundo recuada.
+
+- Reorganizamos os detalhes dos lugares em um painel mais compacto, com informações agrupadas e botões arredondados.
+
+- Simplificamos os detalhes dos lugares, com ícones, informações extras por toque e botões de navegação preenchidos.
+
+- Preparamos a leitura dos detalhes de lugares salvos, com navegação entre ideias e retorno à tela anterior.
+
+- Suavizamos a passagem do conteúdo para os botões dos sheets, com um degradê discreto no iPhone e Android.
+
+- Unificamos o guia de interface: alça nos sheets, Cancelar no topo esquerdo, campos e ações com a mesma organização no iPhone e Android.
+
+- Preparamos o fluxo para escrever, revisar e guardar ideias de lugares no aparelho, com confirmação antes de descartar ou excluir. O endereço ainda não é pesquisado nem marcado no mapa.
+
+- Adicionamos um puxador entre os cartões para ajustar o espaço do mapa; a escolha por toque continua disponível.
+
+- Diferenciamos os tons do fundo e do cartão para preservar sua forma nos modos claro e escuro.
+
+- Organizamos o cabeçalho com adicionar lugar, contexto central e relógio.
+
+- Retiramos os contornos dos dois cartões para deixar a tela mais contínua.
+- Ajustamos os textos dos controles no modo escuro para melhorar a leitura.
+
+> Ajustes na versão em desenvolvimento; nenhuma versão foi lançada.
+
+## Projeto em desenvolvimento — 31 de outubro de 2026
+
+- Escolhemos Apple Maps para iPhone e Google Maps para Android; a configuração Android ainda está pendente.
+- Geramos capturas reais das primeiras telas em iPhone e Android, em claro e escuro; o mapa Apple já aparece no iPhone.
+- Começamos a preparar o aplicativo para iPhone e Android ao mesmo tempo.
+- Criamos a primeira estrutura da tela com mapa e informações em dois cartões; os recursos ainda estão em desenvolvimento.
+- Preparamos verificações automáticas para acompanhar a construção das duas versões.
+
+> Esta é uma etapa inicial de desenvolvimento. Mapas e recursos de viagem ainda não estão disponíveis; não há versão para instalar.
 
 ## Projeto em desenvolvimento — 27 de outubro de 2026
 

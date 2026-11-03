@@ -37,3 +37,4 @@ As alturas são adaptáveis à safe area, teclado, tablets, landscape e fonte am
 - Acessibilidade: remover/reduzir zoom e deslocamento em Reduce Motion/Remove Animations.
 
 Cada ajuste visual exige auditoria [QUALITY-001](../qualidade/QUALIDADE.md).
+**Paridade obrigatória — 01/11/2026:** [DESIGN-006](DESIGN-006.md) orienta as duas plataformas. Alça visível em sheets, Cancelar no topo esquerdo, mesma hierarquia de ações/campos e métricas-base de texto/espaçamento. APIs e materiais continuam nativos; não usar diferenças de plataforma para mudar a organização do fluxo. Revisar pares de capturas antes de avançar.
