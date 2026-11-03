@@ -75,79 +75,79 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
             coverError = false
             scope.launch {
                 try {
-                    if (!reviewing || draft.cover.isNotEmpty()) {
-                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(20.dp)).padding(16.dp)) {
-                        val cover = withContext(Dispatchers.IO) { readPlaceCover(context.contentResolver, uri) }
-                            if (cover == null) coverError = true else draft = draft.copy(cover = cover)
-                        } finally {
-                            loadingCover = false
+                    val cover = withContext(Dispatchers.IO) { readPlaceCover(context.contentResolver, uri) }
+                    if (cover == null) coverError = true else draft = draft.copy(cover = cover)
+                } finally {
+                    loadingCover = false
+                }
+            }
+        }
+    }
+    var reviewing by rememberSaveable { mutableStateOf(false) }
+    val editorScroll = rememberScrollState()
+    LaunchedEffect(reviewing) { editorScroll.scrollTo(0) }
+    var submitted by rememberSaveable { mutableStateOf(false) }
+    var confirmingDiscard by remember { mutableStateOf(false) }
+    var showingInfo by remember { mutableStateOf(false) }
+    val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
+    val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    fun cancel() {
+        focus.clearFocus()
+        keyboard?.hide()
+        if (!saving) { if (!hasChanges) onCancel() else confirmingDiscard = true }
+    }
+    val canDismiss by rememberUpdatedState(!hasChanges && !saving)
+    val confirmSheetChange = remember { { value: SheetValue -> value != SheetValue.Hidden || canDismiss } }
+    val sheet = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = confirmSheetChange,
+    )
+    ArkeFloatingSheet(
+        onDismiss = { if (!saving) cancel() }, tagPrefix = "place", sheetState = sheet, enabled = !saving,
+        modifier = Modifier.fillMaxHeight(0.9f).imePadding(),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(
+                    colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
+                    contentPadding = PaddingValues(0.dp),
+                    shape = CircleShape,
+                    modifier = Modifier.width(48.dp).heightIn(min = 48.dp).testTag("place.cancel"),
+                ) {
+                    Box(Modifier.size(48.dp).background(arkeInsetColor(), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ic_close), stringResource(R.string.cancel))
+                    }
+                }
+                Spacer(Modifier.width(28.dp))
+                Text(
+                    stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
+                    Modifier.weight(1f).testTag("place.title").semantics { heading() },
+                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
+                )
+                Box(Modifier.width(76.dp), contentAlignment = Alignment.CenterEnd) {
+                    IconButton(onClick = { focus.clearFocus(); keyboard?.hide(); showingInfo = true },
+                        modifier = Modifier.size(48.dp).background(arkeInsetColor(), CircleShape).testTag("place.info")) {
+                        Icon(painterResource(R.drawable.ic_info), "Informações sobre salvar lugares")
+                    }
+                    DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
+                        Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("Sobre sua ideia", style = MaterialTheme.typography.titleMedium)
+                            Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.", modifier = Modifier.testTag("place.infoText"))
+                            TextButton(onClick = { showingInfo = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("place.infoDismiss")) { Text("Entendi") }
                         }
                     }
                 }
             }
-            var reviewing by rememberSaveable { mutableStateOf(false) }
-            val editorScroll = rememberScrollState()
-            LaunchedEffect(reviewing) { editorScroll.scrollTo(0) }
-            var submitted by rememberSaveable { mutableStateOf(false) }
-            var confirmingDiscard by remember { mutableStateOf(false) }
-            var showingInfo by remember { mutableStateOf(false) }
-            val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
-            val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
-            val focus = LocalFocusManager.current
-            val keyboard = LocalSoftwareKeyboardController.current
-            fun cancel() {
-                focus.clearFocus()
-                keyboard?.hide()
-                if (!saving) { if (!hasChanges) onCancel() else confirmingDiscard = true }
-            }
-            val canDismiss by rememberUpdatedState(!hasChanges && !saving)
-            val confirmSheetChange = remember { { value: SheetValue -> value != SheetValue.Hidden || canDismiss } }
-            val sheet = rememberModalBottomSheetState(
-                skipPartiallyExpanded = true,
-                confirmValueChange = confirmSheetChange,
-            )
-            ArkeFloatingSheet(
-                onDismiss = { if (!saving) cancel() }, tagPrefix = "place", sheetState = sheet, enabled = !saving,
-                modifier = Modifier.fillMaxHeight(0.9f).imePadding(),
+            Column(
+                Modifier.fillMaxWidth().weight(1f)
+                    .verticalScroll(editorScroll).testTag("place.fields")
+                    .padding(top = 16.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
-                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(
-                            colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
-                            contentPadding = PaddingValues(0.dp),
-                            shape = CircleShape,
-                            modifier = Modifier.width(48.dp).heightIn(min = 48.dp).testTag("place.cancel"),
-                        ) {
-                            Box(Modifier.size(48.dp).background(arkeInsetColor(), CircleShape), contentAlignment = Alignment.Center) {
-                                Icon(painterResource(R.drawable.ic_close), stringResource(R.string.cancel))
-                            }
-                        }
-                        Spacer(Modifier.width(28.dp))
-                        Text(
-                            stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
-                            Modifier.weight(1f).testTag("place.title").semantics { heading() },
-                            style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
-                        )
-                        Box(Modifier.width(76.dp), contentAlignment = Alignment.CenterEnd) {
-                            IconButton(onClick = { focus.clearFocus(); keyboard?.hide(); showingInfo = true },
-                                modifier = Modifier.size(48.dp).background(arkeInsetColor(), CircleShape).testTag("place.info")) {
-                                Icon(painterResource(R.drawable.ic_info), "Informações sobre salvar lugares")
-                            }
-                            DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
-                                Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Text("Sobre sua ideia", style = MaterialTheme.typography.titleMedium)
-                                    Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.", modifier = Modifier.testTag("place.infoText"))
-                                    TextButton(onClick = { showingInfo = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("place.infoDismiss")) { Text("Entendi") }
-                                }
-                            }
-                        }
-                    }
-                    Column(
-                        Modifier.fillMaxWidth().weight(1f)
-                            .verticalScroll(editorScroll).testTag("place.fields")
-                            .padding(top = 16.dp, bottom = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
+                if (!reviewing || draft.cover.isNotEmpty()) {
+                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(20.dp)).padding(16.dp)) {
                         val cover = remember(draft.cover) { decodePlaceCover(draft.cover) }
                         if (cover != null) {
                             Image(cover.asImageBitmap(), contentDescription = null,
