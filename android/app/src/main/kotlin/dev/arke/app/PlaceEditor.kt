@@ -84,6 +84,8 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
         }
     }
     var reviewing by rememberSaveable { mutableStateOf(false) }
+    val editorScroll = rememberScrollState()
+    LaunchedEffect(reviewing) { editorScroll.scrollTo(0) }
     var submitted by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by remember { mutableStateOf(false) }
     var showingInfo by remember { mutableStateOf(false) }
@@ -140,7 +142,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
             }
             Column(
                 Modifier.fillMaxWidth().weight(1f)
-                    .verticalScroll(rememberScrollState()).testTag("place.fields")
+                    .verticalScroll(editorScroll).testTag("place.fields")
                     .padding(top = 16.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
