@@ -40,7 +40,9 @@ PY
   xcrun simctl status_bar "$device" override --time '9:41' --batteryState charged --batteryLevel 100
   xcrun simctl install "$device" build/ios/Build/Products/Debug-iphonesimulator/Arke.app
   if [ "$size" = standard ]; then
-    xcrun simctl io "$device" recordVideo --codec=h264 "$output/ios-qa-interactions.mov" &
+    # An asynchronous Bash command may inherit SIGINT as ignored.
+    python3 -c 'import os, signal, sys; signal.signal(signal.SIGINT, signal.SIG_DFL); os.execvp(sys.argv[1], sys.argv[1:])' \
+      xcrun simctl io "$device" recordVideo --codec=h264 "$output/ios-qa-interactions.mov" &
     recorder=$!
     trap 'kill -INT "$recorder" 2>/dev/null || true; wait "$recorder" 2>/dev/null || true' EXIT
     if ! xcodebuild -project ios/Arke.xcodeproj -scheme Arke -configuration Debug \
