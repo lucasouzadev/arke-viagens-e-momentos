@@ -101,7 +101,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     val canDismiss by rememberUpdatedState(!hasChanges && !saving)
     val confirmSheetChange = remember { { value: SheetValue -> value != SheetValue.Hidden || canDismiss } }
     val sheet = rememberModalBottomSheetState(
-        skipPartiallyExpanded = false,
+        skipPartiallyExpanded = true,
         confirmValueChange = confirmSheetChange,
     )
     ArkeFloatingSheet(
