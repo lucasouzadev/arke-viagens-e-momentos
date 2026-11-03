@@ -7,15 +7,14 @@ final class HeaderNavigationTests: XCTestCase {
     func testInlineNavigationChangesContextWithoutChangingPanel() {
         let app = XCUIApplication()
         app.launch()
-        let next = app.buttons["home.contextNext"]
+        let next = app.staticTexts["home.contextTitle"]
         XCTAssertTrue(next.waitForExistence(timeout: 15))
         XCTAssertEqual(app.buttons.matching(identifier: "home.panelMenu").count, 1)
         app.buttons["home.panelMenu"].tap()
         app.buttons["Detalhes"].tap()
         for (index, title) in ["Gastos", "Cofrinho", "Avaliações", "Memórias", "Avaliações"].enumerated() {
-            let step = index == 4 ? app.buttons["home.contextPrevious"] : next
-            XCTAssertTrue(step.isHittable)
-            step.tap()
+            XCTAssertTrue(next.isHittable)
+            if index == 4 { next.swipeRight() } else { next.swipeLeft() }
             let selectedTitle = NSPredicate(format: "label == %@", title)
             expectation(for: selectedTitle, evaluatedWith: app.staticTexts["home.contextTitle"])
             waitForExpectations(timeout: 5)
@@ -52,7 +51,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(name.value as? String, "Rascunho de teste")
         app.buttons["place.cancel"].tap()
         app.buttons["Descartar"].tap()
-        XCTAssertTrue(app.buttons["home.contextNext"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].waitForExistence(timeout: 5))
     }
 
     func testSaveReviewReopenAndConfirmedDelete() {
@@ -190,7 +189,7 @@ final class HeaderNavigationTests: XCTestCase {
         start.press(forDuration: 0.1, thenDragTo: end)
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
-        XCTAssertTrue(app.buttons["home.contextNext"].isHittable)
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].isHittable)
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
     }
 
@@ -253,7 +252,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         app.buttons["detail.next"].tap()
         app.buttons["detail.done"].tap()
-        XCTAssertTrue(app.buttons["home.contextNext"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["home.contextTitle"].label, "Planejamento")
         XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Equilibrado")
     }
@@ -313,7 +312,7 @@ final class HeaderNavigationTests: XCTestCase {
         locate.tap()
         XCTAssertTrue(app.alerts["Minha localização"].waitForExistence(timeout: 5))
         app.alerts["Minha localização"].buttons["Entendi"].tap()
-        XCTAssertTrue(app.buttons["home.contextNext"].isHittable)
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].isHittable)
         app.terminate()
         app.resetAuthorizationStatus(for: .location)
     }

@@ -43,24 +43,30 @@ struct HomeView: View {
                         .mapStyle(.standard)
                         .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
                         .frame(height: panelHeight ?? mapHeight(in: geometry.size.height))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .contentShape(RoundedRectangle(cornerRadius: 20))
-                        .overlay(alignment: .topLeading) {
-                            Button { showingMapSearch = true } label: {
-                                Label("Buscar lugares", systemImage: "magnifyingglass")
-                                    .padding(.horizontal, 12).frame(minHeight: 44)
-                            }
-                            .modifier(MapLocationButtonStyle(isPill: true))
-                            .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
-                            .padding(10)
+                        .clipShape(.rect(cornerRadius: 30))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 30)
+                                .strokeBorder(.white.opacity(0.44), lineWidth: 1)
+                                .shadow(color: .white.opacity(0.75), radius: 7)
+                                .allowsHitTesting(false)
                         }
-                        .overlay(alignment: .bottomTrailing) {
-                            Button { location.request() } label: {
-                                Image(systemName: "location.fill").frame(width: 48, height: 48)
-
-                            }.padding(12).accessibilityLabel("Minha localização")
+                        .overlay(alignment: .bottom) {
+                            HStack(spacing: 6) {
+                                Button { showingMapSearch = true } label: {
+                                    Label("Buscar lugares", systemImage: "magnifyingglass")
+                                        .font(.subheadline).frame(maxWidth: .infinity, minHeight: 34)
+                                }
+                                .modifier(MapLocationButtonStyle(isPill: true))
+                                .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
+                                Button { location.request() } label: {
+                                    Image(systemName: "location.fill").frame(width: 36, height: 36)
+                                }
+                                .modifier(MapLocationButtonStyle())
+                                .accessibilityLabel("Minha localização")
                                 .accessibilityIdentifier("home.location")
                                 .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
+                            }
+                            .padding(.horizontal, 12).padding(.bottom, 28)
                         }
                         .onReceive(location.$coordinate) { coordinate in
                             if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
@@ -154,28 +160,18 @@ struct HomeView: View {
     }
 
     private var cardHeader: some View {
-        HStack(spacing: 8) {
-            Button { showingAddPlace = true } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .medium))
-                    .frame(width: 48, height: 48)
-                    .contentShape(Rectangle())
-            }
-            .disabled(!places.ready || places.busy)
-            .accessibilityLabel("Adicionar lugar")
-            .accessibilityIdentifier("home.addPlace")
-
+        ZStack(alignment: .leading) {
             let options = TravelContext.allCases
             let index = options.firstIndex(of: state.context) ?? 0
             HStack(spacing: 4) {
-                contextStep(-1, from: index)
+                contextPreview(index - 1)
                 Text(state.context.title)
                     .arkeText(.contextTitle)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, minHeight: 48)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("home.contextTitle")
-                contextStep(1, from: index)
+                contextPreview(index + 1)
             }
             .contentShape(Rectangle())
             .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
@@ -189,9 +185,20 @@ struct HomeView: View {
                 @unknown default: break
                 }
             }
+            Button { showingAddPlace = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .medium))
+                    .frame(width: 48, height: 48)
+                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
+            }
+            .disabled(!places.ready || places.busy)
+            .accessibilityLabel("Adicionar lugar")
+            .accessibilityIdentifier("home.addPlace")
+
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
+        .sensoryFeedback(.selection, trigger: contextValue)
     }
 
     private func selectContext(_ index: Int) {
@@ -199,19 +206,11 @@ struct HomeView: View {
         contextValue = TravelContext.allCases[index].rawValue
     }
 
-    private func contextStep(_ delta: Int, from index: Int) -> some View {
-        let next = index + delta
-        let available = TravelContext.allCases.indices.contains(next)
-        return Button { selectContext(next) } label: {
-            Image(systemName: delta < 0 ? "chevron.left" : "chevron.right")
-                .frame(width: 44, height: 48)
-                .contentShape(Rectangle())
-        }
-        .opacity(available ? 1 : 0)
-        .disabled(!available)
-        .accessibilityHidden(!available)
-        .accessibilityLabel(delta < 0 ? "Contexto anterior" : "Próximo contexto")
-        .accessibilityIdentifier(delta < 0 ? "home.contextPrevious" : "home.contextNext")
+    private func contextPreview(_ index: Int) -> some View {
+        let options = TravelContext.allCases
+        return Text(options.indices.contains(index) ? options[index].title : "")
+            .font(.caption.weight(.semibold)).lineLimit(1)
+            .frame(width: 56).opacity(0.34).accessibilityHidden(true)
     }
 
     private func settlePanel(_ detent: PanelDetent) {

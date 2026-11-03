@@ -73,8 +73,11 @@ struct PlaceEditor: View {
                         ScrollView {
                             VStack(spacing: 16) {
                             VStack(alignment: .leading, spacing: 16) {
+                                if !reviewing || draft.cover != nil {
+                                    coverField.frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(16).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                                }
                                 VStack(alignment: .leading, spacing: 20) {
-                                coverField
                                 if reviewing {
                                     summary("Nome do lugar", value: draft.normalized.name, height: 56)
                                     summary("Endereço ou referência", value: draft.normalized.address, height: 96)
@@ -123,7 +126,7 @@ struct PlaceEditor: View {
                             }
                         }
                         .scrollDismissesKeyboard(.interactively)
-                        .accessibilityIdentifier("place.fields").arkeScrollEdges()
+                        .accessibilityIdentifier("place.fields").scrollIndicators(.hidden)
                         .onChange(of: field) { _, focused in
                             if let focused { proxy.scrollTo(focused, anchor: .top) }
                         }
@@ -152,7 +155,7 @@ struct PlaceEditor: View {
         VStack(alignment: .leading, spacing: 8) {
             if let data = draft.cover, let image = UIImage(data: data) {
                 Image(uiImage: image).resizable().scaledToFill()
-                    .frame(height: 112).frame(maxWidth: .infinity).clipped()
+                    .frame(width: 112, height: 80).clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityHidden(true)
             }
             if !reviewing {

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -26,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -114,8 +116,9 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Card(
-                        modifier = Modifier.fillMaxWidth().height(mapHeight),
-                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth().height(mapHeight)
+                            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.42f), RoundedCornerShape(30.dp)),
+                        shape = RoundedCornerShape(30.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     ) { TravelMap(Modifier.fillMaxSize()) }
@@ -175,49 +178,62 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
 @Composable
 private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Boolean, onSelect: (TravelContext) -> Unit) {
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
-    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        IconButton(onClick = onAdd, enabled = addEnabled, modifier = Modifier.size(48.dp).testTag("home.addPlace")) {
-            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = actionColor)
-        }
+    val view = androidx.compose.ui.platform.LocalView.current
+    Box(Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
         val options = TravelContext.entries
         val index = options.indexOf(context)
         var drag by remember { mutableFloatStateOf(0f) }
         val threshold = with(LocalDensity.current) { 24.dp.toPx() }
         Row(
-            Modifier.weight(1f).draggable(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp).draggable(
                 orientation = Orientation.Horizontal,
                 state = rememberDraggableState { drag += it },
                 onDragStarted = { drag = 0f },
                 onDragStopped = {
                     if (abs(drag) >= threshold) {
-                        options.getOrNull(index + if (drag < 0) 1 else -1)?.let(onSelect)
+                        options.getOrNull(index + if (drag < 0) 1 else -1)?.let {
+                            view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                            onSelect(it)
+                        }
                     }
                 },
             ),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
-            ContextStep(options.getOrNull(index - 1), false, onSelect)
+            ContextPreview(options.getOrNull(index - 1))
             Text(
                 stringResource(context.title()),
-                modifier = Modifier.weight(1f).testTag("home.contextTitle").semantics { heading() },
+                modifier = Modifier.weight(1f).testTag("home.contextTitle").semantics {
+                    heading()
+                    customActions = listOfNotNull(
+                        options.getOrNull(index - 1)?.let { previous ->
+                            CustomAccessibilityAction("Contexto anterior") { onSelect(previous); true }
+                        },
+                        options.getOrNull(index + 1)?.let { next ->
+                            CustomAccessibilityAction("Próximo contexto") { onSelect(next); true }
+                        },
+                    )
+                },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
-            ContextStep(options.getOrNull(index + 1), true, onSelect)
+            ContextPreview(options.getOrNull(index + 1))
+        }
+        IconButton(onClick = onAdd, enabled = addEnabled, modifier = Modifier.size(48.dp).background(arkeInsetColor(), androidx.compose.foundation.shape.CircleShape).testTag("home.addPlace")) {
+            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = actionColor)
         }
     }
 }
 
 @Composable
-private fun ContextStep(option: TravelContext?, forward: Boolean, onSelect: (TravelContext) -> Unit) {
-    if (option == null) {
-        Spacer(Modifier.width(48.dp))
-    } else {
-        IconButton(onClick = { onSelect(option) }, modifier = Modifier.size(48.dp).testTag("context.${option.name}")) {
-            Text(if (forward) "›" else "‹", Modifier.semantics {
-                contentDescription = if (forward) "Próximo contexto" else "Contexto anterior"
-            }, style = MaterialTheme.typography.headlineSmall)
+private fun ContextPreview(option: TravelContext?) {
+    Box(Modifier.width(56.dp)) {
+        if (option != null) {
+            Text(stringResource(option.title()), maxLines = 1, softWrap = false,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.34f),
+                modifier = Modifier.clearAndSetSemantics {})
         }
     }
 }

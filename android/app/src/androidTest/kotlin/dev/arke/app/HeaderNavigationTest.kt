@@ -57,8 +57,11 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("home.panelMenu").performClick()
         compose.onNodeWithTag("detent.DETAILS").performClick()
         val contexts = listOf("EXPENSES" to "Gastos", "SAVINGS" to "Cofrinho", "REVIEWS" to "Avaliações", "MEMORIES" to "Memórias", "REVIEWS" to "Avaliações")
-        for ((id, title) in contexts) {
-            compose.onNodeWithTag("context.$id").performClick()
+        for ((index, entry) in contexts.withIndex()) {
+            val title = entry.second
+            compose.onNodeWithTag("home.contextTitle").performTouchInput {
+                if (index == contexts.lastIndex) swipeRight() else swipeLeft()
+            }
             compose.onNodeWithTag("home.contextTitle").assertTextEquals(title)
             compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Detalhes")
         }

@@ -18,6 +18,18 @@ struct PlaceIdeasContent: View {
             } else {
                 ForEach(store.ideas) { idea in
                     VStack(alignment: .leading, spacing: 8) {
+                        if let cover = idea.cover, let image = UIImage(data: cover) {
+                            GeometryReader { geometry in
+                                Image(uiImage: image).resizable().scaledToFill()
+                                    .frame(width: geometry.size.width - 20, height: geometry.size.height - 20)
+                                    .clipped().padding(10)
+                            }
+                            .frame(height: 148)
+                            .background {
+                                Color(uiColor: .systemBackground).mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
+                            }
+                            .accessibilityHidden(true)
+                        }
                         HStack {
                             Text(idea.name).arkeText(.contextTitle).frame(maxWidth: .infinity, alignment: .leading)
                             Button { editSaveAttempted = false; editing = idea } label: {
@@ -208,3 +220,16 @@ enum DetailCapture {
     ]
 }
 #endif
+
+private struct StampEdge: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path(rect)
+        let radius: CGFloat = 4
+        for x in stride(from: rect.minX + 12, to: rect.maxX - 8, by: 12) {
+            for y in [rect.minY, rect.maxY] {
+                path.addEllipse(in: CGRect(x: x - radius, y: y - radius, width: 8, height: 8))
+            }
+        }
+        return path
+    }
+}
