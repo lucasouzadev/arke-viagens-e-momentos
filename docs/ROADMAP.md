@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | M5-HOME-REVEAL-01 | Atalho para expandir/recolher o mapa sobre o cartão inferior e mais área útil para a rolagem | Implementado localmente em SwiftUI e Compose; validação pendente |
 | M5-HOME-PLACES-01 | Uma ideia em foco, troca por gesto horizontal ou toque nos nomes vizinhos, rótulo no mapa e capa abaixo das informações | Implementado localmente nas duas plataformas; validação pendente. Selo perfurado no Android pendente |
-| M5-PIN-01 | Transformar uma ideia salva em Pin pessoal e vincular a uma viagem opcionalmente | Implementado em código; validação nativa pendente |
+| M5-PIN-01 | Transformar uma ideia salva em Pin pessoal e vincular a uma viagem opcionalmente | Implementado; CI nativo aprovado. Validação interativa do mapa Android depende de configuração |
 
 ### Aceite do próximo recorte M5-PIN-01
 
