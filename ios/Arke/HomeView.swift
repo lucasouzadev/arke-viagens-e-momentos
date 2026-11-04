@@ -72,7 +72,10 @@ struct HomeView: View {
                                             Task { await places.remove(id: id) }
                                         }, onPin: { pinIdea = $0 }, onDetailsVisibilityChanged: { showingSavedDetails = $0 }, focusedID: $focusedIdeaID)
                                     } else {
-                                        Text("Em breve.")
+                                        if state.context == .expenses || state.context == .savings {
+                                            LocalFinanceView(trips: pinPlan?.trips ?? [], savings: state.context == .savings)
+                                                .id(state.context.rawValue)
+                                        } else { Text("Em breve.") }
                                         Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
                                     }
                                 } else if places.busy { ProgressView("Abrindo seus lugares…") }
@@ -528,6 +531,128 @@ private struct MapSearchMotion: ViewModifier {
 
 
 
+
+private struct LocalFinanceView: View {
+    struct Entry: Codable, Identifiable {
+        var id = UUID()
+        var trip: String
+        var name: String
+        var currency: String
+        var amount: Int64
+        var kind: String
+    }
+
+    let trips: [LocalPinTrip]
+    let savings: Bool
+    @AppStorage("arke.local-finance.v1") private var stored = Data()
+    @State private var selectedTrip = ""
+    @State private var name = ""
+    @State private var amount = ""
+    @State private var currency = "BRL"
+    @State private var kind = ""
+    @State private var editing: UUID?
+    @State private var error: String?
+
+    private var records: [Entry] {
+        (try? JSONDecoder().decode([Entry].self, from: stored)) ?? []
+    }
+    private var trip: String? {
+        trips.first(where: { $0.id == selectedTrip })?.id ?? trips.first?.id
+    }
+
+    var body: some View {
+        if let trip {
+            Picker("Viagem", selection: Binding(get: { trip }, set: { selectedTrip = $0; clearDraft() })) {
+                ForEach(trips, id: \.id) { Text($0.title).tag($0.id) }
+            }
+            let entries = records.filter { $0.trip == trip && (savings ? ["goal", "saving"].contains($0.kind) : ["planned", "incurred"].contains($0.kind)) }
+            let goal = entries.first { $0.kind == "goal" }
+            if savings, let goal {
+                let total = entries.filter { $0.kind == "saving" && $0.currency == goal.currency }.reduce(Int64(0)) { $0 + $1.amount }
+                Text("Reservado: \(formatted(total, goal.currency)) / \(formatted(goal.amount, goal.currency))")
+                Text("Falta: \(formatted(max(0, goal.amount - total), goal.currency))")
+            }
+            if !savings {
+                ForEach(Set(entries.map(\.currency)).sorted(), id: \.self) { code in
+                    let subtotal = entries.filter { $0.currency == code }
+                    Text("Previsto: \(formatted(subtotal.filter { $0.kind == "planned" }.reduce(0) { $0 + $1.amount }, code))")
+                    Text("Realizado: \(formatted(subtotal.filter { $0.kind == "incurred" }.reduce(0) { $0 + $1.amount }, code))")
+                }
+            }
+            ForEach(entries) { entry in
+                Button {
+                    editing = entry.id; name = entry.name; currency = entry.currency; kind = entry.kind
+                    amount = displayAmount(entry.amount, code: entry.currency)
+                } label: { Text("\(entry.name) · \(formatted(entry.amount, entry.currency))") }
+            }
+            Picker("Tipo", selection: $kind) {
+                Text("Escolha o tipo").tag("")
+                if savings {
+                    Text("Meta").tag("goal")
+                    if goal != nil { Text("Valor reservado").tag("saving") }
+                } else {
+                    Text("Prevista").tag("planned")
+                    Text("Realizada").tag("incurred")
+                }
+            }.disabled(editing != nil && savings)
+            if !savings { TextField("Descrição", text: $name) }
+            Picker("Moeda", selection: Binding(get: { savings && kind == "saving" ? (goal?.currency ?? currency) : currency }, set: { currency = $0 })) {
+                ForEach(["BRL", "USD", "EUR", "JPY", "KWD"], id: \.self) { Text($0).tag($0) }
+            }.disabled(savings && (kind == "saving" || entries.contains { $0.kind == "saving" }))
+            TextField("Valor", text: $amount).keyboardType(.decimalPad)
+            if let error { Text(error).foregroundStyle(.red) }
+            Button(editing == nil ? "Salvar registro" : "Salvar alterações") { save(trip: trip, goal: goal) }
+            if editing != nil { Button("Cancelar edição") { clearDraft() } }
+        } else {
+            Text("Crie uma viagem local para começar.")
+        }
+    }
+
+    private func displayAmount(_ amount: Int64, code: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator = false
+        formatter.maximumFractionDigits = digits(code)
+        return formatter.string(from: NSNumber(value: Double(amount) / pow(10, Double(digits(code))))) ?? ""
+    }
+    private func digits(_ code: String) -> Int { code == "JPY" ? 0 : code == "KWD" ? 3 : 2 }
+    private func formatted(_ amount: Int64, _ code: String) -> String { "\(code) \(displayAmount(amount, code: code))" }
+
+    private func clearDraft() {
+        editing = nil; name = ""; amount = ""; kind = ""; error = nil
+    }
+
+    private func save(trip: String, goal: Entry?) {
+        let code = savings && kind == "saving" ? (goal?.currency ?? currency) : currency
+        let input = amount.trimmingCharacters(in: .whitespacesAndNewlines)
+        let separator = Locale.current.decimalSeparator ?? "."
+        let pieces = input.components(separatedBy: separator)
+        guard !kind.isEmpty, savings || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              (kind != "saving" || goal != nil),
+              pieces.count <= 2, pieces.allSatisfy({ !$0.isEmpty && $0.utf8.allSatisfy { (48...57).contains($0) } }),
+              (pieces.dropFirst().first?.count ?? 0) <= digits(code),
+              let value = Decimal(string: pieces.joined(separator: "."), locale: Locale(identifier: "en_US_POSIX")),
+              value > 0, value <= 1_000_000_000 else {
+            error = "Informe um tipo e um valor válido para a moeda."
+            return
+        }
+        do {
+            var entries = stored.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: stored)
+            guard entries.count < 10_000 || editing != nil || (kind == "goal" && goal != nil) else {
+                error = "Limite de registros atingido."
+                return
+            }
+            let id = editing ?? (kind == "goal" ? goal?.id : nil) ?? UUID()
+            let scale = Decimal(Int(pow(10, Double(digits(code)))))
+            let label = savings ? (kind == "goal" ? "Meta" : "Valor reservado") : name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let entry = Entry(id: id, trip: trip, name: label, currency: code, amount: NSDecimalNumber(decimal: value * scale).int64Value, kind: kind)
+            if let index = entries.firstIndex(where: { $0.id == id }) { entries[index] = entry }
+            else { entries.append(entry) }
+            stored = try JSONEncoder().encode(entries)
+            clearDraft()
+        } catch { self.error = "Não foi possível salvar os registros." }
+    }
+}
 private struct SharePinForm: View {
     struct Trip: Decodable, Identifiable { let id: UUID; let title: String }
     struct Session: Decodable { let access_token: String }

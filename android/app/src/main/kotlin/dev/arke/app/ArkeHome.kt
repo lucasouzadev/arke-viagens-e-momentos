@@ -286,7 +286,9 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                         onDetailsVisibilityChanged = { showingSavedDetails = it },
                                         onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }) { id -> savedNotice = false; places.remove(id) }
                                     else {
-                                        Text("Em breve.")
+                                        if (state.context == TravelContext.EXPENSES || state.context == TravelContext.SAVINGS) {
+                                            LocalFinanceContent(pinPlan?.trips.orEmpty(), savings = state.context == TravelContext.SAVINGS)
+                                        } else Text("Em breve.")
                                         TextButton(onClick = { state = state.selectContext(TravelContext.PLANNING) }) { Text(stringResource(R.string.view_places)) }
                                     }
                                 } else if (placeState.busy) Text(stringResource(R.string.loading_places))
@@ -509,6 +511,130 @@ private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (Pan
     TravelContext.SAVINGS -> R.string.savings
     TravelContext.REVIEWS -> R.string.reviews
     TravelContext.MEMORIES -> R.string.memories
+}
+
+@Composable
+private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences("arke.local-finance.v1", 0) }
+    var raw by remember(prefs) { mutableStateOf(prefs.getString("records", "[]") ?: "[]") }
+    var tripID by remember { mutableStateOf<String?>(null) }
+    val trip = trips.firstOrNull { it.id == tripID } ?: trips.firstOrNull()
+    if (trip == null) {
+        Text("Crie uma viagem local para começar.")
+        return
+    }
+    var kind by remember(trip.id, savings) { mutableStateOf("") }
+    var name by remember(trip.id, savings) { mutableStateOf("") }
+    var currency by remember(trip.id, savings) { mutableStateOf("BRL") }
+    var amount by remember(trip.id, savings) { mutableStateOf("") }
+    var editing by remember(trip.id, savings) { mutableStateOf<String?>(null) }
+    var error by remember(trip.id, savings) { mutableStateOf<String?>(null) }
+    val records = remember(raw) {
+        runCatching {
+            val array = org.json.JSONArray(raw)
+            (0 until array.length()).map { array.getJSONObject(it) }
+        }.getOrNull()
+    }
+    if (records == null) {
+        Text("Não foi possível abrir os registros.")
+        return
+    }
+
+    fun digits(code: String) = java.util.Currency.getInstance(code).defaultFractionDigits
+    fun display(value: Long, code: String): String = java.text.NumberFormat.getNumberInstance().apply {
+        isGroupingUsed = false
+        maximumFractionDigits = digits(code)
+    }.format(java.math.BigDecimal.valueOf(value, digits(code)))
+    fun formatted(value: Long, code: String) = "$code ${display(value, code)}"
+    fun clearDraft() { editing = null; kind = ""; name = ""; amount = ""; error = null }
+
+    FinanceChoice("Viagem", trip.title, trips.map { it.id to it.title }) { tripID = it }
+    val acceptedKinds = if (savings) setOf("goal", "saving") else setOf("planned", "incurred")
+    val entries = records.filter { it.optString("trip") == trip.id && it.optString("kind") in acceptedKinds }
+    val goal = entries.firstOrNull { it.getString("kind") == "goal" }
+    val goalCurrency = goal?.getString("currency")
+    val contributions = entries.filter { it.getString("kind") == "saving" }
+    if (savings && goal != null && goalCurrency != null) {
+        val total = contributions.filter { it.getString("currency") == goalCurrency }.sumOf { it.getLong("amount") }
+        Text("Reservado: ${formatted(total, goalCurrency)} / ${formatted(goal.getLong("amount"), goalCurrency)}")
+        Text("Falta: ${formatted((goal.getLong("amount") - total).coerceAtLeast(0), goalCurrency)}")
+    }
+    if (!savings) {
+        entries.groupBy { it.getString("currency") }.toSortedMap().forEach { (code, subtotal) ->
+            Text("Previsto: ${formatted(subtotal.filter { it.getString("kind") == "planned" }.sumOf { it.getLong("amount") }, code)}")
+            Text("Realizado: ${formatted(subtotal.filter { it.getString("kind") == "incurred" }.sumOf { it.getLong("amount") }, code)}")
+        }
+    }
+    entries.forEach { entry ->
+        val code = entry.getString("currency")
+        TextButton(onClick = {
+            editing = entry.getString("id")
+            kind = entry.getString("kind")
+            name = entry.getString("name")
+            currency = code
+            amount = display(entry.getLong("amount"), code)
+            error = null
+        }) { Text("${entry.getString("name")} · ${formatted(entry.getLong("amount"), code)}") }
+    }
+    val types = if (savings) {
+        if (goal == null) listOf("goal" to "Meta") else listOf("goal" to "Meta", "saving" to "Valor reservado")
+    } else listOf("planned" to "Prevista", "incurred" to "Realizada")
+    FinanceChoice("Tipo", types.firstOrNull { it.first == kind }?.second.orEmpty(), types, !savings || editing == null) { kind = it }
+    if (!savings) OutlinedTextField(name, { name = it }, label = { Text("Descrição") })
+    val code = if (savings && (kind == "saving" || contributions.isNotEmpty())) goalCurrency ?: currency else currency
+    FinanceChoice("Moeda", code, listOf("BRL", "USD", "EUR", "JPY", "KWD").map { it to it },
+        !savings || (kind != "saving" && contributions.isEmpty())) { currency = it }
+    OutlinedTextField(amount, { amount = it }, label = { Text("Valor") },
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
+    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    TextButton(onClick = {
+        val separator = java.text.DecimalFormatSymbols.getInstance().decimalSeparator
+        val pieces = amount.trim().split(separator)
+        val value = pieces.joinToString(".").toBigDecimalOrNull()
+        val valid = pieces.size <= 2 && pieces.all { it.isNotEmpty() && it.all { digit -> digit in '0'..'9' } } &&
+            (pieces.getOrNull(1)?.length ?: 0) <= digits(code) && value != null &&
+            value > java.math.BigDecimal.ZERO && value <= java.math.BigDecimal("1000000000")
+        if (!valid || kind.isEmpty() || (!savings && name.isBlank()) || (kind == "saving" && goal == null)) {
+            error = "Informe um tipo e um valor válido para a moeda."
+            return@TextButton
+        }
+        val existing = editing ?: if (kind == "goal") goal?.getString("id") else null
+        if (existing == null && records.size >= 10_000) {
+            error = "Limite de registros atingido."
+            return@TextButton
+        }
+        val id = existing ?: java.util.UUID.randomUUID().toString()
+        val label = if (!savings) name.trim() else if (kind == "goal") "Meta" else "Valor reservado"
+        val record = org.json.JSONObject().put("id", id).put("trip", trip.id).put("name", label)
+            .put("currency", code).put("kind", kind).put("amount", requireNotNull(value).movePointRight(digits(code)).longValueExact())
+        val updated = records.toMutableList()
+        val index = updated.indexOfFirst { it.optString("id") == id }
+        if (index >= 0) updated[index] = record else updated.add(record)
+        val encoded = org.json.JSONArray(updated).toString()
+        if (prefs.edit().putString("records", encoded).commit()) {
+            raw = encoded
+            clearDraft()
+        } else {
+            error = "Não foi possível salvar os registros."
+        }
+    }) { Text(if (editing == null) "Salvar registro" else "Salvar alterações") }
+    if (editing != null) TextButton(onClick = { clearDraft() }) { Text("Cancelar edição") }
+}
+
+@Composable
+private fun FinanceChoice(label: String, selection: String, choices: List<Pair<String, String>>, enabled: Boolean = true, onSelect: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { open = true }, enabled = enabled) {
+            Text(if (selection.isEmpty()) label else "$label: $selection")
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            choices.forEach { (id, title) ->
+                DropdownMenuItem(text = { Text(title) }, onClick = { open = false; onSelect(id) })
+            }
+        }
+    }
 }
 
 @StringRes private fun PanelDetent.title(): Int = when (this) {

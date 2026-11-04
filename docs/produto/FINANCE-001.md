@@ -32,6 +32,16 @@
 
 Sem moeda, sem taxa, meta vazia, despesa duplicada, participantes que saíram, falta de rede e edições concorrentes exigem estados explícitos. Dados não sincronizados não devem parecer compartilhados.
 
+## Primeiro recorte local
+
+Implementação em SwiftUI e Compose. Validação nativa pendente.
+
+Em **Gastos**, a pessoa seleciona uma viagem local e registra descrição, valor, moeda e se a despesa é prevista ou realizada. A lista permite corrigir registros e apresenta totais separados por moeda e estado. Uma despesa realizada substitui seu valor previsto no total, sem contar o mesmo item duas vezes.
+
+Em **Cofrinho**, a pessoa define uma meta pessoal por viagem e registra quanto já reservou fora do app. Meta e contribuições usam a mesma moeda. O progresso mostra valor reservado, valor da meta e quanto falta, com restante mínimo de zero quando a meta é superada.
+
+Os valores usam unidades mínimas inteiras da moeda e entrada conforme a região do aparelho. Rateio, conversão cambial e compartilhamento ficam para recortes posteriores. A validação deve cobrir moedas com casas decimais diferentes, edição de valores, isolamento entre viagens e reabertura sem conexão.
+
 ## Decisões pendentes
 
 Moeda-base por Trip, cotação manual/automática, regras de rateio, exportação e permissões exatas. Cofrinho coletivo e visibilidade de contribuições requerem aceite específico.
