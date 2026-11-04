@@ -2,6 +2,15 @@ import XCTest
 @testable import ArkeCore
 
 final class PlaceDraftTests: XCTestCase {
+    func testLinkAddsHTTPSOnlyWhenSchemeIsMissing() {
+        let draft = PlaceDraft(name: "Museu", address: "Centro", link: " exemplo.com/visita ")
+        XCTAssertNil(draft.issue)
+        XCTAssertEqual(PlaceIdea(draft: draft).link, "https://exemplo.com/visita")
+        XCTAssertEqual(PlaceDraft.webURL("http://exemplo.com")?.absoluteString, "http://exemplo.com")
+        XCTAssertNil(PlaceDraft.webURL("javascript:alert(1)"))
+        XCTAssertNil(PlaceDraft.webURL("user@exemplo.com"))
+    }
+
     func testRequiredFieldsAndWhitespace() {
         XCTAssertEqual(PlaceDraft(name: " \n ").issue, .nameRequired)
         XCTAssertEqual(PlaceDraft(name: "Museu", address: " \n ").issue, .addressRequired)

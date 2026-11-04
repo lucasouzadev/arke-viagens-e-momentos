@@ -15,6 +15,11 @@ data class PlaceIdeasUiState(val ideas: List<PlaceIdea> = emptyList(), val ready
 
 class PlaceIdeasViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = PlaceIdeasRepository(application)
+
+    suspend fun loadPinPlan() = repository.loadPinPlan()
+
+    suspend fun savePin(id: String, latitude: Double, longitude: Double, trip: LocalPinTripChoice) =
+        repository.savePin(id, latitude, longitude, trip)
     private val mutableState = MutableStateFlow(PlaceIdeasUiState())
     val state = mutableState.asStateFlow()
     init { load() }

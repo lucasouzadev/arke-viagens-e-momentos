@@ -4,32 +4,74 @@ struct PlaceIdeasContent: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: PlaceIdeasStore
     let onDelete: (String) -> Void
+    let onPin: (PlaceIdea) -> Void
     var onDetailsVisibilityChanged: (Bool) -> Void = { _ in }
+    @Binding var focusedID: String?
+    let detent: PanelDetent
     @State private var deleting: PlaceIdea?
     @State private var selected: PlaceIdea?
     @State private var editing: PlaceIdea?
     @State private var editSaveAttempted = false
+
+    @ViewBuilder
+    private func neighbor(_ idea: PlaceIdea?, icon: String) -> some View {
+        if let idea {
+            Button { focusedID = idea.id } label: {
+                Label {
+                    Text(idea.name)
+                } icon: {
+                    if let cover = idea.cover, let image = UIImage(data: cover) {
+                        Image(uiImage: image).resizable().scaledToFill().frame(width: 32, height: 32).clipShape(.rect(cornerRadius: 6))
+                    } else { Image(systemName: icon) }
+                }
+                    .lineLimit(1)
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Selecionar \(idea.name)")
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if store.ideas.isEmpty {
                 Text("Guarde seu próximo lugar com +").arkeText(.body)
                     .foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 48)
-            } else {
-                ForEach(store.ideas) { idea in
-                    VStack(alignment: .leading, spacing: 8) {
-                        if let cover = idea.cover, let image = UIImage(data: cover) {
-                            GeometryReader { geometry in
-                                Image(uiImage: image).resizable().scaledToFill()
-                                    .frame(width: geometry.size.width - 20, height: geometry.size.height - 20)
-                                    .clipped().padding(10)
-                            }
-                            .frame(height: 148)
-                            .background {
-                                Color(uiColor: .systemBackground).mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
-                            }
-                            .accessibilityHidden(true)
+            } else if detent == .explore {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 12) {
+                        ForEach(store.ideas) { idea in
+                            Button {
+                                focusedID = idea.id
+                                selected = idea
+                            } label: {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    if let cover = idea.cover, let image = UIImage(data: cover) {
+                                        Image(uiImage: image).resizable().scaledToFill()
+                                            .frame(width: 80, height: 50).clipShape(.rect(cornerRadius: 8))
+                                    } else {
+                                        Image(systemName: "mappin").frame(width: 80, height: 50)
+                                    }
+                                    Text(idea.name).lineLimit(1).frame(width: 80, alignment: .leading)
+                                }
+                            }.buttonStyle(.plain)
                         }
+                    }
+                }.scrollIndicators(.hidden)
+            } else {
+                let index = store.ideas.firstIndex { $0.id == focusedID } ?? 0
+                let idea = store.ideas[index]
+                let previous = index > 0 ? store.ideas[index - 1] : nil
+                let next = index + 1 < store.ideas.count ? store.ideas[index + 1] : nil
+                if store.ideas.count > 1 {
+                    HStack {
+                        neighbor(previous, icon: "chevron.left")
+                        Spacer()
+                        neighbor(next, icon: "chevron.right")
+                    }
+                }
+                VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text(idea.name).arkeText(.contextTitle).frame(maxWidth: .infinity, alignment: .leading)
                             Button { editSaveAttempted = false; editing = idea } label: {
@@ -39,6 +81,19 @@ struct PlaceIdeasContent: View {
                         }
                         Text(idea.address).foregroundStyle(.secondary)
                         if !idea.note.isEmpty { Text(idea.note).lineLimit(3) }
+                        if let cover = idea.cover, let image = UIImage(data: cover) {
+                            GeometryReader { geometry in
+                                Image(uiImage: image).resizable().scaledToFill()
+                                    .frame(width: geometry.size.width - 20, height: geometry.size.height - 20)
+                                    .clipped().padding(10)
+                            }
+                            .frame(height: detent == .details ? 210 : 148)
+                            .background {
+                                Color(uiColor: .systemBackground).mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
+                            }
+                            .accessibilityHidden(true)
+                        }
+                        Button { onPin(idea) } label: { Label("Marcar no mapa", systemImage: "mappin") }
                         HStack(spacing: 12) {
                             Button { selected = idea } label: {
                                 Label("Abrir", systemImage: "arrow.up.right").arkeText(.button)
@@ -59,25 +114,18 @@ struct PlaceIdeasContent: View {
                         }
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        RoundedRectangle(cornerRadius: 24).fill(ArkeUI.insetSurface(colorScheme))
-                            .overlay {
-                                if let cover = idea.cover, let image = UIImage(data: cover) {
-                                    GeometryReader { geometry in
-                                        Image(uiImage: image).resizable().scaledToFill()
-                                            .frame(width: geometry.size.width, height: geometry.size.height)
-                                            .clipped()
-                                            .overlay(ArkeUI.insetSurface(colorScheme).opacity(0.83))
-                                    }.accessibilityHidden(true)
-                                }
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
-                    }
-                }
+                    .simultaneousGesture(DragGesture(minimumDistance: 28).onEnded { value in
+                        let movement = value.translation
+                        guard abs(movement.width) > abs(movement.height) * 1.5 else { return }
+                        if let target = movement.width < 0 ? next : previous { focusedID = target.id }
+                    })
             }
         }
         .padding(.bottom, 24)
         .onChange(of: selected != nil || editing != nil) { _, visible in onDetailsVisibilityChanged(visible) }
+        .onChange(of: store.ideas, initial: true) { _, ideas in
+            if !ideas.contains(where: { $0.id == focusedID }) { focusedID = ideas.first?.id }
+        }
         .onDisappear { onDetailsVisibilityChanged(false) }
         .sheet(item: $selected) { idea in
             PlaceDetails(ideas: store.ideas, initialID: idea.id, onClose: { selected = nil })
@@ -176,7 +224,8 @@ struct PlaceDetails: View {
                     }
                 }
                 .id(selectedID).accessibilityIdentifier("detail.body")
-                .arkeScrollEdges()
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
                 HStack(spacing: 16) {
                     if let index, index > 0 {
                         Button { selectedID = ideas[index - 1].id } label: {
@@ -221,7 +270,7 @@ enum DetailCapture {
 }
 #endif
 
-private struct StampEdge: Shape {
+struct StampEdge: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path(rect)
         let radius: CGFloat = 4

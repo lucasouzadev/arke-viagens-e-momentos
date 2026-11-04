@@ -117,6 +117,14 @@ if any(n.get('package') == 'android' for n in nodes) or not any(n.get('text') ==
 if not any(n.get('text') == 'Jardim das descobertas' for n in nodes):
     raise SystemExit('Prefilled place name is missing')
 PYEDIT
+    for journal in reviews memories; do
+      for detent in explore balanced details; do
+        adb shell am force-stop dev.arke.app.dev
+        adb shell am start -W -n dev.arke.app.dev/dev.arke.app.MainActivity --es captureJournal "$journal/$detent"
+        sleep 2
+        adb exec-out screencap -p > "$output/android-$journal-$detent-$size-$theme.png"
+      done
+    done
   done
 done
 adb shell wm size reset

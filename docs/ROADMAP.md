@@ -1,5 +1,24 @@
 # ROADMAP — Plano principal do Arke
 
+## Recorte atual da home e próximo fluxo
+
+| Tarefa | Entrega | Estado |
+| --- | --- | --- |
+| M5-HOME-REVEAL-01 | Atalho para expandir/recolher o mapa sobre o cartão inferior e mais área útil para a rolagem | Implementado localmente em SwiftUI e Compose; validação pendente |
+| M5-HOME-PLACES-01 | Uma ideia em foco, troca por gesto horizontal ou toque nos nomes vizinhos, rótulo no mapa e capa abaixo das informações | Implementado localmente nas duas plataformas; validação pendente. Selo perfurado no Android implementado localmente; validação visual pendente |
+| M5-PIN-01 | Transformar uma ideia salva em Pin pessoal e vincular a uma viagem opcionalmente | Implementado; CI nativo aprovado. Validação interativa do mapa Android depende de configuração |
+| M5-TRIP-01 | Listar viagens locais e abrir os Pins vinculados | Implementado localmente; validação nativa pendente |
+| M3-GROUP-01 | [Primeiro recorte de colaboração](produto/GROUP-001.md#primeiro-recorte-de-colaboração-aprovado) | Regras de produto aprovadas; autenticação e backend pendentes |
+
+Depois de Viagens locais, a ordem aprovada é **Grupos e permissões → Gastos e cofrinho → Memórias**. O rateio depende das regras de grupo.
+
+### Aceite do recorte M5-PIN-01
+
+- Partir de uma ideia salva e confirmar explicitamente a posição antes de criar o Pin. O endereço escrito continua disponível, inclusive sem serviço de busca. A seleção manual no mapa depende de um provedor configurado. O fallback deve explicar a indisponibilidade e preservar a ideia.
+- Permitir salvar o Pin sem viagem. Oferecer vínculo opcional a uma viagem local existente e criação explícita de uma viagem quando a lista estiver vazia. Vincular ou desvincular preserva o Pin e seus dados pessoais.
+- Preservar IDs e dados das ideias existentes (nome, endereço, nota, capa e link). Repetir uma confirmação não duplica Pin nem vínculo. Cancelamento e falha preservam o último estado persistido.
+- Manter o fluxo e os estados equivalentes em SwiftUI e Compose. Usar [M3-DATA-CONTRACT](arquitetura/M3-DATA-CONTRACT.md) como referência de domínio para este recorte local. Conta, grupos, compartilhamento e sincronização ficam fora do recorte.
+
 **QA da beta em revisão — 02/11/2026:** [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md): fluxos UI, viewport/teclado e posição simulada verificados em iPhone 14/iOS 27; Android aprovado, 40 PNGs em pares inspecionados. CI final aprovada com 38 testes na fonte 3ba7343. Sem nova beta/merge; limites manuais e fontes em STATUS.
 
 **Primeira beta enviada — 02/11/2026:** M5-TESTFLIGHT-01 teve validação/upload Apple aceitos para 0.0.1 (8.1), fonte 90c1e5d. Processamento, grupo e instalação ainda não verificados; sem release pública/merge. Evidências em STATUS e contrato.

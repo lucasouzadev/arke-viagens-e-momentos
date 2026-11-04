@@ -10,7 +10,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
@@ -21,6 +26,10 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.arke.core.PlaceDraft
 import androidx.compose.material3.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import dev.arke.core.PanelDetent
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -38,12 +47,16 @@ import dev.arke.core.PlaceIdea
 
 @Composable
 fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea, String) -> Unit, onEditCancel: () -> Unit,
-    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onDelete: (String) -> Unit) {
+    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onFocus: (String?) -> Unit, onPin: (PlaceIdea) -> Unit, detent: PanelDetent, onDelete: (String) -> Unit) {
+    var focusedID by rememberSaveable { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf<PlaceIdea?>(null) }
     var selectedID by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by rememberSaveable(stateSaver = IdeaSaver) { mutableStateOf<PlaceIdea?>(null) }
     var pendingUpdate by rememberSaveable(stateSaver = PendingDraftSaver) { mutableStateOf<PlaceDraft?>(null) }
     var pendingRequest by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.ideas, focusedID) {
+        onFocus(state.ideas.firstOrNull { it.id == focusedID }?.id ?: state.ideas.firstOrNull()?.id)
+    }
     LaunchedEffect(selectedID, editing) { onDetailsVisibilityChanged(selectedID != null || editing != null) }
     LaunchedEffect(state, pendingUpdate, pendingRequest) {
         val pending = pendingUpdate
@@ -58,22 +71,56 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
     if (state.ideas.isEmpty()) {
         Text("Guarde seu próximo lugar com +", style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), textAlign = TextAlign.Center)
+    } else if (detent == PanelDetent.EXPLORE) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.ideas.forEach { idea ->
+                TextButton(onClick = { focusedID = idea.id; selectedID = idea.id }) {
+                    Column(Modifier.width(80.dp)) {
+                        val thumbnail = remember(idea.cover) { decodePlaceCover(idea.cover) }
+                        if (thumbnail != null) Image(thumbnail.asImageBitmap(), null,
+                            Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+                        else Text("◉", Modifier.height(50.dp))
+                        Text(idea.name, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
     } else {
-        state.ideas.forEach { idea ->
+        val index = state.ideas.indexOfFirst { it.id == focusedID }.coerceAtLeast(0)
+        val idea = state.ideas[index]
+        val previous = state.ideas.getOrNull(index - 1)
+        val next = state.ideas.getOrNull(index + 1)
+        if (state.ideas.size > 1) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                if (previous != null) TextButton(onClick = { focusedID = previous.id }, modifier = Modifier.weight(1f)) {
+                    Text("‹ ${previous.name}", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.width(8.dp))
+                if (next != null) TextButton(onClick = { focusedID = next.id }, modifier = Modifier.weight(1f)) {
+                    Text("${next.name} ›", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+        run {
             key(idea.id) {
                 Spacer(Modifier.height(16.dp))
                 val shape = RoundedCornerShape(24.dp)
                 val surface = arkeInsetColor()
                 val cover = remember(idea.cover) { decodePlaceCover(idea.cover) }
-                Box(Modifier.fillMaxWidth().clip(shape).background(surface)) {
-                    if (cover != null) {
-                        Image(cover.asImageBitmap(), contentDescription = null,
-                            modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop)
-                        Box(Modifier.matchParentSize().background(surface.copy(alpha = 0.83f)))
-                    }
+                Box(Modifier.fillMaxWidth().clip(shape).pointerInput(previous?.id, next?.id) {
+                    var distance = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { distance = 0f },
+                        onDragEnd = {
+                            val target = if (distance < -28.dp.toPx()) next else if (distance > 28.dp.toPx()) previous else null
+                            if (target != null) focusedID = target.id
+                        },
+                        onHorizontalDrag = { _, delta -> distance += delta },
+                    )
+                }) {
                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).testTag("home.ideaName"))
                         IconButton(onClick = { pendingUpdate = null; pendingRequest = null; editing = idea }, enabled = state.ready && !state.busy,
                             modifier = Modifier.size(48.dp).testTag("place.update.${idea.id}")) {
                             Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.edit_place_label, idea.name))
@@ -81,6 +128,16 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                     }
                     Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    if (cover != null) {
+                        val paper = MaterialTheme.colorScheme.surface
+                        Image(
+                            cover.asImageBitmap(), contentDescription = null,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(if (detent == PanelDetent.DETAILS) 210.dp else 148.dp)
+                                .arkeStamp(paper).padding(10.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                    TextButton(onClick = { onPin(idea) }) { Text("Marcar no mapa") }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         val openLabel = stringResource(R.string.view_place_details_label, idea.name)
                         TextButton(onClick = { selectedID = idea.id },
@@ -163,12 +220,13 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                 }
             }
             key(selectedID) {
+                val detailScroll = rememberScrollState()
                 Column(Modifier.fillMaxWidth().weight(1f, fill = false).drawWithContent {
                     drawContent()
-                    drawRect(Brush.verticalGradient(listOf(sheetColor, Color.Transparent), 0f, 12.dp.toPx()))
-                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
+                    if (detailScroll.canScrollBackward) drawRect(Brush.verticalGradient(listOf(sheetColor, Color.Transparent), 0f, 12.dp.toPx()))
+                    if (detailScroll.canScrollForward) drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
                         startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f), endY = size.height))
-                }.verticalScroll(rememberScrollState()).testTag("detail.body").padding(top = 24.dp, bottom = 48.dp),
+                }.verticalScroll(detailScroll).testTag("detail.body").padding(vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     if (index >= 0) {
                         val idea = ideas[index]
@@ -225,4 +283,25 @@ internal fun detailCaptureIdeas(): List<PlaceIdea> {
         PlaceIdea.from(PlaceDraft(id = "capture-garden", name = "Jardim das descobertas", address = "Entrada principal, perto da praça central", note = "Chegar pela manhã, caminhar pelos jardins e reservar um tempo para um café.")),
         PlaceIdea.from(PlaceDraft(id = "capture-museum", name = "Museu dos caminhos", address = "Avenida das ideias, 100")),
     )
+}
+
+internal fun Modifier.arkeStamp(paper: Color): Modifier = drawBehind {
+    val radius = 4.dp.toPx()
+    val edge = Path().apply {
+        fillType = PathFillType.EvenOdd
+        addRect(Rect(0f, 0f, size.width, size.height))
+        fun perforate(x: Float, y: Float) {
+            addOval(Rect(x - radius, y - radius, x + radius, y + radius))
+        }
+        val spacing = 14.dp.toPx()
+        for (column in 1 until (size.width / spacing).toInt()) {
+            perforate(column * spacing, 0f)
+            perforate(column * spacing, size.height)
+        }
+        for (row in 1 until (size.height / spacing).toInt()) {
+            perforate(0f, row * spacing)
+            perforate(size.width, row * spacing)
+        }
+    }
+    clipRect { drawPath(edge, paper) }
 }

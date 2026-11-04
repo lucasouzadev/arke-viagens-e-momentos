@@ -86,8 +86,10 @@ extension View {
 }
 
 struct ArkeScrollEdges: ViewModifier {
+    var active = true
+
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
+        if #available(iOS 26, *), active {
             content.scrollIndicators(.hidden).scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
         } else {
             content.scrollIndicators(.hidden)

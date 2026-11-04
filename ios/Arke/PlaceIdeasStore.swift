@@ -6,6 +6,12 @@ final class PlaceIdeasStore: ObservableObject {
     @Published private(set) var ready = false
     @Published private(set) var busy = false
     @Published private(set) var error: String?
+    func loadPinPlan() async throws -> LocalPinPlan { try await Self.disk.loadPinPlan() }
+
+    func savePin(id: String, latitude: Double, longitude: Double, trip: LocalPinTripChoice) async throws -> LocalPinPlan {
+        try await Self.disk.savePin(ideaID: id, latitude: latitude, longitude: longitude, trip: trip)
+    }
+
     private static let disk = PlaceIdeasDisk(directory: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("ArkeIdeas", isDirectory: true))
 
     func load() async {
