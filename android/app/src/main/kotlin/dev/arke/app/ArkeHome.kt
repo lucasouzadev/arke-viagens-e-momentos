@@ -172,11 +172,17 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 )
 
 @Composable
-fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false) {
+fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false, journalCapture: String? = null) {
     val placeState by places.state.collectAsState()
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
-    var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
+    val journalMode = journalCapture?.split("/")
+    var state by rememberSaveable(journalCapture, stateSaver = HomeStateSaver) {
+        val initial = runCatching {
+            HomeState(TravelContext.valueOf(journalMode.orEmpty()[0].uppercase()), PanelDetent.valueOf(journalMode.orEmpty()[1].uppercase()))
+        }.getOrDefault(HomeState())
+        mutableStateOf(initial)
+    }
     var showingTrips by rememberSaveable { mutableStateOf(false) }
     var mapDetailIdeaID by rememberSaveable { mutableStateOf<String?>(null) }
     var pinToShare by remember { mutableStateOf<Pair<String, LocalMapPin>?>(null) }
@@ -315,7 +321,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                             } else {
                                                 key(state.context) {
                                                     TripJournalContent(pinPlan, placeState.ideas, state.context == TravelContext.REVIEWS,
-                                                        detailed = state.detent == PanelDetent.DETAILS)
+                                                        detailed = state.detent == PanelDetent.DETAILS, preview = journalCapture != null)
                                                 }
                                                 if (state.detent == PanelDetent.BALANCED) {
                                                     TextButton(onClick = { state = state.setDetent(PanelDetent.DETAILS) }) { Text("Ver detalhes") }
@@ -570,13 +576,14 @@ private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (Pan
 
 
 @Composable
-private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, reviews: Boolean, detailed: Boolean) {
+private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, reviews: Boolean, detailed: Boolean, preview: Boolean = false) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("arke.trip-journal.v1", 0) }
     var raw by remember(prefs) { mutableStateOf(prefs.getString("records", "[]") ?: "[]") }
     var tripID by remember { mutableStateOf<String?>(null) }
-    val trip = plan?.trips?.firstOrNull { it.id == tripID } ?: plan?.trips?.firstOrNull()
-    if (plan == null || trip == null) {
+    val activePlan = if (preview) LocalPinPlan(emptyList(), listOf(LocalPinTrip("preview", "Milano"))) else plan
+    val trip = activePlan?.trips?.firstOrNull { it.id == tripID } ?: activePlan?.trips?.firstOrNull()
+    if (activePlan == null || trip == null) {
         Text("Crie uma viagem local para começar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
@@ -594,8 +601,11 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
         Text("Não foi possível abrir os registros.")
         return
     }
-    FinanceChoice("Viagem", trip.title, plan.trips.map { it.id to it.title }) { tripID = it }
-    val entries = records.filter { it.optString("trip") == trip.id && (it.optInt("rating") > 0) == reviews }
+    FinanceChoice("Viagem", trip.title, activePlan.trips.map { it.id to it.title }) { tripID = it }
+    val source = if (preview) listOf(org.json.JSONObject().put("trip", "preview")
+        .put("text", if (reviews) "Chegamos cedo e encontramos a praça tranquila." else "A primeira manhã na praça do Duomo.")
+        .put("rating", if (reviews) 4 else 0)) else records
+    val entries = source.filter { it.optString("trip") == trip.id && (it.optInt("rating") > 0) == reviews }
     if (entries.isEmpty()) Text(if (reviews) "Nenhuma avaliação nesta viagem." else "Nenhuma memória nesta viagem.")
     val visible = if (detailed) entries.asReversed() else entries.takeLast(1)
     visible.forEach { entry ->
@@ -604,7 +614,10 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
                 Text("★ ${entry.getInt("rating")} de 5", style = MaterialTheme.typography.titleMedium)
             } else {
                 val cover = ideas.firstOrNull { it.id == entry.optString("place") }?.cover
-                val image = remember(cover) { cover?.let { decodePlaceCover(it) } }
+                val image = remember(cover, preview) {
+                    if (preview) android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_arke)
+                    else cover?.let { decodePlaceCover(it) }
+                }
                 if (image != null) {
                     androidx.compose.foundation.Image(image.asImageBitmap(), null,
                         modifier = Modifier.fillMaxWidth().height(if (detailed) 190.dp else 100.dp)
@@ -621,13 +634,13 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
             FinanceChoice("Nota", "$rating de 5", (1..5).map { it.toString() to "$it de 5" }) { rating = it.toInt() }
         } else {
             val covers = ideas.filter { idea ->
-                idea.cover.isNotEmpty() && plan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
+                idea.cover.isNotEmpty() && activePlan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
             }
             FinanceChoice("Capa", covers.firstOrNull { it.id == placeID }?.name ?: "Sem capa",
                 listOf("" to "Sem capa") + covers.map { it.id to it.name }) { placeID = it }
         }
         OutlinedTextField(draft, { draft = it }, label = { Text(if (reviews) "Escreva sua avaliação" else "Escreva sua memória") })
-        TextButton(enabled = draft.isNotBlank() && draft.length <= 1000, onClick = {
+        TextButton(enabled = !preview && draft.isNotBlank() && draft.length <= 1000, onClick = {
             val entry = org.json.JSONObject().put("trip", trip.id).put("text", draft.trim())
             if (reviews) entry.put("rating", rating) else entry.put("place", placeID)
             val updated = org.json.JSONArray(records + entry).toString()

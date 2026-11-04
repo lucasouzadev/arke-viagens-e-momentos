@@ -32,10 +32,24 @@ struct HomeView: View {
     @ScaledMetric(relativeTo: .headline) private var minimumContentHeight: CGFloat = 160
 
     private var state: HomeState {
-        HomeState(
+        if let capture = journalCapture { return capture }
+        return HomeState(
             context: TravelContext(rawValue: contextValue) ?? .planning,
             detent: PanelDetent(rawValue: detentValue) ?? .balanced
         )
+    }
+
+    private var journalCapture: HomeState? {
+        #if DEBUG
+        for argument in ProcessInfo.processInfo.arguments where argument.hasPrefix("--capture-journal=") {
+            let fields = argument.dropFirst("--capture-journal=".count).split(separator: "/")
+            if fields.count == 2, let context = TravelContext(rawValue: String(fields[0])),
+               let detent = PanelDetent(rawValue: String(fields[1])) {
+                return HomeState(context: context, detent: detent)
+            }
+        }
+        #endif
+        return nil
     }
 
     var body: some View {
@@ -92,7 +106,7 @@ struct HomeView: View {
                                                 }.frame(minHeight: 44)
                                             } else {
                                                 TripJournalView(plan: pinPlan, ideas: places.ideas, reviews: state.context == .reviews,
-                                                                detailed: state.detent == .details).id(state.context.rawValue)
+                                                                detailed: state.detent == .details, preview: journalCapture != nil).id(state.context.rawValue)
                                                 if state.detent == .balanced {
                                                     Button("Ver detalhes") { settlePanel(.details) }
                                                 }
@@ -611,6 +625,7 @@ private struct TripJournalView: View {
     let ideas: [PlaceIdea]
     let reviews: Bool
     let detailed: Bool
+    var preview = false
     @AppStorage("arke.trip-journal.v1") private var data = Data()
     @State private var selectedTrip = ""
     @State private var placeID: String?
@@ -619,7 +634,9 @@ private struct TripJournalView: View {
     @State private var error = false
 
     var body: some View {
-        if let plan, let trip = plan.trips.first(where: { $0.id == selectedTrip }) ?? plan.trips.first {
+        let activePlan = preview ? try? JSONDecoder().decode(LocalPinPlan.self, from: Data(
+            #"{"pins":[],"trips":[{"id":"preview","title":"Milano"}]}"#.utf8)) : plan
+        if let plan = activePlan, let trip = plan.trips.first(where: { $0.id == selectedTrip }) ?? plan.trips.first {
             Picker("Viagem", selection: Binding(get: { trip.id }, set: {
                 selectedTrip = $0
                 draft = ""
@@ -628,15 +645,17 @@ private struct TripJournalView: View {
             })) {
                 ForEach(plan.trips, id: \.id) { Text($0.title).tag($0.id) }
             }
-            let entries = ((try? JSONDecoder().decode([Entry].self, from: data)) ?? [])
+            let source = preview ? [
+                Entry(tripID: "preview", text: reviews ? "Chegamos cedo e encontramos a praça tranquila." : "A primeira manhã na praça do Duomo.", rating: reviews ? 4 : nil, placeID: nil)
+            ] : ((try? JSONDecoder().decode([Entry].self, from: data)) ?? [])
+            let entries = source
                 .filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
             if entries.isEmpty { Text(reviews ? "Nenhuma avaliação nesta viagem." : "Nenhuma memória nesta viagem.").foregroundStyle(.secondary) }
             ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
                 VStack(alignment: .leading, spacing: 6) {
                     if let rating = entry.rating {
                         Label("\(rating) de 5", systemImage: "star.fill").arkeText(.contextTitle)
-                    } else if let imageData = ideas.first(where: { $0.id == entry.placeID })?.cover,
-                              let image = UIImage(data: imageData) {
+                    } else if let image = journalCover(entry) {
                         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: detailed ? 190 : 100)
                             .padding(10)
                             .background {
@@ -673,7 +692,7 @@ private struct TripJournalView: View {
                         placeID = nil
                         error = false
                     } catch { self.error = true }
-                }.disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
+                }.disabled(preview || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
                 if error { Text("Não foi possível salvar.").foregroundStyle(.red) }
             }
         } else {
