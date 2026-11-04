@@ -105,28 +105,30 @@ struct PlaceEditor: View {
                             }
                             .foregroundStyle(ink).frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top, 24).padding(.bottom, 16)
-                        VStack(spacing: 12) {
-                            if reviewing {
-                                Button { reviewing = false } label: {
-                                    Text("Editar informações").arkeText(.button).foregroundStyle(ink)
-                                        .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
-                                        .background(ArkeUI.insetSurface(colorScheme), in: Capsule()).contentShape(Rectangle())
-                                }
-                                .disabled(saving).accessibilityIdentifier("place.edit")
-                                primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
-                            } else {
-                                primary("Revisar lugar", identifier: "place.review") {
-                                    submitted = true
-                                    if draft.issue == nil && !coverLoading { field = nil; reviewing = true }
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain).foregroundStyle(ink).padding(.bottom, 16)
-                        .padding(.bottom, 8)
                             }
                         }
                         .scrollDismissesKeyboard(.interactively)
                         .accessibilityIdentifier("place.fields").scrollIndicators(.hidden)
+                        .safeAreaInset(edge: .bottom, spacing: 0) {
+                            VStack(spacing: 12) {
+                                if reviewing {
+                                    Button { reviewing = false } label: {
+                                        Text("Editar informações").arkeText(.button).foregroundStyle(ink)
+                                            .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
+                                            .background(ArkeUI.insetSurface(colorScheme), in: Capsule()).contentShape(Rectangle())
+                                    }
+                                    .disabled(saving).accessibilityIdentifier("place.edit")
+                                    primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
+                                } else {
+                                    primary("Revisar lugar", identifier: "place.review") {
+                                        submitted = true
+                                        if draft.issue == nil && !coverLoading { field = nil; reviewing = true }
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain).foregroundStyle(ink).padding(.vertical, 8)
+                            .background(ArkeUI.sheetSurface(colorScheme))
+                        }
                         .onChange(of: field) { _, focused in
                             if let focused { proxy.scrollTo(focused, anchor: .top) }
                         }

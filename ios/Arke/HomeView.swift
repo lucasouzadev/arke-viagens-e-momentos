@@ -57,6 +57,12 @@ struct HomeView: View {
 
                     VStack(spacing: 12) {
                         cardHeader
+                        if state.context == .planning, state.detent != .explore,
+                           let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
+                            Text(idea.name).arkeText(.caption).foregroundStyle(.secondary)
+                                .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                                .accessibilityLabel("Lugar selecionado: " + idea.name)
+                        }
                         Divider()
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {

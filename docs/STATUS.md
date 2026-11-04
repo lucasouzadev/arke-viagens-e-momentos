@@ -1,6 +1,6 @@
 # STATUS — Estado verificável do Arke
 
-**QA de janelas em validação.** A home tem busca compacta no iOS, halo no mapa, alças sem menu e fundo escurecido na expansão. Planejamento tem miniaturas em Explorar e capa maior em Detalhes. Links sem protocolo recebem HTTPS. Gastos e Cofrinho têm ação de teclado e bloqueiam o gesto de redimensionamento enquanto o teclado está aberto. O editor de Pin consulta o endereço e os Pins vinculados abrem a viagem. A revisão visual dos sheets, a paridade dos modos nas outras ferramentas e os selos de Memórias seguem pendentes.
+**[QA de janelas](qualidade/QA-JANELAS-01.md) em validação.** A home tem busca compacta no iOS, halo no mapa, alças sem menu e fundo escurecido na expansão. Planejamento tem miniaturas em Explorar e capa maior em Detalhes. Links sem protocolo recebem HTTPS. Gastos e Cofrinho têm ação de teclado e bloqueiam o gesto de redimensionamento enquanto o teclado está aberto. O editor de Pin consulta o endereço e os Pins vinculados abrem a viagem. A revisão visual dos sheets, a paridade dos modos nas outras ferramentas e os selos de Memórias seguem pendentes.
 
 **Grupos e permissões em integração.** Compartilhar Pin está implementado localmente em iOS e Android. O fluxo entra com uma conta existente do Arke Dev, escolhe ou cria uma viagem compartilhada e confirma o envio de nome e coordenadas. Compilação e validação ponta a ponta pendentes.
 

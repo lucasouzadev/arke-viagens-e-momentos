@@ -276,6 +276,13 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     ) {
                         Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
                             CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
+                            if (state.context == TravelContext.PLANNING && state.detent != PanelDetent.EXPLORE) {
+                                placeState.ideas.firstOrNull { it.id == focusedIdeaID }?.let { idea ->
+                                    Text(idea.name, style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                }
+                            }
                             HorizontalDivider(Modifier.padding(vertical = 12.dp))
                             Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {
                                 if (state.context == TravelContext.PLANNING) {
