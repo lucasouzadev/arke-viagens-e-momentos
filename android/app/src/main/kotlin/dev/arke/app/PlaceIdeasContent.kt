@@ -133,26 +133,7 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                         Image(
                             cover.asImageBitmap(), contentDescription = null,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(if (detent == PanelDetent.DETAILS) 210.dp else 148.dp)
-                                .drawBehind {
-                                    val radius = 4.dp.toPx()
-                                    val edge = Path().apply {
-                                        fillType = PathFillType.EvenOdd
-                                        addRect(Rect(0f, 0f, size.width, size.height))
-                                        fun perforate(x: Float, y: Float) {
-                                            addOval(Rect(x - radius, y - radius, x + radius, y + radius))
-                                        }
-                                        val spacing = 14.dp.toPx()
-                                        for (column in 1 until (size.width / spacing).toInt()) {
-                                            perforate(column * spacing, 0f)
-                                            perforate(column * spacing, size.height)
-                                        }
-                                        for (row in 1 until (size.height / spacing).toInt()) {
-                                            perforate(0f, row * spacing)
-                                            perforate(size.width, row * spacing)
-                                        }
-                                    }
-                                    clipRect { drawPath(edge, paper) }
-                                }.padding(10.dp),
+                                .arkeStamp(paper).padding(10.dp),
                             contentScale = ContentScale.Fit,
                         )
                     }
@@ -302,4 +283,25 @@ internal fun detailCaptureIdeas(): List<PlaceIdea> {
         PlaceIdea.from(PlaceDraft(id = "capture-garden", name = "Jardim das descobertas", address = "Entrada principal, perto da praça central", note = "Chegar pela manhã, caminhar pelos jardins e reservar um tempo para um café.")),
         PlaceIdea.from(PlaceDraft(id = "capture-museum", name = "Museu dos caminhos", address = "Avenida das ideias, 100")),
     )
+}
+
+internal fun Modifier.arkeStamp(paper: Color): Modifier = drawBehind {
+    val radius = 4.dp.toPx()
+    val edge = Path().apply {
+        fillType = PathFillType.EvenOdd
+        addRect(Rect(0f, 0f, size.width, size.height))
+        fun perforate(x: Float, y: Float) {
+            addOval(Rect(x - radius, y - radius, x + radius, y + radius))
+        }
+        val spacing = 14.dp.toPx()
+        for (column in 1 until (size.width / spacing).toInt()) {
+            perforate(column * spacing, 0f)
+            perforate(column * spacing, size.height)
+        }
+        for (row in 1 until (size.height / spacing).toInt()) {
+            perforate(0f, row * spacing)
+            perforate(size.width, row * spacing)
+        }
+    }
+    clipRect { drawPath(edge, paper) }
 }

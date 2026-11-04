@@ -270,7 +270,7 @@ enum DetailCapture {
 }
 #endif
 
-private struct StampEdge: Shape {
+struct StampEdge: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path(rect)
         let radius: CGFloat = 4

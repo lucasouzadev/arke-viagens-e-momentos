@@ -86,11 +86,16 @@ struct HomeView: View {
                                                     .id(state.context.rawValue)
                                             }
                                         } else {
-                                            Label(state.context.title, systemImage: state.context == .reviews ? "star" : "photo.on.rectangle")
-                                                .arkeText(.contextTitle)
-                                            if state.detent != .explore {
-                                                Text(state.context == .reviews ? "As avaliações das suas viagens aparecerão aqui." : "As fotos e os selos das suas viagens aparecerão aqui.")
-                                                    .foregroundStyle(.secondary)
+                                            if state.detent == .explore {
+                                                Button { settlePanel(.details) } label: {
+                                                    Label(state.context.title, systemImage: state.context == .reviews ? "star" : "photo.on.rectangle")
+                                                }.frame(minHeight: 44)
+                                            } else {
+                                                TripJournalView(plan: pinPlan, ideas: places.ideas, reviews: state.context == .reviews,
+                                                                detailed: state.detent == .details).id(state.context.rawValue)
+                                                if state.detent == .balanced {
+                                                    Button("Ver detalhes") { settlePanel(.details) }
+                                                }
                                             }
                                         }
                                         Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
@@ -592,6 +597,90 @@ private struct MapSearchMotion: ViewModifier {
 
 
 
+
+private struct TripJournalView: View {
+    struct Entry: Codable, Identifiable {
+        var id = UUID()
+        let tripID: String
+        let text: String
+        let rating: Int?
+        let placeID: String?
+    }
+
+    let plan: LocalPinPlan?
+    let ideas: [PlaceIdea]
+    let reviews: Bool
+    let detailed: Bool
+    @AppStorage("arke.trip-journal.v1") private var data = Data()
+    @State private var selectedTrip = ""
+    @State private var placeID: String?
+    @State private var rating = 5
+    @State private var draft = ""
+    @State private var error = false
+
+    var body: some View {
+        if let plan, let trip = plan.trips.first(where: { $0.id == selectedTrip }) ?? plan.trips.first {
+            Picker("Viagem", selection: Binding(get: { trip.id }, set: {
+                selectedTrip = $0
+                draft = ""
+                placeID = nil
+                error = false
+            })) {
+                ForEach(plan.trips, id: \.id) { Text($0.title).tag($0.id) }
+            }
+            let entries = ((try? JSONDecoder().decode([Entry].self, from: data)) ?? [])
+                .filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
+            if entries.isEmpty { Text(reviews ? "Nenhuma avaliação nesta viagem." : "Nenhuma memória nesta viagem.").foregroundStyle(.secondary) }
+            ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
+                VStack(alignment: .leading, spacing: 6) {
+                    if let rating = entry.rating {
+                        Label("\(rating) de 5", systemImage: "star.fill").arkeText(.contextTitle)
+                    } else if let imageData = ideas.first(where: { $0.id == entry.placeID })?.cover,
+                              let image = UIImage(data: imageData) {
+                        Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: detailed ? 190 : 100)
+                            .padding(10)
+                            .background {
+                                Color(uiColor: .systemBackground)
+                                    .mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
+                            }
+                            .accessibilityHidden(true)
+                    } else {
+                        Label("Memória", systemImage: "photo.on.rectangle").arkeText(.contextTitle)
+                    }
+                    Text(entry.text).lineLimit(detailed ? nil : 2)
+                }.padding(.vertical, 6)
+            }
+            if detailed {
+                if reviews {
+                    Stepper("Nota: \(rating) de 5", value: $rating, in: 1...5)
+                } else {
+                    Picker("Capa do lugar", selection: $placeID) {
+                        Text("Sem capa").tag(nil as String?)
+                        ForEach(ideas.filter { idea in
+                            idea.cover != nil && plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
+                        }) { idea in Text(idea.name).tag(Optional(idea.id)) }
+                    }
+                }
+                TextField(reviews ? "Escreva sua avaliação" : "Escreva sua memória", text: $draft, axis: .vertical)
+                Button(reviews ? "Salvar avaliação" : "Salvar memória") {
+                    let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !text.isEmpty, text.count <= 1000 else { return }
+                    do {
+                        var all = data.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: data)
+                        all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID))
+                        data = try JSONEncoder().encode(all)
+                        draft = ""
+                        placeID = nil
+                        error = false
+                    } catch { self.error = true }
+                }.disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
+                if error { Text("Não foi possível salvar.").foregroundStyle(.red) }
+            }
+        } else {
+            Text("Crie uma viagem local para começar.").foregroundStyle(.secondary)
+        }
+    }
+}
 private struct LocalFinanceView: View {
     struct Entry: Codable, Identifiable {
         var id = UUID()

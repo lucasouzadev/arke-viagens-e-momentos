@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
@@ -307,10 +308,18 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                                     detailed = state.detent == PanelDetent.DETAILS)
                                             }
                                         } else {
-                                            Text(stringResource(state.context.title()), style = MaterialTheme.typography.titleMedium)
-                                            if (state.detent != PanelDetent.EXPLORE) {
-                                                Text(if (state.context == TravelContext.REVIEWS) "As avaliações das suas viagens aparecerão aqui."
-                                                    else "As fotos e os selos das suas viagens aparecerão aqui.")
+                                            if (state.detent == PanelDetent.EXPLORE) {
+                                                TextButton(onClick = { state = state.setDetent(PanelDetent.DETAILS) }) {
+                                                    Text(stringResource(state.context.title()))
+                                                }
+                                            } else {
+                                                key(state.context) {
+                                                    TripJournalContent(pinPlan, placeState.ideas, state.context == TravelContext.REVIEWS,
+                                                        detailed = state.detent == PanelDetent.DETAILS)
+                                                }
+                                                if (state.detent == PanelDetent.BALANCED) {
+                                                    TextButton(onClick = { state = state.setDetent(PanelDetent.DETAILS) }) { Text("Ver detalhes") }
+                                                }
                                             }
                                         }
                                         TextButton(onClick = { state = state.selectContext(TravelContext.PLANNING) }) { Text(stringResource(R.string.view_places)) }
@@ -557,6 +566,80 @@ private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (Pan
     TravelContext.SAVINGS -> R.string.savings
     TravelContext.REVIEWS -> R.string.reviews
     TravelContext.MEMORIES -> R.string.memories
+}
+
+
+@Composable
+private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, reviews: Boolean, detailed: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences("arke.trip-journal.v1", 0) }
+    var raw by remember(prefs) { mutableStateOf(prefs.getString("records", "[]") ?: "[]") }
+    var tripID by remember { mutableStateOf<String?>(null) }
+    val trip = plan?.trips?.firstOrNull { it.id == tripID } ?: plan?.trips?.firstOrNull()
+    if (plan == null || trip == null) {
+        Text("Crie uma viagem local para começar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    var draft by remember(trip.id, reviews) { mutableStateOf("") }
+    var rating by remember(trip.id, reviews) { mutableIntStateOf(5) }
+    var placeID by remember(trip.id, reviews) { mutableStateOf("") }
+    var failed by remember(trip.id, reviews) { mutableStateOf(false) }
+    val records = remember(raw) {
+        runCatching {
+            val array = org.json.JSONArray(raw)
+            (0 until array.length()).map { array.getJSONObject(it) }
+        }.getOrNull()
+    }
+    if (records == null) {
+        Text("Não foi possível abrir os registros.")
+        return
+    }
+    FinanceChoice("Viagem", trip.title, plan.trips.map { it.id to it.title }) { tripID = it }
+    val entries = records.filter { it.optString("trip") == trip.id && (it.optInt("rating") > 0) == reviews }
+    if (entries.isEmpty()) Text(if (reviews) "Nenhuma avaliação nesta viagem." else "Nenhuma memória nesta viagem.")
+    val visible = if (detailed) entries.asReversed() else entries.takeLast(1)
+    visible.forEach { entry ->
+        Column(Modifier.padding(vertical = 8.dp)) {
+            if (reviews) {
+                Text("★ ${entry.getInt("rating")} de 5", style = MaterialTheme.typography.titleMedium)
+            } else {
+                val cover = ideas.firstOrNull { it.id == entry.optString("place") }?.cover
+                val image = remember(cover) { cover?.let { decodePlaceCover(it) } }
+                if (image != null) {
+                    androidx.compose.foundation.Image(image.asImageBitmap(), null,
+                        modifier = Modifier.fillMaxWidth().height(if (detailed) 190.dp else 100.dp)
+                            .arkeStamp(MaterialTheme.colorScheme.surface).padding(10.dp),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+                } else Text("Memória", style = MaterialTheme.typography.titleMedium)
+            }
+            Text(entry.getString("text"), maxLines = if (detailed) Int.MAX_VALUE else 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    }
+    if (detailed) {
+        if (reviews) {
+            FinanceChoice("Nota", "$rating de 5", (1..5).map { it.toString() to "$it de 5" }) { rating = it.toInt() }
+        } else {
+            val covers = ideas.filter { idea ->
+                idea.cover.isNotEmpty() && plan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
+            }
+            FinanceChoice("Capa", covers.firstOrNull { it.id == placeID }?.name ?: "Sem capa",
+                listOf("" to "Sem capa") + covers.map { it.id to it.name }) { placeID = it }
+        }
+        OutlinedTextField(draft, { draft = it }, label = { Text(if (reviews) "Escreva sua avaliação" else "Escreva sua memória") })
+        TextButton(enabled = draft.isNotBlank() && draft.length <= 1000, onClick = {
+            val entry = org.json.JSONObject().put("trip", trip.id).put("text", draft.trim())
+            if (reviews) entry.put("rating", rating) else entry.put("place", placeID)
+            val updated = org.json.JSONArray(records + entry).toString()
+            if (prefs.edit().putString("records", updated).commit()) {
+                raw = updated
+                draft = ""
+                placeID = ""
+                failed = false
+            } else failed = true
+        }) { Text(if (reviews) "Salvar avaliação" else "Salvar memória") }
+        if (failed) Text("Não foi possível salvar.", color = MaterialTheme.colorScheme.error)
+    }
 }
 
 @Composable
