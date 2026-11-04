@@ -69,5 +69,5 @@
     <string name="edit_place">Editar lugar</string>
     <string name="edit_place_label">Editar %1$s</string>
     <string name="save_changes">Salvar alterações</string>
-    <string name="invalid_place_link">Informe um link completo que comece com https:// ou http://.</string>
+    <string name="invalid_place_link">Informe um endereço válido, como exemplo.com.</string>
 </resources>

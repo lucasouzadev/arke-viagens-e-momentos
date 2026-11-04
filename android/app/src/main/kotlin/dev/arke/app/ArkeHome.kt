@@ -7,7 +7,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -27,6 +26,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalDensity
@@ -213,17 +214,18 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
             Text(stringResource(R.string.tagline), style = MaterialTheme.typography.headlineMedium)
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
                 val density = LocalDensity.current
+                val keyboardVisible = WindowInsets.ime.getBottom(density) > 0
                 val minContentHeight = (160 * density.fontScale).dp
                 val availableHeight = maxHeight
-                fun heightFor(detent: PanelDetent) = maxOf(64.dp, minOf(availableHeight * when (detent) {
+                fun heightFor(detent: PanelDetent) = maxOf(minOf(84.dp, availableHeight), minOf(availableHeight * when (detent) {
                     PanelDetent.EXPLORE -> 0.65f
                     PanelDetent.BALANCED -> 0.45f
                     PanelDetent.DETAILS -> 0.25f
                 }, availableHeight - minContentHeight - 64.dp))
                 var dragHeight by remember(availableHeight, density.density, density.fontScale) { mutableStateOf<Float?>(null) }
                 val restingHeight = heightFor(state.detent)
-                val maxMapPx = with(density) { maxOf(64.dp, availableHeight - minContentHeight - 64.dp).toPx() }
-                val minMapPx = with(density) { 64.dp.toPx() }
+                val maxMapPx = with(density) { maxOf(minOf(84.dp, availableHeight), availableHeight - minContentHeight - 64.dp).toPx() }
+                val minMapPx = with(density) { minOf(84.dp, availableHeight).toPx() }
                 val restingPx = with(density) { restingHeight.toPx() }
                 val position = remember { Animatable(restingPx) }
                 LaunchedEffect(restingPx, dragHeight != null) {
@@ -237,6 +239,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                 val contentRecess by animateDpAsState(if (mapExpanded) 12.dp else 0.dp, label = "contentRecess")
                 val dragModifier = Modifier.draggable(
                     orientation = Orientation.Vertical,
+                    enabled = !keyboardVisible,
                     state = rememberDraggableState { delta ->
                         val current = dragHeight ?: position.value
                         dragHeight = (current + delta).coerceIn(minMapPx, maxMapPx)
@@ -263,7 +266,10 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     }
 
                     Card(
-                        modifier = Modifier.fillMaxWidth().weight(1f).offset(y = contentRecess),
+                        modifier = Modifier.fillMaxWidth().weight(1f).offset(y = contentRecess).drawWithContent {
+                            drawContent()
+                            if (mapExpanded) drawRect(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.68f))
+                        },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -284,7 +290,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                     if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState,
                                         onUpdate = places::update, onEditCancel = places::load,
                                         onDetailsVisibilityChanged = { showingSavedDetails = it },
-                                        onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }) { id -> savedNotice = false; places.remove(id) }
+                                        onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }, detent = state.detent) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         if (state.context == TravelContext.EXPENSES || state.context == TravelContext.SAVINGS) {
                                             LocalFinanceContent(pinPlan?.trips.orEmpty(), savings = state.context == TravelContext.SAVINGS)
@@ -298,18 +304,34 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     }
                 }
                 Card(
-                    modifier = Modifier.fillMaxWidth().height(mapHeight + mapExtension)
-                        .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.42f), RoundedCornerShape(30.dp)),
+                    modifier = Modifier.fillMaxWidth().height(mapHeight + mapExtension),
                     shape = RoundedCornerShape(30.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                  ) {
-                    Box(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxSize().drawWithContent {
+                        drawContent()
+                        for (width in 2..14 step 2) {
+                            drawRoundRect(
+                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.025f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx()),
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width.dp.toPx()),
+                            )
+                        }
+                    }) {
                         TravelMap(Modifier.fillMaxSize(), pins = pinPlan?.pins.orEmpty().mapNotNull { pin ->
                             placeState.ideas.firstOrNull { it.id == pin.ideaID }?.let { pin to it.name }
-                        }, revealPin = revealedPin)
+                        }, revealPin = revealedPin, onPinSelected = { pin ->
+                            focusedIdeaID = pin.ideaID
+                            if (pin.tripID != null) {
+                                tripDetailsID = pin.tripID
+                                showingTrips = true
+                            } else {
+                                pinIdea = placeState.ideas.firstOrNull { it.id == pin.ideaID }
+                            }
+                        })
                         val focusedIdea = placeState.ideas.firstOrNull { it.id == focusedIdeaID }
-                        if (state.context == TravelContext.PLANNING && focusedIdea != null) {
+                        if (mapHeight + mapExtension >= 150.dp && state.context == TravelContext.PLANNING && focusedIdea != null) {
                             Surface(
                                 modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 18.dp, end = 72.dp),
                                 shape = RoundedCornerShape(24.dp),
@@ -323,18 +345,29 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                 )
                             }
                         }
-                        FilledTonalIconButton(
-                            onClick = { mapExpanded = !mapExpanded },
-                            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).testTag("home.expandMap"),
+                        if (!mapExpanded) FilledTonalIconButton(
+                            onClick = { mapExpanded = true },
+                            enabled = !keyboardVisible,
+                            modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp).testTag("home.expandMap"),
                         ) {
-                            Text(
-                                if (mapExpanded) "↘" else "↗",
-                                modifier = Modifier.clearAndSetSemantics {
-                                    contentDescription = if (mapExpanded) "Recolher mapa" else "Expandir mapa"
-                                },
-                            )
+                            Text("↗", Modifier.clearAndSetSemantics { contentDescription = "Expandir mapa" })
                         }
                     }
+                }
+                if (mapExpanded) {
+                    var closeDistance by remember { mutableStateOf(0f) }
+                    val closeThreshold = with(density) { 16.dp.toPx() }
+                    Box(
+                        Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp)
+                            .draggable(rememberDraggableState { closeDistance += it }, Orientation.Vertical,
+                                onDragStarted = { closeDistance = 0f },
+                                onDragStopped = { if (closeDistance > closeThreshold) mapExpanded = false })
+                            .semantics {
+                                contentDescription = "Recolher mapa"
+                                customActions = listOf(CustomAccessibilityAction("Recolher mapa") { mapExpanded = false; true })
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) { Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp))) }
                 }
             }
         }
@@ -470,39 +503,19 @@ private fun ContextPreview(option: TravelContext?) {
 
 @Composable
 private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (PanelDetent) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
     val description = stringResource(R.string.change_panel, stringResource(selected.title()))
     val moreMap = stringResource(R.string.more_map)
     val moreContent = stringResource(R.string.more_content)
-    Box {
-        TextButton(
-            onClick = { expanded = true },
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
-            ),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).then(modifier).testTag("home.panelMenu").semantics {
-                contentDescription = description
-                customActions = listOf(
-                    CustomAccessibilityAction(moreMap) { onSelect(PanelDetent.entries[maxOf(0, selected.ordinal - 1)]); true },
-                    CustomAccessibilityAction(moreContent) { onSelect(PanelDetent.entries[minOf(2, selected.ordinal + 1)]); true },
-                )
-            },
-        ) {
-            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Box(Modifier.size(width = 36.dp, height = 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp)))
-                Text(stringResource(selected.title()), style = MaterialTheme.typography.labelMedium)
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            PanelDetent.entries.forEach { detent ->
-                DropdownMenuItem(
-                    modifier = Modifier.testTag("detent.${detent.name}"),
-                    text = { Text(stringResource(detent.title())) },
-                    onClick = { onSelect(detent); expanded = false },
-                )
-            }
-        }
-    }
+    Box(
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).then(modifier).testTag("home.panelMenu").semantics {
+            contentDescription = description
+            customActions = listOf(
+                CustomAccessibilityAction(moreMap) { onSelect(PanelDetent.entries[maxOf(0, selected.ordinal - 1)]); true },
+                CustomAccessibilityAction(moreContent) { onSelect(PanelDetent.entries[minOf(2, selected.ordinal + 1)]); true },
+            )
+        },
+        contentAlignment = Alignment.Center,
+    ) { Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp))) }
 }
 
 @StringRes private fun TravelContext.title(): Int = when (this) {
@@ -516,6 +529,7 @@ private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (Pan
 @Composable
 private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val financeFocus = LocalFocusManager.current
     val prefs = remember(context) { context.getSharedPreferences("arke.local-finance.v1", 0) }
     var raw by remember(prefs) { mutableStateOf(prefs.getString("records", "[]") ?: "[]") }
     var tripID by remember { mutableStateOf<String?>(null) }
@@ -587,6 +601,9 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean) {
         !savings || (kind != "saving" && contributions.isEmpty())) { currency = it }
     OutlinedTextField(amount, { amount = it }, label = { Text("Valor") },
         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
+    if (WindowInsets.ime.getBottom(LocalDensity.current) > 0) {
+        TextButton(onClick = { financeFocus.clearFocus() }) { Text("Fechar teclado") }
+    }
     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     TextButton(onClick = {
         val separator = java.text.DecimalFormatSymbols.getInstance().decimalSeparator
@@ -614,6 +631,7 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean) {
         val encoded = org.json.JSONArray(updated).toString()
         if (prefs.edit().putString("records", encoded).commit()) {
             raw = encoded
+            financeFocus.clearFocus()
             clearDraft()
         } else {
             error = "Não foi possível salvar os registros."

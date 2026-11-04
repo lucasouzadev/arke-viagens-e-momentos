@@ -270,7 +270,7 @@ private extension PlaceDraftIssue {
         case .nameTooLong: "Use até 100 caracteres no nome."
         case .addressRequired: "Informe um endereço ou referência."
         case .addressTooLong: "Use até 240 caracteres no endereço."
-        case .invalidLink: "Informe um link completo que comece com https:// ou http://."
+        case .invalidLink: "Informe um endereço válido, como exemplo.com."
         case .noteTooLong: "Use até 1.000 caracteres na nota."
         }
     }

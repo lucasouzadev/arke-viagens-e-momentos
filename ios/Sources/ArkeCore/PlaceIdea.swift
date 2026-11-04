@@ -26,7 +26,7 @@ public struct PlaceDraft: Equatable, Sendable {
         return PlaceDraft(id: id, name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                    address: address.trimmingCharacters(in: .whitespacesAndNewlines),
                    note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                   link: cleanLink == "" ? nil : cleanLink, cover: cover)
+                   link: cleanLink == "" ? nil : Self.webURL(cleanLink)?.absoluteString ?? cleanLink, cover: cover)
     }
 
     public var isEmpty: Bool {
@@ -35,9 +35,13 @@ public struct PlaceDraft: Equatable, Sendable {
     }
 
     public static func webURL(_ text: String?) -> URL? {
-        guard let text, text.utf8.count <= 2048, let url = URL(string: text),
+        guard let text else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let explicitScheme = trimmed.range(of: "^[A-Za-z][A-Za-z0-9+.-]*:", options: .regularExpression) != nil
+        let candidate = explicitScheme ? trimmed : "https://" + trimmed
+        guard !trimmed.hasPrefix("/"), candidate.utf8.count <= 2048, let url = URL(string: candidate),
               ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
-              let host = url.host, !host.isEmpty, url.user == nil, url.password == nil else { return nil }
+              let host = url.host, !host.isEmpty, explicitScheme || host.contains("."), url.user == nil, url.password == nil else { return nil }
         return url
     }
 

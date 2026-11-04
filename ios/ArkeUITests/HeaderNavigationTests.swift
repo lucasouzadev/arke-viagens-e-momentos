@@ -10,8 +10,9 @@ final class HeaderNavigationTests: XCTestCase {
         let next = app.staticTexts["home.contextTitle"]
         XCTAssertTrue(next.waitForExistence(timeout: 15))
         XCTAssertEqual(app.buttons.matching(identifier: "home.panelMenu").count, 1)
-        app.buttons["home.panelMenu"].tap()
-        app.buttons["Detalhes"].tap()
+        let handle = app.buttons["home.panelMenu"]
+        let origin = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        origin.press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: 0, dy: -app.frame.height * 0.35)))
         for (index, title) in ["Gastos", "Cofrinho", "Avaliações", "Memórias", "Avaliações"].enumerated() {
             XCTAssertTrue(next.isHittable)
             if index == 4 { next.swipeRight() } else { next.swipeLeft() }
@@ -20,8 +21,6 @@ final class HeaderNavigationTests: XCTestCase {
             waitForExpectations(timeout: 5)
             XCTAssertEqual(app.buttons["home.panelMenu"].value as? String, "Detalhes")
         }
-        app.buttons["home.panelMenu"].tap()
-        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
     }
 
     func testAddPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
@@ -148,8 +147,6 @@ final class HeaderNavigationTests: XCTestCase {
         app.launch()
         let handle = app.buttons["home.panelMenu"]
         XCTAssertTrue(handle.waitForExistence(timeout: 15))
-        handle.tap()
-        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
         let distance = app.frame.height * 0.35
         XCTAssertTrue(handle.isHittable)
         let window = app.coordinate(withNormalizedOffset: .zero)
@@ -171,8 +168,6 @@ final class HeaderNavigationTests: XCTestCase {
         add(dragCapture)
         expectation(for: NSPredicate(format: "value == %@", "Explorar"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
-        handle.tap()
-        app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", "Equilibrado", "Equilibrado ✓")).firstMatch.tap()
         expectation(for: NSPredicate(format: "value == %@", "Equilibrado"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
     }

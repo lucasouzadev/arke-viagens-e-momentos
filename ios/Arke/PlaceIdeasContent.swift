@@ -7,6 +7,7 @@ struct PlaceIdeasContent: View {
     let onPin: (PlaceIdea) -> Void
     var onDetailsVisibilityChanged: (Bool) -> Void = { _ in }
     @Binding var focusedID: String?
+    let detent: PanelDetent
     @State private var deleting: PlaceIdea?
     @State private var selected: PlaceIdea?
     @State private var editing: PlaceIdea?
@@ -16,7 +17,13 @@ struct PlaceIdeasContent: View {
     private func neighbor(_ idea: PlaceIdea?, icon: String) -> some View {
         if let idea {
             Button { focusedID = idea.id } label: {
-                Label(idea.name, systemImage: icon)
+                Label {
+                    Text(idea.name)
+                } icon: {
+                    if let cover = idea.cover, let image = UIImage(data: cover) {
+                        Image(uiImage: image).resizable().scaledToFill().frame(width: 32, height: 32).clipShape(.rect(cornerRadius: 6))
+                    } else { Image(systemName: icon) }
+                }
                     .lineLimit(1)
                     .frame(minHeight: 44)
             }
@@ -31,6 +38,27 @@ struct PlaceIdeasContent: View {
             if store.ideas.isEmpty {
                 Text("Guarde seu próximo lugar com +").arkeText(.body)
                     .foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 48)
+            } else if detent == .explore {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 12) {
+                        ForEach(store.ideas) { idea in
+                            Button {
+                                focusedID = idea.id
+                                selected = idea
+                            } label: {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    if let cover = idea.cover, let image = UIImage(data: cover) {
+                                        Image(uiImage: image).resizable().scaledToFill()
+                                            .frame(width: 80, height: 50).clipShape(.rect(cornerRadius: 8))
+                                    } else {
+                                        Image(systemName: "mappin").frame(width: 80, height: 50)
+                                    }
+                                    Text(idea.name).lineLimit(1).frame(width: 80, alignment: .leading)
+                                }
+                            }.buttonStyle(.plain)
+                        }
+                    }
+                }.scrollIndicators(.hidden)
             } else {
                 let index = store.ideas.firstIndex { $0.id == focusedID } ?? 0
                 let idea = store.ideas[index]
@@ -59,7 +87,7 @@ struct PlaceIdeasContent: View {
                                     .frame(width: geometry.size.width - 20, height: geometry.size.height - 20)
                                     .clipped().padding(10)
                             }
-                            .frame(height: 148)
+                            .frame(height: detent == .details ? 210 : 148)
                             .background {
                                 Color(uiColor: .systemBackground).mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
                             }
@@ -86,7 +114,6 @@ struct PlaceIdeasContent: View {
                         }
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
                     .simultaneousGesture(DragGesture(minimumDistance: 28).onEnded { value in
                         let movement = value.translation
                         guard abs(movement.width) > abs(movement.height) * 1.5 else { return }
@@ -197,7 +224,8 @@ struct PlaceDetails: View {
                     }
                 }
                 .id(selectedID).accessibilityIdentifier("detail.body")
-                .arkeScrollEdges()
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
                 HStack(spacing: 16) {
                     if let index, index > 0 {
                         Button { selectedID = ideas[index - 1].id } label: {

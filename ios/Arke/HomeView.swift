@@ -11,6 +11,8 @@ struct HomeView: View {
     @State private var showingTrips = false
     @State private var pinPlan: LocalPinPlan?
     @State private var pinIdea: PlaceIdea?
+    @State private var selectedMapPin: String?
+    @State private var tripPath: [String] = []
     @State private var focusedIdeaID: String?
     @State private var mapExpanded = false
     @State private var panelHeight: CGFloat?
@@ -25,7 +27,7 @@ struct HomeView: View {
     @State private var savedNotice = false
     @StateObject private var places = PlaceIdeasStore()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var showingPanelPicker = false
+    @State private var keyboardVisible = false
     @ScaledMetric(relativeTo: .headline) private var minimumContentHeight: CGFloat = 160
 
     private var state: HomeState {
@@ -42,11 +44,12 @@ struct HomeView: View {
             GeometryReader { geometry in
                 let restingHeight = panelHeight ?? mapHeight(in: geometry.size.height)
                 let expandedHeight = min(geometry.size.height, max(restingHeight, geometry.size.height - 52))
+                let compactMap = !mapExpanded && restingHeight < 150
                 VStack(spacing: 8) {
                     Color.clear.frame(height: restingHeight).accessibilityHidden(true)
 
                     panelMenu
-                        .highPriorityGesture(panelDrag(in: geometry.size.height))
+                        .highPriorityGesture(panelDrag(in: geometry.size.height), including: keyboardVisible ? .none : .all)
                         .opacity(mapExpanded ? 0 : 1)
                         .allowsHitTesting(!mapExpanded)
                         .accessibilityHidden(mapExpanded)
@@ -58,7 +61,7 @@ struct HomeView: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
                             if state.context == .planning {
-                                Button { showingTrips = true } label: { Label("Viagens", systemImage: "suitcase") }
+                                Button { tripPath = []; showingTrips = true } label: { Label("Viagens", systemImage: "suitcase") }
                             }
                                 if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
                                 if let error = places.error, !showingAddPlace {
@@ -70,7 +73,7 @@ struct HomeView: View {
                                         PlaceIdeasContent(store: places, onDelete: { id in
                                             savedNotice = false
                                             Task { await places.remove(id: id) }
-                                        }, onPin: { pinIdea = $0 }, onDetailsVisibilityChanged: { showingSavedDetails = $0 }, focusedID: $focusedIdeaID)
+                                        }, onPin: { pinIdea = $0 }, onDetailsVisibilityChanged: { showingSavedDetails = $0 }, focusedID: $focusedIdeaID, detent: state.detent)
                                     } else {
                                         if state.context == .expenses || state.context == .savings {
                                             LocalFinanceView(trips: pinPlan?.trips ?? [], savings: state.context == .savings)
@@ -83,22 +86,25 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .frame(maxHeight: .infinity)
+                        .arkeScrollEdges()
+                        .scrollDismissesKeyboard(.interactively)
                         .accessibilityIdentifier("home.contentBody")
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
                     .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
                     .clipShape(.rect(cornerRadius: 20))
+                    .overlay { if mapExpanded { Color.black.opacity(0.68) } }
                     .offset(y: mapExpanded ? 12 : 0)
                     .allowsHitTesting(!mapExpanded)
                     .accessibilityHidden(mapExpanded)
                 }
                 .overlay(alignment: .top) {
-                    Map(position: $camera) {
+                    Map(position: $camera, selection: $selectedMapPin) {
                         UserAnnotation()
                         ForEach(pinPlan?.pins ?? [], id: \.ideaID) { pin in
                             if let idea = places.ideas.first(where: { $0.id == pin.ideaID }) {
-                                Marker(idea.name, coordinate: CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude))
+                                Marker(idea.name, coordinate: CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)).tag(pin.ideaID)
                             }
                         }
                         if let searchPin { Marker(item: searchPin) }
@@ -106,33 +112,46 @@ struct HomeView: View {
                         .mapStyle(.standard)
                         .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
                         .frame(height: mapExpanded ? expandedHeight : restingHeight)
-                        .clipShape(.rect(cornerRadius: 30))
                         .overlay {
                             RoundedRectangle(cornerRadius: 30)
-                                .strokeBorder(.white.opacity(0.44), lineWidth: 1)
-                                .shadow(color: .white.opacity(0.75), radius: 7)
+                                .strokeBorder(.white.opacity(0.25), lineWidth: 9)
+                                .blur(radius: 7)
                                 .allowsHitTesting(false)
                         }
                         .overlay(alignment: .bottom) {
                             HStack(spacing: 6) {
                                 Button { showingMapSearch = true } label: {
-                                    Label("Buscar lugares", systemImage: "magnifyingglass")
-                                        .font(.subheadline).frame(maxWidth: .infinity, minHeight: 34)
+                                    if compactMap {
+                                        Image(systemName: "magnifyingglass").frame(width: 44, height: 44)
+                                    } else {
+                                        Label("Buscar lugares", systemImage: "magnifyingglass")
+                                            .font(.subheadline).frame(maxWidth: .infinity, minHeight: 44)
+                                    }
                                 }
-                                .modifier(MapLocationButtonStyle(isPill: true))
+                                .modifier(MapLocationButtonStyle(isPill: !compactMap))
+                                .accessibilityLabel("Buscar lugares")
                                 .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
                                 Button { location.request() } label: {
-                                    Image(systemName: "location.fill").frame(width: 36, height: 36)
+                                    Image(systemName: "location.fill").frame(width: 44, height: 44)
                                 }
                                 .modifier(MapLocationButtonStyle())
                                 .accessibilityLabel("Minha localização")
                                 .accessibilityIdentifier("home.location")
                                 .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
+                                if !mapExpanded {
+                                    Button { setMapExpanded(true) } label: {
+                                        Image(systemName: "arrow.up.left.and.arrow.down.right").frame(width: 44, height: 44)
+                                    }
+                                    .modifier(MapLocationButtonStyle())
+                                    .accessibilityLabel("Expandir mapa")
+                                    .accessibilityIdentifier("home.expandMap")
+                                    .disabled(keyboardVisible)
+                                }
                             }
-                            .padding(.horizontal, 12).padding(.bottom, 28)
+                            .padding(.horizontal, 12).padding(.bottom, 26)
                         }
                         .overlay(alignment: .topLeading) {
-                            if state.context == .planning,
+                            if !compactMap, state.context == .planning,
                                let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
                                 Label(idea.name, systemImage: "bookmark")
                                     .font(.subheadline.weight(.semibold)).lineLimit(1)
@@ -142,26 +161,37 @@ struct HomeView: View {
                                     .allowsHitTesting(false)
                             }
                         }
-                        .overlay(alignment: .topTrailing) {
-                            Button {
-                                withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
-                                    mapExpanded.toggle()
-                                }
-                            } label: {
-                                Image(systemName: mapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                                    .frame(width: 44, height: 44)
-                            }
-                            .modifier(MapLocationButtonStyle())
-                            .accessibilityLabel(mapExpanded ? "Recolher mapa" : "Expandir mapa")
-                            .accessibilityIdentifier("home.expandMap")
-                            .padding(12)
-                        }
+                        .clipShape(.rect(cornerRadius: 30))
                         .onReceive(location.$coordinate) { coordinate in
                             if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
                         }
                 }
+                .overlay(alignment: .bottom) {
+                    if mapExpanded {
+                        Capsule().fill(.secondary).frame(width: 36, height: 4)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .contentShape(Rectangle())
+                            .gesture(DragGesture(minimumDistance: 10).onEnded { value in
+                                if value.translation.height > 16 { setMapExpanded(false) }
+                            })
+                            .accessibilityLabel("Recolher mapa")
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityAction { setMapExpanded(false) }
+                    }
+                }
                 .clipped()
             }
+        }
+        .onChange(of: selectedMapPin) { _, id in
+            guard let id, let pin = pinPlan?.pins.first(where: { $0.ideaID == id }) else { return }
+            focusedIdeaID = id
+            if let tripID = pin.tripID {
+                tripPath = [tripID]
+                showingTrips = true
+            } else if let idea = places.ideas.first(where: { $0.id == id }) {
+                pinIdea = idea
+            }
+            selectedMapPin = nil
         }
         .alert("Minha localização", isPresented: Binding(get: { location.message != nil }, set: { if !$0 { location.message = nil } })) {
             Button("Entendi", role: .cancel) { location.message = nil }
@@ -169,7 +199,8 @@ struct HomeView: View {
         .arkeText(.body)
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
         .arkeReceding(presented: showingAddPlace || showingDetailPreview || showingSavedDetails || showingEditPreview)
         .task(id: savedNotice) {
             if savedNotice {
@@ -206,30 +237,34 @@ struct HomeView: View {
         }
         .task { pinPlan = try? await places.loadPinPlan() }
         .sheet(isPresented: $showingTrips) {
-            NavigationStack {
+            NavigationStack(path: $tripPath) {
                 List {
                     if let plan = pinPlan {
                         if plan.trips.isEmpty { Text("Suas viagens aparecem aqui quando você vincula um Pin.") }
                         ForEach(plan.trips, id: \.id) { trip in
-                            NavigationLink(trip.title) {
-                                List {
-                                    let ideas = places.ideas.filter { idea in
-                                        plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
-                                    }
-                                    if ideas.isEmpty { Text("Nenhum Pin nesta viagem.") }
-                                    ForEach(ideas) { idea in
-                                        VStack(alignment: .leading) {
-                                            Text(idea.name).font(.headline)
-                                            Text(idea.address).foregroundStyle(.secondary)
-                                            if let pin = plan.pins.first(where: { $0.ideaID == idea.id }) {
-                                                NavigationLink("Compartilhar Pin") { SharePinForm(name: idea.name, pin: pin) }
-                                            }
-                                        }
-                                    }
-                                }.navigationTitle(trip.title)
-                            }
+                            NavigationLink(trip.title, value: trip.id)
                         }
                     } else { Text("Não foi possível abrir as viagens.") }
+                }
+
+                .navigationDestination(for: String.self) { id in
+                    if let plan = pinPlan, let trip = plan.trips.first(where: { $0.id == id }) {
+                        List {
+                            let ideas = places.ideas.filter { idea in
+                                plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
+                            }
+                            if ideas.isEmpty { Text("Nenhum Pin nesta viagem.") }
+                            ForEach(ideas) { idea in
+                                VStack(alignment: .leading) {
+                                    Text(idea.name).font(.headline)
+                                    Text(idea.address).foregroundStyle(.secondary)
+                                    if let pin = plan.pins.first(where: { $0.ideaID == idea.id }) {
+                                        NavigationLink("Compartilhar Pin") { SharePinForm(name: idea.name, pin: pin) }
+                                    }
+                                }
+                            }
+                        }.navigationTitle(trip.title)
+                    }
                 }
                 .navigationTitle("Viagens")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { showingTrips = false } } }
@@ -264,8 +299,8 @@ struct HomeView: View {
                 contextPreview(index - 1)
                 Text(state.context.title)
                     .arkeText(.contextTitle)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("home.contextTitle")
                 contextPreview(index + 1)
@@ -319,21 +354,13 @@ struct HomeView: View {
     }
 
     private var panelMenu: some View {
-        Button { showingPanelPicker = true } label: {
-            VStack(spacing: 4) {
-                Capsule().fill(.secondary).frame(width: 36, height: 4)
-                    .accessibilityHidden(true)
-                Text(state.detent.title).arkeText(.label)
-            }
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(controlStyle)
-        .accessibilityLabel("Ajustar proporção")
-        .accessibilityValue(state.detent.title)
-        .accessibilityIdentifier("home.panelMenu")
-        .accessibilityHint("Arraste para ajustar ou toque para escolher a proporção.")
+        Capsule().fill(.secondary).frame(width: 36, height: 4)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+            .accessibilityLabel("Ajustar proporção")
+            .accessibilityValue(state.detent.title)
+            .accessibilityIdentifier("home.panelMenu")
+            .accessibilityAddTraits(.isButton)
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: movePanel(towardMap: true)
@@ -343,14 +370,10 @@ struct HomeView: View {
         }
         .accessibilityAction(named: "Mostrar mais mapa") { movePanel(towardMap: true) }
         .accessibilityAction(named: "Expandir conteúdo") { movePanel(towardMap: false) }
-        .confirmationDialog("Proporção atual: \(state.detent.title)", isPresented: $showingPanelPicker, titleVisibility: .visible) {
-            ForEach(PanelDetent.allCases, id: \.self) { detent in
-                Button(detent.title + (detent == state.detent ? " ✓" : "")) {
-                    settlePanel(detent)
-                }
-            }
-            Button("Cancelar", role: .cancel) {}
-        }
+    }
+
+    private func setMapExpanded(_ expanded: Bool) {
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) { mapExpanded = expanded }
     }
 
     private var controlStyle: AnyShapeStyle {
@@ -379,7 +402,7 @@ struct HomeView: View {
     }
 
     private func clampedMapHeight(_ value: CGFloat, in height: CGFloat) -> CGFloat {
-        max(64, min(value, height - minimumContentHeight - 60))
+        max(min(84, height), min(value, height - minimumContentHeight - 60))
     }
 
     private func mapHeight(in height: CGFloat) -> CGFloat {
@@ -454,21 +477,27 @@ private final class ForegroundLocation: NSObject, ObservableObject, CLLocationMa
 }
 
 private struct MapLocationButtonStyle: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
     var isPill = false
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
-            content.buttonStyle(.glass).buttonBorderShape(isPill ? .capsule : .circle)
+            content.foregroundStyle(colorScheme == .dark ? Color.white : Color.primary).tint(colorScheme == .dark ? .white : .primary).buttonStyle(.glass).buttonBorderShape(isPill ? .capsule : .circle)
         } else {
-            content.background(.regularMaterial, in: Capsule())
+            content.foregroundStyle(colorScheme == .dark ? Color.white : Color.primary).background(.regularMaterial, in: Capsule())
         }
     }
 }
 
 private struct MapPlaceSearch: View {
     let onSelect: (MKMapItem) -> Void
-    @State private var query = ""
+    @State private var query: String
     @State private var results: [MKMapItem] = []
     @State private var message: String?
+
+    init(initialQuery: String = "", onSelect: @escaping (MKMapItem) -> Void) {
+        _query = State(initialValue: initialQuery)
+        self.onSelect = onSelect
+    }
 
     var body: some View {
         NavigationStack {
@@ -550,6 +579,7 @@ private struct LocalFinanceView: View {
     @State private var amount = ""
     @State private var currency = "BRL"
     @State private var kind = ""
+    @FocusState private var financeFieldFocused: Bool
     @State private var editing: UUID?
     @State private var error: String?
 
@@ -599,7 +629,8 @@ private struct LocalFinanceView: View {
             Picker("Moeda", selection: Binding(get: { savings && kind == "saving" ? (goal?.currency ?? currency) : currency }, set: { currency = $0 })) {
                 ForEach(["BRL", "USD", "EUR", "JPY", "KWD"], id: \.self) { Text($0).tag($0) }
             }.disabled(savings && (kind == "saving" || entries.contains { $0.kind == "saving" }))
-            TextField("Valor", text: $amount).keyboardType(.decimalPad)
+            TextField("Valor", text: $amount).keyboardType(.decimalPad).focused($financeFieldFocused)
+            if financeFieldFocused { Button("Fechar teclado") { financeFieldFocused = false } }
             if let error { Text(error).foregroundStyle(.red) }
             Button(editing == nil ? "Salvar registro" : "Salvar alterações") { save(trip: trip, goal: goal) }
             if editing != nil { Button("Cancelar edição") { clearDraft() } }
@@ -649,6 +680,7 @@ private struct LocalFinanceView: View {
             if let index = entries.firstIndex(where: { $0.id == id }) { entries[index] = entry }
             else { entries.append(entry) }
             stored = try JSONEncoder().encode(entries)
+            financeFieldFocused = false
             clearDraft()
         } catch { self.error = "Não foi possível salvar os registros." }
     }
@@ -752,6 +784,8 @@ private struct PinEditor: View {
     let onSaved: (LocalPinPlan) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var camera: MapCameraPosition = .automatic
+    @StateObject private var pinLocation = ForegroundLocation()
+    @State private var searchingAddress = false
     @State private var point: CLLocationCoordinate2D?
     @State private var plan: LocalPinPlan?
     @State private var tripID: String?
@@ -766,9 +800,15 @@ private struct PinEditor: View {
             Form {
                 Section(idea.name) {
                     Text(idea.address)
+                    HStack {
+                        Button { searchingAddress = true } label: { Label("Buscar endereço", systemImage: "magnifyingglass") }
+                        Button { pinLocation.request() } label: { Label("Minha localização", systemImage: "location") }
+                    }.buttonStyle(.borderless)
                     Text("Mova o mapa para posicionar a marca no centro.")
                     Map(position: $camera)
-                        .onMapCameraChange(frequency: .continuous) { point = $0.region.center }
+                        .onMapCameraChange(frequency: .continuous) { update in
+                            if camera.positionedByUser { point = update.region.center }
+                        }
                         .overlay { Image(systemName: "mappin").font(.title).allowsHitTesting(false) }
                         .frame(height: 230)
                 }
@@ -789,6 +829,13 @@ private struct PinEditor: View {
             .navigationTitle("Marcar no mapa")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() }.disabled(busy) } }
             .interactiveDismissDisabled(busy)
+            .sheet(isPresented: $searchingAddress) {
+                MapPlaceSearch(initialQuery: idea.address) { item in
+                    centerMap(on: item.placemark.coordinate)
+                    searchingAddress = false
+                }
+            }
+            .onReceive(pinLocation.$coordinate) { if let coordinate = $0 { centerMap(on: coordinate) } }
             .task {
                 do {
                     let loaded = try await places.loadPinPlan()
@@ -799,9 +846,24 @@ private struct PinEditor: View {
                         camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
                     }
                     plan = loaded
+                    if point == nil || !loaded.pins.contains(where: { $0.ideaID == idea.id }) {
+                        let request = MKLocalSearch.Request()
+                        request.naturalLanguageQuery = idea.address
+                        if let results = try? await MKLocalSearch(request: request).start(),
+                           results.mapItems.count == 1, let match = results.mapItems.first,
+                           !Task.isCancelled {
+                            centerMap(on: match.placemark.coordinate)
+                        }
+                    }
                 } catch { self.error = "Não foi possível abrir os Pins." }
             }
         }
+    }
+
+    private func centerMap(on coordinate: CLLocationCoordinate2D) {
+        point = coordinate
+        camera = .region(MKCoordinateRegion(center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
     }
 
     private func save() {

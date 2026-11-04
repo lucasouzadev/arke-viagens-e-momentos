@@ -35,7 +35,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
-fun TravelMap(modifier: Modifier = Modifier, pins: List<Pair<LocalMapPin, String>> = emptyList(), revealPin: LocalMapPin? = null) {
+fun TravelMap(modifier: Modifier = Modifier, pins: List<Pair<LocalMapPin, String>> = emptyList(), revealPin: LocalMapPin? = null, onPinSelected: (LocalMapPin) -> Unit = {}) {
     if (!BuildConfig.MAPS_CONFIGURED) {
         Column(modifier.padding(20.dp).arkeScrollEdges().verticalScroll(rememberScrollState()).padding(top = 12.dp, bottom = 24.dp)) {
             Text(stringResource(R.string.map_pending), style = MaterialTheme.typography.titleMedium)
@@ -82,7 +82,7 @@ fun TravelMap(modifier: Modifier = Modifier, pins: List<Pair<LocalMapPin, String
         pins.forEach { (pin, name) ->
             key(pin.ideaID, pin.latitude, pin.longitude) {
                 val marker = remember { MarkerState(position = LatLng(pin.latitude, pin.longitude)) }
-                Marker(state = marker, title = name)
+                Marker(state = marker, title = name, onClick = { onPinSelected(pin); true })
             }
         }
     }

@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.arke.core.PlaceDraft
 import androidx.compose.material3.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import dev.arke.core.PanelDetent
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
@@ -45,7 +47,7 @@ import dev.arke.core.PlaceIdea
 
 @Composable
 fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea, String) -> Unit, onEditCancel: () -> Unit,
-    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onFocus: (String?) -> Unit, onPin: (PlaceIdea) -> Unit, onDelete: (String) -> Unit) {
+    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onFocus: (String?) -> Unit, onPin: (PlaceIdea) -> Unit, detent: PanelDetent, onDelete: (String) -> Unit) {
     var focusedID by rememberSaveable { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf<PlaceIdea?>(null) }
     var selectedID by rememberSaveable { mutableStateOf<String?>(null) }
@@ -69,6 +71,20 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
     if (state.ideas.isEmpty()) {
         Text("Guarde seu próximo lugar com +", style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), textAlign = TextAlign.Center)
+    } else if (detent == PanelDetent.EXPLORE) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.ideas.forEach { idea ->
+                TextButton(onClick = { focusedID = idea.id; selectedID = idea.id }) {
+                    Column(Modifier.width(80.dp)) {
+                        val thumbnail = remember(idea.cover) { decodePlaceCover(idea.cover) }
+                        if (thumbnail != null) Image(thumbnail.asImageBitmap(), null,
+                            Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+                        else Text("◉", Modifier.height(50.dp))
+                        Text(idea.name, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
     } else {
         val index = state.ideas.indexOfFirst { it.id == focusedID }.coerceAtLeast(0)
         val idea = state.ideas[index]
@@ -91,7 +107,7 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                 val shape = RoundedCornerShape(24.dp)
                 val surface = arkeInsetColor()
                 val cover = remember(idea.cover) { decodePlaceCover(idea.cover) }
-                Box(Modifier.fillMaxWidth().clip(shape).background(surface).pointerInput(previous?.id, next?.id) {
+                Box(Modifier.fillMaxWidth().clip(shape).pointerInput(previous?.id, next?.id) {
                     var distance = 0f
                     detectHorizontalDragGestures(
                         onDragStart = { distance = 0f },
@@ -116,7 +132,7 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                         val paper = MaterialTheme.colorScheme.surface
                         Image(
                             cover.asImageBitmap(), contentDescription = null,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(148.dp)
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(if (detent == PanelDetent.DETAILS) 210.dp else 148.dp)
                                 .drawBehind {
                                     val radius = 4.dp.toPx()
                                     val edge = Path().apply {

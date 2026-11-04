@@ -13,7 +13,7 @@ data class PlaceDraft(
     val link: String = "",
     val cover: String = "",
 ) {
-    fun normalized() = copy(name = name.trim(), address = address.trim(), note = note.trim(), link = link.trim())
+    fun normalized() = copy(name = name.trim(), address = address.trim(), note = note.trim(), link = webLink(link) ?: link.trim())
     val isEmpty: Boolean get() = normalized().let { it.name.isEmpty() && it.address.isEmpty() && it.note.isEmpty() && it.link.isEmpty() && it.cover.isEmpty() }
     val issue: PlaceDraftIssue? get() {
         val value = normalized()
@@ -37,7 +37,14 @@ data class PlaceIdea(val id: String, val name: String, val address: String, val 
 }
 
 fun webLink(value: String): String? {
-    if (value.toByteArray().size > 2048) return null
-    val uri = runCatching { URI(value) }.getOrNull() ?: return null
-    return value.takeIf { uri.scheme?.lowercase() in setOf("http", "https") && uri.host != null && uri.userInfo == null }
+    val trimmed = value.trim()
+    val explicitScheme = Regex("^[A-Za-z][A-Za-z0-9+.-]*:").containsMatchIn(trimmed)
+    val candidate = if (explicitScheme) trimmed else "https://$trimmed"
+    if (trimmed.startsWith("/") || candidate.toByteArray().size > 2048) return null
+    val uri = runCatching { URI(candidate) }.getOrNull() ?: return null
+    val host = uri.host ?: return null
+    return candidate.takeIf {
+        uri.scheme?.lowercase() in setOf("http", "https") && uri.userInfo == null &&
+            (explicitScheme || '.' in host)
+    }
 }
