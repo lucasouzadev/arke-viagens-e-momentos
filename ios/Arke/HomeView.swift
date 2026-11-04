@@ -98,6 +98,7 @@ struct HomeView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        .accessibilityIdentifier("home.contentBody")
                         .safeAreaInset(edge: .top, spacing: 0) {
                             VStack(alignment: .leading, spacing: 6) {
                                 cardHeader
@@ -114,7 +115,6 @@ struct HomeView: View {
                         .frame(maxHeight: .infinity)
                         .arkeScrollEdges()
                         .scrollDismissesKeyboard(.interactively)
-                        .accessibilityIdentifier("home.contentBody")
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
