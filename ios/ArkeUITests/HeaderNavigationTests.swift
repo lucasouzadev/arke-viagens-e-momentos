@@ -168,6 +168,9 @@ final class HeaderNavigationTests: XCTestCase {
         add(dragCapture)
         expectation(for: NSPredicate(format: "value == %@", "Explorar"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
+        let balancedStart = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        balancedStart.press(forDuration: 0.1, thenDragTo:
+            balancedStart.withOffset(CGVector(dx: 0, dy: -app.frame.height * 0.15)))
         expectation(for: NSPredicate(format: "value == %@", "Equilibrado"), evaluatedWith: handle)
         waitForExpectations(timeout: 5)
     }
