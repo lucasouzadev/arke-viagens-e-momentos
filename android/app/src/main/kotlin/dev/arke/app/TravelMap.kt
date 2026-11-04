@@ -97,6 +97,10 @@ fun TravelMap(modifier: Modifier = Modifier, pins: List<Pair<LocalMapPin, String
 
 @Composable
 fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit, onSaved: (LocalPinPlan) -> Unit) {
+    val context = LocalContext.current
+    var query by remember(idea.id) { mutableStateOf(idea.address) }
+    var searching by remember { mutableStateOf(false) }
+    var matches by remember { mutableStateOf<List<android.location.Address>>(emptyList()) }
     var plan by remember { mutableStateOf<LocalPinPlan?>(null) }
     var point by remember { mutableStateOf<LatLng?>(null) }
     var tripID by remember { mutableStateOf<String?>(null) }
@@ -109,6 +113,20 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
     val camera = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(0.0, 0.0), 2f)
     }
+    fun selectAddress(address: android.location.Address) {
+        val coordinate = LatLng(address.latitude, address.longitude)
+        point = coordinate
+        camera.position = CameraPosition.fromLatLngZoom(coordinate, 14f)
+        matches = emptyList()
+    }
+    @Suppress("DEPRECATION")
+    suspend fun findAddresses(phrase: String): List<android.location.Address> =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            if (android.location.Geocoder.isPresent()) {
+                android.location.Geocoder(context).getFromLocationName(phrase, 5).orEmpty()
+                    .filter { it.hasLatitude() && it.hasLongitude() }
+            } else emptyList()
+        }
     LaunchedEffect(idea.id) {
         try {
             val loaded = places.loadPinPlan()
@@ -119,6 +137,11 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
                 camera.position = CameraPosition.fromLatLngZoom(center, 14f)
             }
             plan = loaded
+            if (BuildConfig.MAPS_CONFIGURED && point == null) {
+                matches = try { findAddresses(idea.address) }
+                    catch (_: java.io.IOException) { emptyList() }
+                if (point == null) matches.singleOrNull()?.let(::selectAddress)
+            }
         } catch (failure: Exception) {
             if (failure is kotlinx.coroutines.CancellationException) throw failure
             error = "Não foi possível abrir os Pins."
@@ -133,6 +156,25 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
                 Text(idea.name, style = MaterialTheme.typography.titleMedium)
                 Text(idea.address)
                 if (BuildConfig.MAPS_CONFIGURED) {
+                    OutlinedTextField(query, { query = it }, label = { Text("Buscar endereço") }, singleLine = true)
+                    TextButton(enabled = query.isNotBlank() && !searching, onClick = {
+                        searching = true
+                        error = null
+                        scope.launch {
+                            try {
+                                matches = findAddresses(query)
+                                if (matches.isEmpty()) error = "Endereço não encontrado. Você pode tocar no mapa."
+                                matches.singleOrNull()?.let(::selectAddress)
+                            } catch (_: java.io.IOException) {
+                                error = "Não foi possível buscar o endereço."
+                            } finally { searching = false }
+                        }
+                    }) { Text("Buscar") }
+                    matches.forEach { address ->
+                        TextButton(onClick = { selectAddress(address) }) {
+                            Text(address.getAddressLine(0) ?: address.featureName ?: "Usar este ponto")
+                        }
+                    }
                     Text("Toque no mapa para posicionar a marca.")
                     GoogleMap(Modifier.fillMaxWidth().height(220.dp), cameraPositionState = camera,
                         onMapClick = { point = it }) {
