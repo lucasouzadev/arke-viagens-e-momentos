@@ -239,12 +239,13 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                 }
             }
             key(selectedID) {
+                val detailScroll = rememberScrollState()
                 Column(Modifier.fillMaxWidth().weight(1f, fill = false).drawWithContent {
                     drawContent()
-                    drawRect(Brush.verticalGradient(listOf(sheetColor, Color.Transparent), 0f, 12.dp.toPx()))
-                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
+                    if (detailScroll.canScrollBackward) drawRect(Brush.verticalGradient(listOf(sheetColor, Color.Transparent), 0f, 12.dp.toPx()))
+                    if (detailScroll.canScrollForward) drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
                         startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f), endY = size.height))
-                }.verticalScroll(rememberScrollState()).testTag("detail.body").padding(top = 24.dp, bottom = 48.dp),
+                }.verticalScroll(detailScroll).testTag("detail.body").padding(vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     if (index >= 0) {
                         val idea = ideas[index]

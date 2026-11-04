@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var showingTrips = false
     @State private var pinPlan: LocalPinPlan?
     @State private var pinIdea: PlaceIdea?
+    @State private var mapDetailIdea: PlaceIdea?
     @State private var selectedMapPin: String?
     @State private var tripPath: [String] = []
     @State private var focusedIdeaID: String?
@@ -215,7 +216,7 @@ struct HomeView: View {
                 tripPath = [tripID]
                 showingTrips = true
             } else if let idea = places.ideas.first(where: { $0.id == id }) {
-                pinIdea = idea
+                mapDetailIdea = idea
             }
             selectedMapPin = nil
         }
@@ -296,6 +297,9 @@ struct HomeView: View {
                 .navigationTitle("Viagens")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { showingTrips = false } } }
             }
+        }
+        .sheet(item: $mapDetailIdea) { idea in
+            PlaceDetails(ideas: places.ideas, initialID: idea.id) { mapDetailIdea = nil }
         }
         .sheet(item: $pinIdea) { idea in
             PinEditor(idea: idea, places: places) { plan in

@@ -27,6 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
@@ -174,6 +177,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
     var showingTrips by rememberSaveable { mutableStateOf(false) }
+    var mapDetailIdeaID by rememberSaveable { mutableStateOf<String?>(null) }
     var pinToShare by remember { mutableStateOf<Pair<String, LocalMapPin>?>(null) }
     var tripDetailsID by rememberSaveable { mutableStateOf<String?>(null) }
     var pinPlan by remember { mutableStateOf<LocalPinPlan?>(null) }
@@ -274,17 +278,11 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     ) {
-                        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
-                            CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
-                            if (state.context == TravelContext.PLANNING && state.detent != PanelDetent.EXPLORE) {
-                                placeState.ideas.firstOrNull { it.id == focusedIdeaID }?.let { idea ->
-                                    Text(idea.name, style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
-                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                }
-                            }
-                            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-                            Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {
+                        var headerHeight by remember { mutableIntStateOf(0) }
+                        val scroll = rememberScrollState()
+                        Box(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                            Column(Modifier.fillMaxSize().testTag("home.contentBody").verticalScroll(scroll)
+                                .padding(top = with(density) { headerHeight.toDp() })) {
                                 if (state.context == TravelContext.PLANNING) {
                                     TextButton(onClick = { showingTrips = true }) { Text("Viagens") }
                                 }
@@ -320,6 +318,20 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                 } else if (placeState.busy) Text(stringResource(R.string.loading_places))
 
                             }
+                            val headerColor = MaterialTheme.colorScheme.surface
+                            Column(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }
+                                .background(Brush.verticalGradient(listOf(headerColor, headerColor,
+                                    if (scroll.value > 0) Color.Transparent else headerColor)))
+                                .padding(top = 16.dp, bottom = 10.dp)) {
+                                CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
+                                if (state.context == TravelContext.PLANNING && state.detent != PanelDetent.EXPLORE) {
+                                    placeState.ideas.firstOrNull { it.id == focusedIdeaID }?.let { idea ->
+                                        Text(idea.name, style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -347,7 +359,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                 tripDetailsID = pin.tripID
                                 showingTrips = true
                             } else {
-                                pinIdea = placeState.ideas.firstOrNull { it.id == pin.ideaID }
+                                mapDetailIdeaID = pin.ideaID
                             }
                         })
                         val focusedIdea = placeState.ideas.firstOrNull { it.id == focusedIdeaID }
@@ -392,6 +404,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
             }
         }
     }
+    mapDetailIdeaID?.let { id -> PlaceDetails(placeState.ideas, id) { mapDetailIdeaID = null } }
     pinToShare?.let { (name, pin) -> SharePinDialog(name, pin) { pinToShare = null } }
     if (showingTrips && pinToShare == null) {
         val plan = pinPlan
