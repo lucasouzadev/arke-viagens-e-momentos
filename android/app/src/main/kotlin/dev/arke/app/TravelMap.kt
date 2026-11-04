@@ -113,6 +113,33 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
     val camera = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(0.0, 0.0), 2f)
     }
+    fun locatePin() {
+        val manager = context.getSystemService(LocationManager::class.java)
+        if (!manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            error = "Ative a localização para usar sua posição."
+            return
+        }
+        try {
+            LocationManagerCompat.getCurrentLocation(
+                manager, LocationManager.NETWORK_PROVIDER, android.os.CancellationSignal(),
+                ContextCompat.getMainExecutor(context),
+            ) { location ->
+                if (location == null) {
+                    error = "Não foi possível obter sua posição."
+                } else {
+                    val coordinate = LatLng(location.latitude, location.longitude)
+                    point = coordinate
+                    camera.position = CameraPosition.fromLatLngZoom(coordinate, 14f)
+                    error = null
+                }
+            }
+        } catch (_: SecurityException) {
+            error = "Permita a localização para usar sua posição."
+        }
+    }
+    val pinPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) locatePin() else error = "Você pode escolher um ponto no mapa sem usar sua localização."
+    }
     fun selectAddress(address: android.location.Address) {
         val coordinate = LatLng(address.latitude, address.longitude)
         point = coordinate
@@ -175,6 +202,13 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
                             Text(address.getAddressLine(0) ?: address.featureName ?: "Usar este ponto")
                         }
                     }
+                    TextButton(onClick = {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                            locatePin()
+                        } else {
+                            pinPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        }
+                    }) { Text("Minha localização") }
                     Text("Toque no mapa para posicionar a marca.")
                     GoogleMap(Modifier.fillMaxWidth().height(220.dp), cameraPositionState = camera,
                         onMapClick = { point = it }) {

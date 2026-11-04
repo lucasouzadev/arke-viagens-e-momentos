@@ -10,6 +10,7 @@ struct PlaceEditor: View {
     let onCancel: () -> Void
     let original: PlaceIdea?
     @State private var draft = PlaceDraft()
+    @State private var editorDetent: PresentationDetent = .fraction(0.78)
     @State private var reviewing = false
     @State private var submitted = false
     @State private var confirmingDiscard = false
@@ -107,6 +108,7 @@ struct PlaceEditor: View {
                             .padding(.top, 24).padding(.bottom, 16)
                             }
                         }
+                        .modifier(ArkeScrollEdges(active: editorDetent == .large))
                         .scrollDismissesKeyboard(.interactively)
                         .accessibilityIdentifier("place.fields").scrollIndicators(.hidden)
                         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -148,7 +150,7 @@ struct PlaceEditor: View {
             }
         }
         .tint(actionInk)
-        .presentationDetents([.fraction(0.78), .large])
+        .presentationDetents([.fraction(0.78), .large], selection: $editorDetent)
         .interactiveDismissDisabled(hasChanges || saving)
         .task(id: coverSelection) { await loadCover() }
     }

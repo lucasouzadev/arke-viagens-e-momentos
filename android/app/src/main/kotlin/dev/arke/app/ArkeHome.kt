@@ -300,8 +300,21 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                         onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }, detent = state.detent) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         if (state.context == TravelContext.EXPENSES || state.context == TravelContext.SAVINGS) {
-                                            LocalFinanceContent(pinPlan?.trips.orEmpty(), savings = state.context == TravelContext.SAVINGS)
-                                        } else Text("Em breve.")
+                                            if (state.detent == PanelDetent.EXPLORE) {
+                                                TextButton(onClick = { state = state.setDetent(PanelDetent.DETAILS) }) {
+                                                    Text(stringResource(state.context.title()))
+                                                }
+                                            } else {
+                                                LocalFinanceContent(pinPlan?.trips.orEmpty(), savings = state.context == TravelContext.SAVINGS,
+                                                    detailed = state.detent == PanelDetent.DETAILS)
+                                            }
+                                        } else {
+                                            Text(stringResource(state.context.title()), style = MaterialTheme.typography.titleMedium)
+                                            if (state.detent != PanelDetent.EXPLORE) {
+                                                Text(if (state.context == TravelContext.REVIEWS) "As avaliações das suas viagens aparecerão aqui."
+                                                    else "As fotos e os selos das suas viagens aparecerão aqui.")
+                                            }
+                                        }
                                         TextButton(onClick = { state = state.selectContext(TravelContext.PLANNING) }) { Text(stringResource(R.string.view_places)) }
                                     }
                                 } else if (placeState.busy) Text(stringResource(R.string.loading_places))
@@ -534,7 +547,7 @@ private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (Pan
 }
 
 @Composable
-private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean) {
+private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, detailed: Boolean) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val financeFocus = LocalFocusManager.current
     val prefs = remember(context) { context.getSharedPreferences("arke.local-finance.v1", 0) }
@@ -579,6 +592,7 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean) {
     if (savings && goal != null && goalCurrency != null) {
         val total = contributions.filter { it.getString("currency") == goalCurrency }.sumOf { it.getLong("amount") }
         Text("Reservado: ${formatted(total, goalCurrency)} / ${formatted(goal.getLong("amount"), goalCurrency)}")
+        LinearProgressIndicator(progress = { (total.toDouble() / goal.getLong("amount")).toFloat().coerceIn(0f, 1f) })
         Text("Falta: ${formatted((goal.getLong("amount") - total).coerceAtLeast(0), goalCurrency)}")
     }
     if (!savings) {
@@ -587,7 +601,7 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean) {
             Text("Realizado: ${formatted(subtotal.filter { it.getString("kind") == "incurred" }.sumOf { it.getLong("amount") }, code)}")
         }
     }
-    entries.forEach { entry ->
+    (if (detailed) entries else entries.takeLast(3)).forEach { entry ->
         val code = entry.getString("currency")
         TextButton(onClick = {
             editing = entry.getString("id")

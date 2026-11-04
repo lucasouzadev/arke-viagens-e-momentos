@@ -56,14 +56,6 @@ struct HomeView: View {
                         .zIndex(1)
 
                     VStack(spacing: 12) {
-                        cardHeader
-                        if state.context == .planning, state.detent != .explore,
-                           let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
-                            Text(idea.name).arkeText(.caption).foregroundStyle(.secondary)
-                                .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                                .accessibilityLabel("Lugar selecionado: " + idea.name)
-                        }
-                        Divider()
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
                             if state.context == .planning {
@@ -82,14 +74,42 @@ struct HomeView: View {
                                         }, onPin: { pinIdea = $0 }, onDetailsVisibilityChanged: { showingSavedDetails = $0 }, focusedID: $focusedIdeaID, detent: state.detent)
                                     } else {
                                         if state.context == .expenses || state.context == .savings {
-                                            LocalFinanceView(trips: pinPlan?.trips ?? [], savings: state.context == .savings)
-                                                .id(state.context.rawValue)
-                                        } else { Text("Em breve.") }
+                                            if state.detent == .explore {
+                                                Button { settlePanel(.details) } label: {
+                                                    Label(state.context.title, systemImage: state.context == .expenses ? "receipt" : "chart.bar.fill")
+                                                }
+                                                .frame(minHeight: 44)
+                                            } else {
+                                                LocalFinanceView(trips: pinPlan?.trips ?? [], savings: state.context == .savings,
+                                                                 detailed: state.detent == .details)
+                                                    .id(state.context.rawValue)
+                                            }
+                                        } else {
+                                            Label(state.context.title, systemImage: state.context == .reviews ? "star" : "photo.on.rectangle")
+                                                .arkeText(.contextTitle)
+                                            if state.detent != .explore {
+                                                Text(state.context == .reviews ? "As avaliações das suas viagens aparecerão aqui." : "As fotos e os selos das suas viagens aparecerão aqui.")
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
                                         Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
                                     }
                                 } else if places.busy { ProgressView("Abrindo seus lugares…") }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .safeAreaInset(edge: .top, spacing: 0) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                cardHeader
+                                if state.context == .planning, state.detent != .explore,
+                                   let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
+                                    Text(idea.name).arkeText(.caption).foregroundStyle(.secondary)
+                                        .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                                        .accessibilityLabel("Lugar selecionado: " + idea.name)
+                                }
+                            }
+                            .padding(.bottom, 8)
+                            .background(.regularMaterial)
                         }
                         .frame(maxHeight: .infinity)
                         .arkeScrollEdges()
@@ -203,6 +223,7 @@ struct HomeView: View {
             Button("Entendi", role: .cancel) { location.message = nil }
         } message: { Text(location.message ?? "") }
         .arkeText(.body)
+        .scrollIndicators(.hidden)
         .padding(16)
         .background(Color(uiColor: .systemGroupedBackground))
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
@@ -579,6 +600,7 @@ private struct LocalFinanceView: View {
 
     let trips: [LocalPinTrip]
     let savings: Bool
+    let detailed: Bool
     @AppStorage("arke.local-finance.v1") private var stored = Data()
     @State private var selectedTrip = ""
     @State private var name = ""
@@ -606,6 +628,8 @@ private struct LocalFinanceView: View {
             if savings, let goal {
                 let total = entries.filter { $0.kind == "saving" && $0.currency == goal.currency }.reduce(Int64(0)) { $0 + $1.amount }
                 Text("Reservado: \(formatted(total, goal.currency)) / \(formatted(goal.amount, goal.currency))")
+                ProgressView(value: min(Double(total), Double(goal.amount)), total: Double(goal.amount))
+                    .accessibilityLabel("Progresso da meta")
                 Text("Falta: \(formatted(max(0, goal.amount - total), goal.currency))")
             }
             if !savings {
@@ -615,7 +639,7 @@ private struct LocalFinanceView: View {
                     Text("Realizado: \(formatted(subtotal.filter { $0.kind == "incurred" }.reduce(0) { $0 + $1.amount }, code))")
                 }
             }
-            ForEach(entries) { entry in
+            ForEach(detailed ? entries : Array(entries.suffix(3))) { entry in
                 Button {
                     editing = entry.id; name = entry.name; currency = entry.currency; kind = entry.kind
                     amount = displayAmount(entry.amount, code: entry.currency)
