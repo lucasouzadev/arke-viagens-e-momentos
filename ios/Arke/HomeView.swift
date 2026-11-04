@@ -699,6 +699,20 @@ private struct TripJournalView: View {
             Text("Crie uma viagem local para começar.").foregroundStyle(.secondary)
         }
     }
+    private func journalCover(_ entry: Entry) -> UIImage? {
+        #if DEBUG
+        if preview {
+            return UIGraphicsImageRenderer(size: CGSize(width: 360, height: 210)).image { context in
+                UIColor(red: 0.23, green: 0.50, blue: 0.62, alpha: 1).setFill()
+                context.fill(CGRect(x: 0, y: 0, width: 360, height: 210))
+                UIImage(systemName: "building.columns.fill")?.withTintColor(.white, renderingMode: .alwaysOriginal)
+                    .draw(in: CGRect(x: 125, y: 48, width: 110, height: 110))
+            }
+        }
+        #endif
+        guard let cover = ideas.first(where: { $0.id == entry.placeID })?.cover else { return nil }
+        return UIImage(data: cover)
+    }
 }
 private struct LocalFinanceView: View {
     struct Entry: Codable, Identifiable {
