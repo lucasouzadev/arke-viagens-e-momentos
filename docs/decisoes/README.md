@@ -16,3 +16,5 @@ Status **Aceita** significa decisão de produto/arquitetura/documentação, **n�
 - [ADR-012 — Paridade de UI/UX entre plataformas](ADR-012.md)
 
 Uma alteração que contradiga decisão aceita precisa registrar motivo, alternativas e consequências em novo ADR. **Aprovação de uma regra não aprova propostas anexas ainda pendentes.**
+
+- [ADR-013 — Acesso a viagens compartilhadas](ADR-013.md)

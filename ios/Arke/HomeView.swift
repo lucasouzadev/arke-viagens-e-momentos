@@ -8,6 +8,7 @@ struct HomeView: View {
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
     @StateObject private var location = ForegroundLocation()
     @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)))
+    @State private var showingTrips = false
     @State private var pinPlan: LocalPinPlan?
     @State private var pinIdea: PlaceIdea?
     @State private var focusedIdeaID: String?
@@ -56,6 +57,9 @@ struct HomeView: View {
                         Divider()
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
+                            if state.context == .planning {
+                                Button { showingTrips = true } label: { Label("Viagens", systemImage: "suitcase") }
+                            }
                                 if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
                                 if let error = places.error, !showingAddPlace {
                                     Text(error).foregroundStyle(Color(uiColor: .systemRed))
@@ -198,6 +202,36 @@ struct HomeView: View {
             .presentationDragIndicator(.visible)
         }
         .task { pinPlan = try? await places.loadPinPlan() }
+        .sheet(isPresented: $showingTrips) {
+            NavigationStack {
+                List {
+                    if let plan = pinPlan {
+                        if plan.trips.isEmpty { Text("Suas viagens aparecem aqui quando você vincula um Pin.") }
+                        ForEach(plan.trips, id: \.id) { trip in
+                            NavigationLink(trip.title) {
+                                List {
+                                    let ideas = places.ideas.filter { idea in
+                                        plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
+                                    }
+                                    if ideas.isEmpty { Text("Nenhum Pin nesta viagem.") }
+                                    ForEach(ideas) { idea in
+                                        VStack(alignment: .leading) {
+                                            Text(idea.name).font(.headline)
+                                            Text(idea.address).foregroundStyle(.secondary)
+                                            if let pin = plan.pins.first(where: { $0.ideaID == idea.id }) {
+                                                NavigationLink("Compartilhar Pin") { SharePinForm(name: idea.name, pin: pin) }
+                                            }
+                                        }
+                                    }
+                                }.navigationTitle(trip.title)
+                            }
+                        }
+                    } else { Text("Não foi possível abrir as viagens.") }
+                }
+                .navigationTitle("Viagens")
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { showingTrips = false } } }
+            }
+        }
         .sheet(item: $pinIdea) { idea in
             PinEditor(idea: idea, places: places) { plan in
                 pinPlan = plan
@@ -493,6 +527,100 @@ private struct MapSearchMotion: ViewModifier {
 }
 
 
+
+private struct SharePinForm: View {
+    struct Trip: Decodable, Identifiable { let id: UUID; let title: String }
+    struct Session: Decodable { let access_token: String }
+    let name: String
+    let pin: LocalMapPin
+    @State private var email = ""
+    @State private var password = ""
+    @State private var token: String?
+    @State private var trips: [Trip] = []
+    @State private var destination: UUID?
+    @State private var newTitle = ""
+    @State private var busy = false
+    @State private var message: String?
+    @State private var published = false
+
+    var body: some View {
+        Form {
+            Text("Compartilhará o nome e as coordenadas de \(name) com os membros da viagem escolhida.")
+            if let token {
+                Picker("Viagem compartilhada", selection: $destination) {
+                    Text("Escolha uma viagem").tag(nil as UUID?)
+                    ForEach(trips) { Text($0.title).tag(Optional($0.id)) }
+                }
+                Button("Confirmar compartilhamento") {
+                    guard let destination else { return }
+                    perform {
+                        _ = try await request("/rest/v1/shared_trip_pins", token: token, body: [
+                            "trip_id": destination.uuidString, "title": name,
+                            "latitude": pin.latitude, "longitude": pin.longitude
+                        ])
+                        published = true
+                        message = "Pin compartilhado."
+                    }
+                }.disabled(destination == nil || published)
+                if !published {
+                    TextField("Nome da nova viagem compartilhada", text: $newTitle)
+                    Button("Criar viagem compartilhada") {
+                        perform {
+                            let data = try await request("/rest/v1/shared_trips", token: token, body: ["title": newTitle], representation: true)
+                            let created = try JSONDecoder().decode([Trip].self, from: data)
+                            trips.append(contentsOf: created)
+                            destination = created.first?.id
+                            newTitle = ""
+                        }
+                    }.disabled(newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            } else {
+                TextField("E-mail", text: $email).keyboardType(.emailAddress).textInputAutocapitalization(.never)
+                SecureField("Senha", text: $password)
+                Button("Entrar") {
+                    perform {
+                        defer { password = "" }
+                        let auth = try await request("/auth/v1/token?grant_type=password", body: ["email": email, "password": password])
+                        let session = try JSONDecoder().decode(Session.self, from: auth)
+                        let data = try await request("/rest/v1/shared_trips?select=id,title&order=title", token: session.access_token)
+                        trips = try JSONDecoder().decode([Trip].self, from: data)
+                        token = session.access_token
+                    }
+                }.disabled(email.isEmpty || password.isEmpty)
+            }
+            if let message { Text(message) }
+        }.disabled(busy)
+            .interactiveDismissDisabled(busy)
+            .navigationTitle("Compartilhar Pin")
+    }
+
+    private func perform(_ action: @escaping () async throws -> Void) {
+        busy = true
+        message = nil
+        Task {
+            defer { busy = false }
+            do { try await action() }
+            catch { message = "Não foi possível concluir. Confira a conexão e suas permissões." }
+        }
+    }
+
+    private func request(_ path: String, token: String? = nil, body: [String: Any]? = nil, representation: Bool = false) async throws -> Data {
+        var request = URLRequest(url: URL(string: "https://nbfvflfjegiufbtyjuch.supabase.co" + path)!)
+        request.setValue("sb_publishable_KN5XnD4anPn4_vANwr_-Fg_4_UZIsGB", forHTTPHeaderField: "apikey")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if representation { request.setValue("return=representation", forHTTPHeaderField: "Prefer") }
+        if let body {
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+}
 private struct PinEditor: View {
     let idea: PlaceIdea
     let places: PlaceIdeasStore

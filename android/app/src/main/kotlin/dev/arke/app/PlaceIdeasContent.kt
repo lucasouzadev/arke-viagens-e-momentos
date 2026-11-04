@@ -10,7 +10,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
@@ -108,9 +113,32 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                     Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     if (cover != null) {
-                        Image(cover.asImageBitmap(), contentDescription = null,
+                        val paper = MaterialTheme.colorScheme.surface
+                        Image(
+                            cover.asImageBitmap(), contentDescription = null,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(148.dp)
-                                .clip(RoundedCornerShape(12.dp)), contentScale = ContentScale.Fit)
+                                .drawBehind {
+                                    val radius = 4.dp.toPx()
+                                    val edge = Path().apply {
+                                        fillType = PathFillType.EvenOdd
+                                        addRect(Rect(0f, 0f, size.width, size.height))
+                                        fun perforate(x: Float, y: Float) {
+                                            addOval(Rect(x - radius, y - radius, x + radius, y + radius))
+                                        }
+                                        val spacing = 14.dp.toPx()
+                                        for (column in 1 until (size.width / spacing).toInt()) {
+                                            perforate(column * spacing, 0f)
+                                            perforate(column * spacing, size.height)
+                                        }
+                                        for (row in 1 until (size.height / spacing).toInt()) {
+                                            perforate(0f, row * spacing)
+                                            perforate(size.width, row * spacing)
+                                        }
+                                    }
+                                    clipRect { drawPath(edge, paper) }
+                                }.padding(10.dp),
+                            contentScale = ContentScale.Fit,
+                        )
                     }
                     TextButton(onClick = { onPin(idea) }) { Text("Marcar no mapa") }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

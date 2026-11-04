@@ -2,6 +2,19 @@
 
 **Status:** proposta de contrato; nenhum backend nem autenticação foi implementado.
 
+## Primeiro recorte de colaboração aprovado
+
+A ação **Participantes** abre a lista de membros e convites de uma viagem. O proprietário convida uma conta identificada e escolhe entre **Leitor** e **Editor**. O destinatário autenticado vê a viagem e o papel antes de aceitar. Um Leitor consulta o roteiro compartilhado. Um Editor também pode adicionar itens e editar os que criou. O proprietário administra participantes e convites e pode editar o roteiro compartilhado.
+
+- Convites são vinculados à viagem e ao destinatário, expiram em sete dias, têm uso único e podem ser revogados antes do aceite. Aceite e revogação são operações atômicas no servidor.
+- A viagem local só passa a ter uma versão compartilhada por ação explícita do proprietário. Os Pins pessoais continuam locais até que a pessoa selecione individualmente o que deseja compartilhar.
+- Remover um participante bloqueia novas leituras e escritas. O aplicativo descarta o cache compartilhado ao confirmar a revogação. O primeiro recorte exige conexão para ler ou editar conteúdo compartilhado, aceitar convites e administrar membros.
+- Cofrinho, despesas, memórias, transferência de propriedade e exclusão de viagem compartilhada ficam para recortes próprios.
+
+**Aceite técnico.** Testar proprietário, editor, leitor, conta externa e membro removido. Cobrir acesso direto por ID, tentativa de editar conteúdo de outro autor, convite expirado ou revogado, dois aceites concorrentes e preservação dos Pins pessoais ao ativar o grupo.
+
+**Decisão registrada.** Os papéis e o prazo de sete dias foram aprovados para este recorte. A infraestrutura de autenticação e dados continua em aberto. Consulte [ADR-013](../decisoes/ADR-013.md).
+
 ## Princípio
 
 Uma viagem (`Trip`) tem um ou mais membros. **Não existem duas espécies de Trip** (“solo” e “grupo”); mudar composição não recria a viagem nem seus Pins.

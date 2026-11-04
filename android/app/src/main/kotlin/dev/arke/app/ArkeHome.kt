@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -42,6 +43,122 @@ import dev.arke.core.HomeState
 import dev.arke.core.PanelDetent
 import dev.arke.core.TravelContext
 
+@Composable
+private fun SharePinDialog(name: String, pin: LocalMapPin, onClose: () -> Unit) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf<String?>(null) }
+    var trips by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var destination by remember { mutableStateOf<String?>(null) }
+    var title by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var published by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    fun perform(action: suspend () -> Unit) {
+        if (busy) return
+        busy = true
+        message = null
+        scope.launch {
+            try { action() }
+            catch (failure: Exception) {
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                message = "Não foi possível concluir. Confira a conexão e suas permissões."
+            } finally { busy = false }
+        }
+    }
+
+    val session = token
+    AlertDialog(
+        onDismissRequest = { if (!busy) onClose() },
+        title = { Text("Compartilhar Pin") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("Compartilhará o nome e as coordenadas de $name com os membros da viagem escolhida.")
+                if (session == null) {
+                    OutlinedTextField(email, { email = it }, label = { Text("E-mail") }, singleLine = true, enabled = !busy)
+                    OutlinedTextField(password, { password = it }, label = { Text("Senha") }, singleLine = true, enabled = !busy,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
+                } else if (!published) {
+                    trips.forEach { (id, tripTitle) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = destination == id, onClick = { destination = id }, enabled = !busy)
+                            Text(tripTitle)
+                        }
+                    }
+                    OutlinedTextField(title, { title = it }, label = { Text("Nome da nova viagem compartilhada") }, singleLine = true, enabled = !busy)
+                    TextButton(enabled = title.isNotBlank() && !busy, onClick = {
+                        perform {
+                            val created = org.json.JSONArray(arkeCollaborationRequest("/rest/v1/shared_trips", session,
+                                org.json.JSONObject().put("title", title), representation = true)).getJSONObject(0)
+                            val id = created.getString("id")
+                            trips = trips + (id to created.getString("title"))
+                            destination = id
+                            title = ""
+                        }
+                    }) { Text("Criar viagem compartilhada") }
+                }
+                message?.let { Text(it) }
+            }
+        },
+        confirmButton = {
+            if (!published) TextButton(
+                enabled = !busy && (if (session == null) email.isNotBlank() && password.isNotEmpty() else destination != null),
+                onClick = {
+                    perform {
+                        if (session == null) {
+                            val response = try {
+                                arkeCollaborationRequest("/auth/v1/token?grant_type=password", body =
+                                    org.json.JSONObject().put("email", email).put("password", password))
+                            } finally { password = "" }
+                            val access = org.json.JSONObject(response).getString("access_token")
+                            val rows = org.json.JSONArray(arkeCollaborationRequest("/rest/v1/shared_trips?select=id,title&order=title", access))
+                            trips = (0 until rows.length()).map { index ->
+                                rows.getJSONObject(index).let { it.getString("id") to it.getString("title") }
+                            }
+                            token = access
+                        } else {
+                            arkeCollaborationRequest("/rest/v1/shared_trip_pins", session, org.json.JSONObject()
+                                .put("trip_id", requireNotNull(destination)).put("title", name)
+                                .put("latitude", pin.latitude).put("longitude", pin.longitude))
+                            published = true
+                            message = "Pin compartilhado."
+                        }
+                    }
+                },
+            ) { Text(if (session == null) "Entrar" else "Confirmar compartilhamento") }
+        },
+        dismissButton = { TextButton(onClick = onClose, enabled = !busy) { Text("Fechar") } },
+    )
+}
+
+private suspend fun arkeCollaborationRequest(
+    path: String,
+    token: String? = null,
+    body: org.json.JSONObject? = null,
+    representation: Boolean = false,
+): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    val connection = java.net.URL("https://nbfvflfjegiufbtyjuch.supabase.co" + path)
+        .openConnection() as java.net.HttpURLConnection
+    try {
+        connection.instanceFollowRedirects = false
+        connection.connectTimeout = 15_000
+        connection.readTimeout = 15_000
+        connection.setRequestProperty("apikey", "sb_publishable_KN5XnD4anPn4_vANwr_-Fg_4_UZIsGB")
+        token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
+        if (representation) connection.setRequestProperty("Prefer", "return=representation")
+        if (body != null) {
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+        }
+        check(connection.responseCode in 200..299)
+        connection.inputStream.bufferedReader().use { it.readText() }
+    } finally { connection.disconnect() }
+}
+
 private val HomeStateSaver = Saver<HomeState, List<String>>(
     save = { listOf(it.context.name, it.detent.name) },
     restore = {
@@ -55,6 +172,9 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
     var state by rememberSaveable(stateSaver = HomeStateSaver) { mutableStateOf(HomeState()) }
+    var showingTrips by rememberSaveable { mutableStateOf(false) }
+    var pinToShare by remember { mutableStateOf<Pair<String, LocalMapPin>?>(null) }
+    var tripDetailsID by rememberSaveable { mutableStateOf<String?>(null) }
     var pinPlan by remember { mutableStateOf<LocalPinPlan?>(null) }
     var revealedPin by remember { mutableStateOf<LocalMapPin?>(null) }
     var pinIdea by remember { mutableStateOf<PlaceIdea?>(null) }
@@ -152,6 +272,9 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                             CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
                             HorizontalDivider(Modifier.padding(vertical = 12.dp))
                             Column(Modifier.weight(1f).testTag("home.contentBody").verticalScroll(rememberScrollState())) {
+                                if (state.context == TravelContext.PLANNING) {
+                                    TextButton(onClick = { showingTrips = true }) { Text("Viagens") }
+                                }
                                 if (savedNotice) Text(stringResource(R.string.saved_place_notice), modifier = Modifier.testTag("place.savedNotice"), style = MaterialTheme.typography.bodySmall)
                                 if (placeState.error != null && !showingAddPlace) {
                                     Text(placeState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
@@ -213,6 +336,49 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                 }
             }
         }
+    }
+    pinToShare?.let { (name, pin) -> SharePinDialog(name, pin) { pinToShare = null } }
+    if (showingTrips && pinToShare == null) {
+        val plan = pinPlan
+        val trip = plan?.trips?.firstOrNull { it.id == tripDetailsID }
+        fun closeTrips() {
+            showingTrips = false
+            tripDetailsID = null
+        }
+        AlertDialog(
+            onDismissRequest = { if (trip == null) closeTrips() else tripDetailsID = null },
+            title = { Text(trip?.title ?: "Viagens") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    when {
+                        plan == null -> Text("Não foi possível abrir as viagens.")
+                        trip != null -> {
+                            val ideas = placeState.ideas.filter { idea ->
+                                plan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
+                            }
+                            if (ideas.isEmpty()) Text("Nenhum Pin nesta viagem.")
+                            ideas.forEach { idea ->
+                                Column(Modifier.padding(vertical = 8.dp)) {
+                                    Text(idea.name, style = MaterialTheme.typography.titleMedium)
+                                    Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    plan.pins.firstOrNull { it.ideaID == idea.id }?.let { pin ->
+                                        TextButton(onClick = { pinToShare = idea.name to pin }) { Text("Compartilhar Pin") }
+                                    }
+                                }
+                            }
+                        }
+                        plan.trips.isEmpty() -> Text("Suas viagens aparecem aqui quando você vincula um Pin.")
+                        else -> plan.trips.forEach { item ->
+                            TextButton(onClick = { tripDetailsID = item.id }) { Text(item.title) }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { closeTrips() }) { Text("Fechar") } },
+            dismissButton = {
+                if (trip != null) TextButton(onClick = { tripDetailsID = null }) { Text("Voltar") }
+            },
+        )
     }
     pinIdea?.let { idea ->
         PinEditor(idea, places, onClose = { pinIdea = null }) { plan ->

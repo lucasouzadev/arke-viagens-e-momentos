@@ -5,10 +5,14 @@
 | Tarefa | Entrega | Estado |
 | --- | --- | --- |
 | M5-HOME-REVEAL-01 | Atalho para expandir/recolher o mapa sobre o cartão inferior e mais área útil para a rolagem | Implementado localmente em SwiftUI e Compose; validação pendente |
-| M5-HOME-PLACES-01 | Uma ideia em foco, troca por gesto horizontal ou toque nos nomes vizinhos, rótulo no mapa e capa abaixo das informações | Implementado localmente nas duas plataformas; validação pendente. Selo perfurado no Android pendente |
+| M5-HOME-PLACES-01 | Uma ideia em foco, troca por gesto horizontal ou toque nos nomes vizinhos, rótulo no mapa e capa abaixo das informações | Implementado localmente nas duas plataformas; validação pendente. Selo perfurado no Android implementado localmente; validação visual pendente |
 | M5-PIN-01 | Transformar uma ideia salva em Pin pessoal e vincular a uma viagem opcionalmente | Implementado; CI nativo aprovado. Validação interativa do mapa Android depende de configuração |
+| M5-TRIP-01 | Listar viagens locais e abrir os Pins vinculados | Implementado localmente; validação nativa pendente |
+| M3-GROUP-01 | [Primeiro recorte de colaboração](produto/GROUP-001.md#primeiro-recorte-de-colaboração-aprovado) | Regras de produto aprovadas; autenticação e backend pendentes |
 
-### Aceite do próximo recorte M5-PIN-01
+Depois de Viagens locais, a ordem aprovada é **Grupos e permissões → Gastos e cofrinho → Memórias**. O rateio depende das regras de grupo.
+
+### Aceite do recorte M5-PIN-01
 
 - Partir de uma ideia salva e confirmar explicitamente a posição antes de criar o Pin. O endereço escrito continua disponível, inclusive sem serviço de busca. A seleção manual no mapa depende de um provedor configurado. O fallback deve explicar a indisponibilidade e preservar a ideia.
 - Permitir salvar o Pin sem viagem. Oferecer vínculo opcional a uma viagem local existente e criação explícita de uma viagem quando a lista estiver vazia. Vincular ou desvincular preserva o Pin e seus dados pessoais.

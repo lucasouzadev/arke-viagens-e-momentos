@@ -1,5 +1,7 @@
 # STATUS — Estado verificável do Arke
 
+**Grupos e permissões em integração.** Compartilhar Pin está implementado localmente em iOS e Android. O fluxo entra com uma conta existente do Arke Dev, escolhe ou cria uma viagem compartilhada e confirma o envio de nome e coordenadas. Compilação e validação ponta a ponta pendentes.
+
 **M5-PIN-01 implementado e aprovado no CI nativo.** Seleção de posição, renderização do Pin, vínculo opcional e persistência local implementados. No commit `6d6422c`, o [CI nativo](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41736777742) passou no Android (13 testes instrumentados, lint com 0 erros) e compilou o iOS com os testes unitários aprovados. O iOS passou com 11 testes unitários e 10 testes de interface. Google Maps real no Android exige configuração e o fluxo com mapa real permanece sem validação.
 
 **Home atual — implementada localmente, ainda sem validação nativa.** A branch `chore/development-kickoff` tem atalho Expandir/Recolher mapa, sobreposição sobre o cartão inferior, área útil de rolagem ampliada, navegação por ideias vizinhas e rótulo da ideia selecionada no mapa. O rótulo não tem coordenadas. A capa aparece abaixo das informações; selo perfurado no iOS, moldura simples no Android. Compilação, CI e simuladores das alterações locais: NÃO EXECUTADOS. Ver [roadmap](ROADMAP.md#recorte-atual-da-home-e-próximo-fluxo).
