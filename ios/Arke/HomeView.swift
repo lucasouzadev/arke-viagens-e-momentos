@@ -106,7 +106,8 @@ struct HomeView: View {
                                                 }.frame(minHeight: 44)
                                             } else {
                                                 TripJournalView(plan: pinPlan, ideas: places.ideas, reviews: state.context == .reviews,
-                                                                detailed: state.detent == .details, preview: journalCapture != nil).id(state.context.rawValue)
+                                                                detailed: state.detent == .details, preview: journalCapture != nil)
+                                                    .tint(Color(uiColor: .label)).id(state.context.rawValue)
                                                 if state.detent == .balanced {
                                                     Button("Ver detalhes") { settlePanel(.details) }
                                                 }
@@ -652,11 +653,14 @@ private struct TripJournalView: View {
                 .filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
             if entries.isEmpty { Text(reviews ? "Nenhuma avaliação nesta viagem." : "Nenhuma memória nesta viagem.").foregroundStyle(.secondary) }
             ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
-                VStack(alignment: .leading, spacing: 6) {
+                let layout = detailed || reviews
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: 10))
+                layout {
                     if let rating = entry.rating {
                         Label("\(rating) de 5", systemImage: "star.fill").arkeText(.contextTitle)
                     } else if let image = journalCover(entry) {
-                        Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: detailed ? 190 : 100)
+                        Image(uiImage: image).resizable().scaledToFit().frame(maxWidth: detailed ? .infinity : 64, maxHeight: detailed ? 190 : 44)
                             .padding(10)
                             .background {
                                 Color(uiColor: .systemBackground)

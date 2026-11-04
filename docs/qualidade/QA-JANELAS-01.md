@@ -25,3 +25,9 @@ Direção aprovada no Estúdio de Janelas. 01B, 02A, 03A, 04A, 05B, 06D, 07A, 08
 Os vídeos cobrem o iOS em modo escuro. Validar também modo claro, fonte ampliada, telas compactas, VoiceOver, TalkBack e mapa Android configurado.
 
 A logo fornecida foi aplicada aos ícones de inicialização iOS e Android. Conferir o enquadramento no aparelho na próxima rodada.
+
+## Revisão visual de Avaliações e Memórias
+
+O [CI do commit 49197b4](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/41894082197) passou nas duas plataformas. Inspecionadas 24 capturas Android e 24 iOS de Explorar, Equilibrado e Detalhes, em tamanhos padrão e compacto e temas claro e escuro. Algumas imagens do iOS registraram a inicialização, sem layout legível, e precisam de nova captura.
+
+Em ambas as plataformas, no Equilibrado compacto, a capa de Memórias empurrou a legenda para fora da primeira área visível. Ajuste aplicado com miniatura ao lado da legenda. Em Detalhes, a capa maior mantém o papel principal e o formulário continua na área rolável. O contraste dos controles e a posição do formulário com teclado aberto precisam de conferência nas novas capturas e em interação. O mapa Android exibiu o estado de indisponibilidade.

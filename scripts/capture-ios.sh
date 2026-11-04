@@ -99,7 +99,7 @@ PY
     for journal in reviews memories; do
       for detent in explore balanced details; do
         xcrun simctl launch --terminate-running-process "$device" dev.arke.app.dev "--capture-journal=$journal/$detent"
-        sleep 3
+        sleep 9
         xcrun simctl io "$device" screenshot "$output/ios-$journal-$detent-$size-$theme.png"
       done
     done

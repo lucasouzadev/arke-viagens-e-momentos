@@ -609,21 +609,18 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
     if (entries.isEmpty()) Text(if (reviews) "Nenhuma avaliação nesta viagem." else "Nenhuma memória nesta viagem.")
     val visible = if (detailed) entries.asReversed() else entries.takeLast(1)
     visible.forEach { entry ->
-        Column(Modifier.padding(vertical = 8.dp)) {
+        if (!reviews && !detailed) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                JournalMemoryCover(ideas, entry.optString("place"), preview,
+                    Modifier.size(width = 64.dp, height = 48.dp))
+                Text(entry.getString("text"), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+        } else Column(Modifier.padding(vertical = 8.dp)) {
             if (reviews) {
                 Text("★ ${entry.getInt("rating")} de 5", style = MaterialTheme.typography.titleMedium)
             } else {
-                val cover = ideas.firstOrNull { it.id == entry.optString("place") }?.cover
-                val image = remember(cover, preview) {
-                    if (preview) android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_arke)
-                    else cover?.let { decodePlaceCover(it) }
-                }
-                if (image != null) {
-                    androidx.compose.foundation.Image(image.asImageBitmap(), null,
-                        modifier = Modifier.fillMaxWidth().height(if (detailed) 190.dp else 100.dp)
-                            .arkeStamp(MaterialTheme.colorScheme.surface).padding(10.dp),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit)
-                } else Text("Memória", style = MaterialTheme.typography.titleMedium)
+                JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(190.dp))
             }
             Text(entry.getString("text"), maxLines = if (detailed) Int.MAX_VALUE else 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
@@ -653,6 +650,21 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
         }) { Text(if (reviews) "Salvar avaliação" else "Salvar memória") }
         if (failed) Text("Não foi possível salvar.", color = MaterialTheme.colorScheme.error)
     }
+}
+
+@Composable
+private fun JournalMemoryCover(ideas: List<PlaceIdea>, placeID: String, preview: Boolean, modifier: Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val cover = ideas.firstOrNull { it.id == placeID }?.cover
+    val image = remember(cover, preview) {
+        if (preview) android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_arke)
+        else cover?.let { decodePlaceCover(it) }
+    }
+    if (image != null) {
+        androidx.compose.foundation.Image(image.asImageBitmap(), null,
+            modifier = modifier.arkeStamp(MaterialTheme.colorScheme.surface).padding(6.dp),
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+    } else Text("Memória", style = MaterialTheme.typography.labelMedium)
 }
 
 @Composable
