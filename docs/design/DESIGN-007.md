@@ -8,7 +8,7 @@
 2. **Uma só marca:** azul opaco; o resto são neutros nativos, claro e escuro automáticos.
 3. **Legível:** texto ≥ 4,5:1, mínimo 13 pt, nenhum rótulo de navegação truncado.
 4. **Tocável:** alvo ≥ 48 pt (nunca < 44) e todo gesto com alternativa por toque e por leitor de tela.
-5. **Um sheet só:** mesmo cabeçalho e mesma ação de rodapé em todos.
+5. **Um sheet só, contínuo:** sem alça, sem X, sem cabeçalho nem rodapé fixos; o conteúdo ocupa o cartão de ponta a ponta e a ação principal flutua em vidro sobre ele (ver Sheets).
 6. **Teclado primeiro:** campo ativo e ação principal sempre visíveis acima do teclado.
 7. **Estados reais:** vazio, carregando, offline, sem localização, erro e confirmações desenhados.
 8. **Natividade:** vidro nos controles do iOS, flat no Android; estrutura, ordem e rótulos idênticos.
@@ -36,12 +36,15 @@ Fonte nativa, escalável. Título 22/28 · contexto 19/24 · cabeçalho 17/22 ·
 
 ## Sheets
 
-- Cabeçalho único: **X à esquerda (48), título central, ação ou “i” à direita ou coluna vazia**. Alça nativa; fade de 24–28 no topo e na base; indicadores de rolagem ocultos.
-- Ação principal **sempre no rodapé**, acima do teclado e da área segura; secundária acima dela na revisão.
+- **Sheet contínuo (aprovado em 5/11/2026, substitui o cabeçalho X/título/“i”, a alça e a barra de ação fixa):** um cartão com margem de 8 e cantos de 40 (Android 28), sem alça, sem botões no cabeçalho, sem faixas fixas no topo ou na base. O título (28/34, peso 700) é o primeiro item do conteúdo e **rola junto**. O conteúdo vai de borda a borda e nunca é cortado por uma barra; sobra respiro inferior para a última linha passar por baixo do botão flutuante.
+- **Fechar:** arrastar para baixo. Sem rascunho, fecha direto. Em editor com rascunho, o gesto abre “Descartar rascunho?” (Descartar / Continuar editando); o mesmo vale para o Back do Android e para o gesto de escape do VoiceOver. Sempre há alternativa não-gestual: ação “Fechar” exposta à acessibilidade e, em formulários, “Cancelar” como botão de vidro secundário no fim do conteúdo.
+- **Ação principal flutuante:** pílula de 56 na cor da marca (texto branco) sobre o conteúdo, com sombra suave; a secundária usa vidro (iOS: `glass`; Android: superfície translúcida). Fica 22 acima da borda inferior ou, com teclado, 14 acima dele. Pager de lugares (Lugar 1 de 3) é uma pílula de vidro flutuante no mesmo lugar.
+- Aplica-se a **todos** os sheets: Adicionar lugar, Revisar, Detalhe da ideia, Viagens, Compartilhar, Gasto, Busca e Estados. Marcar no mapa mantém controles flutuantes sobre o mapa (já é contínuo).
+- Indicadores de rolagem ocultos; o conteúdo rola sob o botão de vidro, sem fade de faixa.
 - Campos: rótulo persistente com ícone e marcação **Obrigatório/Opcional**, placeholder legível (≥ 4,5:1), foco com contorno. Cada campo é um cartão próprio com altura mínima de 68 (nome, endereço, link) e 104 (nota), **substituindo 56/96/120 do DESIGN-006**. No Android o texto cresce até 4 linhas (endereço) e 6 (nota). No iOS endereço (44) e nota (72) usam `TextEditor` de altura fixa dentro do cartão e rolam internamente; crescimento automático fica para depois. O texto do campo alinha com o do rótulo; um tipo de campo só (sem mistura de `TextField` e `TextEditor` com recuos diferentes).
 - Foto de capa: linha-botão com ícone, texto, “Opcional” e seta; trocar/remover são ações separadas de 48, remover em cor de perigo.
-- Revisão: resumo compacto em grupo único (rótulo + valor), sem blocos vazios; Editar informações acima de Salvar neste aparelho.
-- Teclado: campo ativo visível acima do teclado, nunca sob o cabeçalho; ação principal sobe junto.
+- Revisão: resumo compacto em grupo único (rótulo + valor), sem blocos vazios; Editar informações (vidro) acima de Salvar neste aparelho (marca), ambos flutuantes.
+- Teclado: o sheet termina no teclado; o campo ativo rola para o centro; a ação principal sobe junto e continua flutuando.
 
 ## Marcar no mapa
 
