@@ -65,6 +65,9 @@ final class HeaderNavigationTests: XCTestCase {
         name.typeText("Rascunho por gesto")
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
         app.swipeDownFromSheetTitle()
+        // Evidência para o CI: estado da tela logo depois do arrastar (PNG exportado mesmo se o teste falhar).
+        let afterSwipe = XCTAttachment(screenshot: app.screenshot()); afterSwipe.name = "after-swipe"; afterSwipe.lifetime = .keepAlways; add(afterSwipe)
+        print("AFTER-SWIPE alert=\(app.alerts.count) editorTitle=\(app.staticTexts["place.title"].exists) home=\(app.staticTexts["home.contextTitle"].exists)")
         XCTAssertTrue(app.alerts["Descartar rascunho?"].waitForExistence(timeout: 5))
         app.buttons["Continuar editando"].tap()
         XCTAssertEqual(name.value as? String, "Rascunho por gesto")
