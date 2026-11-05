@@ -13,24 +13,9 @@ struct PlaceIdeasContent: View {
     @State private var editing: PlaceIdea?
     @State private var editSaveAttempted = false
 
-    @ViewBuilder
-    private func neighbor(_ idea: PlaceIdea?, icon: String) -> some View {
-        if let idea {
-            Button { focusedID = idea.id } label: {
-                Label {
-                    Text(idea.name)
-                } icon: {
-                    if let cover = idea.cover, let image = UIImage(data: cover) {
-                        Image(uiImage: image).resizable().scaledToFill().frame(width: 32, height: 32).clipShape(.rect(cornerRadius: 6))
-                    } else { Image(systemName: icon) }
-                }
-                    .lineLimit(1)
-                    .frame(minHeight: 44)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .accessibilityLabel("Selecionar \(idea.name)")
-        }
+    /// Apresenta o próximo sheet/alerta só depois que o de detalhes terminar de fechar.
+    private func later(_ work: @escaping () -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { work() }
     }
 
     var body: some View {
@@ -64,61 +49,78 @@ struct PlaceIdeasContent: View {
                 let idea = store.ideas[index]
                 let previous = index > 0 ? store.ideas[index - 1] : nil
                 let next = index + 1 < store.ideas.count ? store.ideas[index + 1] : nil
-                if store.ideas.count > 1 {
-                    HStack {
-                        neighbor(previous, icon: "chevron.left")
-                        Spacer()
-                        neighbor(next, icon: "chevron.right")
-                    }
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(idea.name).arkeText(.contextTitle).frame(maxWidth: .infinity, alignment: .leading)
-                            Button { editSaveAttempted = false; editing = idea } label: {
-                                Image(systemName: "pencil").font(.system(size: 20)).frame(width: 48, height: 48).contentShape(Rectangle())
-                            }.buttonStyle(.plain).disabled(store.busy || !store.ready)
-                                .accessibilityLabel("Editar \(idea.name)").accessibilityIdentifier("place.update.\(idea.id)")
-                        }
-                        Text(idea.address).foregroundStyle(.secondary)
-                        if !idea.note.isEmpty { Text(idea.note).lineLimit(3) }
-                        if let cover = idea.cover, let image = UIImage(data: cover) {
-                            GeometryReader { geometry in
+                // Cartão do lugar como no protótipo: selo, nome, endereço, posição, nota, Detalhes e Marcar no mapa.
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Group {
+                            if let cover = idea.cover, let image = UIImage(data: cover) {
                                 Image(uiImage: image).resizable().scaledToFill()
-                                    .frame(width: geometry.size.width - 20, height: geometry.size.height - 20)
-                                    .clipped().padding(10)
+                            } else {
+                                Image(systemName: "photo").font(.system(size: 22)).foregroundStyle(.secondary)
                             }
-                            .frame(height: detent == .details ? 210 : 148)
-                            .background {
-                                Color(uiColor: .systemBackground).mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
-                            }
-                            .accessibilityHidden(true)
                         }
-                        Button { onPin(idea) } label: { Label("Marcar no mapa", systemImage: "mappin") }
-                        HStack(spacing: 12) {
-                            Button { selected = idea } label: {
-                                Label("Abrir", systemImage: "arrow.up.right").arkeText(.button)
-                                    .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
-                                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                                    .contentShape(Rectangle())
-                            }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Ver detalhes de \(idea.name)")
-                                .accessibilityIdentifier("place.open.\(idea.id)")
-                            Button(role: .destructive) { deleting = idea } label: {
-                                Image(systemName: "trash").frame(width: 48, height: 48)
-                                    .background(ArkeUI.sheetSurface(colorScheme), in: Circle())
-                            }
-                                .disabled(store.busy)
-                                .accessibilityLabel("Excluir \(idea.name)")
-                                .accessibilityIdentifier("place.delete.\(idea.id)")
+                        .frame(width: 76, height: 76)
+                        .background(ArkeUI.sheetSurface(colorScheme))
+                        .clipShape(.rect(cornerRadius: 10))
+                        .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(idea.name).arkeText(.contextTitle).lineLimit(1)
+                                .accessibilityIdentifier("home.ideaName")
+                            Text(idea.address).arkeText(.body).foregroundStyle(.secondary).lineLimit(1)
+                            Text("Lugar \(index + 1) de \(store.ideas.count)").arkeText(.caption).foregroundStyle(.tertiary)
+                                .padding(.top, 2)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                    .simultaneousGesture(DragGesture(minimumDistance: 28).onEnded { value in
-                        let movement = value.translation
-                        guard abs(movement.width) > abs(movement.height) * 1.5 else { return }
-                        if let target = movement.width < 0 ? next : previous { focusedID = target.id }
-                    })
+                    if !idea.note.isEmpty {
+                        Text(idea.note).arkeText(.body).foregroundStyle(.secondary).lineLimit(2)
+                    }
+                    HStack(spacing: 8) {
+                        Button { selected = idea } label: {
+                            Text("Detalhes").arkeText(.label)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .background(ArkeUI.sheetSurface(colorScheme), in: Capsule())
+                                .contentShape(Capsule())
+                        }
+                        .accessibilityLabel("Ver detalhes de \(idea.name)")
+                        .accessibilityIdentifier("place.open.\(idea.id)")
+                        Button { onPin(idea) } label: {
+                            Label("Marcar no mapa", systemImage: "mappin").arkeText(.label)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .contentShape(Capsule())
+                        }
+                        .accessibilityIdentifier("place.pin.\(idea.id)")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
+                }
+                .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 26))
+                .simultaneousGesture(DragGesture(minimumDistance: 28).onEnded { value in
+                    let movement = value.translation
+                    guard abs(movement.width) > abs(movement.height) * 1.5 else { return }
+                    if let target = movement.width < 0 ? next : previous { focusedID = target.id }
+                })
+                // Navegação finita entre lugares: anterior, contador e próximo.
+                HStack {
+                    Button { if let previous { focusedID = previous.id } } label: {
+                        Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold))
+                            .frame(width: 48, height: 48).contentShape(Rectangle())
+                    }
+                    .opacity(previous == nil ? 0.3 : 1).disabled(previous == nil)
+                    .accessibilityLabel("Lugar anterior").accessibilityIdentifier("home.placePrevious")
+                    Spacer()
+                    Text("\(index + 1) de \(store.ideas.count)").arkeText(.body).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("home.placeCounter")
+                    Spacer()
+                    Button { if let next { focusedID = next.id } } label: {
+                        Image(systemName: "chevron.right").font(.system(size: 18, weight: .semibold))
+                            .frame(width: 48, height: 48).contentShape(Rectangle())
+                    }
+                    .opacity(next == nil ? 0.3 : 1).disabled(next == nil)
+                    .accessibilityLabel("Próximo lugar").accessibilityIdentifier("home.placeNext")
+                }
+                .buttonStyle(.plain).foregroundStyle(.secondary)
             }
         }
         .padding(.bottom, 24)
@@ -128,7 +130,10 @@ struct PlaceIdeasContent: View {
         }
         .onDisappear { onDetailsVisibilityChanged(false) }
         .sheet(item: $selected) { idea in
-            PlaceDetails(ideas: store.ideas, initialID: idea.id, onClose: { selected = nil })
+            PlaceDetails(ideas: store.ideas, initialID: idea.id, onClose: { selected = nil },
+                         onEdit: { target in selected = nil; editSaveAttempted = false; later { editing = target } },
+                         onPin: { target in selected = nil; later { onPin(target) } },
+                         onDelete: { target in selected = nil; later { deleting = target } })
         }
         .sheet(item: $editing) { original in
             PlaceEditor(initialIdea: original, saving: store.busy, saveError: editSaveAttempted ? store.error : nil, onSave: { draft in
@@ -155,9 +160,17 @@ struct PlaceDetails: View {
     @State private var selectedID: String
     @State private var contentHeight: CGFloat = 300
 
-    init(ideas: [PlaceIdea], initialID: String, onClose: @escaping () -> Void) {
+    var onEdit: ((PlaceIdea) -> Void)?
+    var onPin: ((PlaceIdea) -> Void)?
+    var onDelete: ((PlaceIdea) -> Void)?
+
+    init(ideas: [PlaceIdea], initialID: String, onClose: @escaping () -> Void,
+         onEdit: ((PlaceIdea) -> Void)? = nil, onPin: ((PlaceIdea) -> Void)? = nil, onDelete: ((PlaceIdea) -> Void)? = nil) {
         self.ideas = ideas
         self.onClose = onClose
+        self.onEdit = onEdit
+        self.onPin = onPin
+        self.onDelete = onDelete
         _selectedID = State(initialValue: initialID)
     }
 
@@ -187,6 +200,14 @@ struct PlaceDetails: View {
                             }
                             .padding(20).frame(maxWidth: .infinity, alignment: .leading)
                             .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
+                            if let onEdit, let onPin, let onDelete {
+                                // Ações do lugar (protótipo): Editar, No mapa e Excluir.
+                                HStack(spacing: 8) {
+                                    detailAction("Editar", icon: "pencil", id: "detail.edit") { onEdit(idea) }
+                                    detailAction("No mapa", icon: "mappin", id: "detail.pin") { onPin(idea) }
+                                    detailAction("Excluir", icon: "trash", id: "detail.delete", destructive: true) { onDelete(idea) }
+                                }
+                            }
                             Label("Fica só neste aparelho, sem backup. Para ver no mapa, use Marcar no mapa.", systemImage: "lock")
                                 .arkeText(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
                                 .accessibilityIdentifier("detail.infoText")
@@ -228,6 +249,17 @@ struct PlaceDetails: View {
             .accessibilityAction(.escape) { onClose() }
         }
         .presentationDetents([.height(max(300, contentHeight)), .large])
+    }
+
+    private func detailAction(_ title: String, icon: String, id: String, destructive: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: icon).arkeText(.label)
+                .foregroundStyle(destructive ? Color(uiColor: .systemRed) : ink)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(ArkeUI.insetSurface(colorScheme), in: Capsule())
+                .contentShape(Capsule())
+        }
+        .accessibilityIdentifier(id)
     }
 
     private func contentRow(icon: String, value: String, label: String, identifier: String) -> some View {

@@ -54,8 +54,6 @@ struct HomeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Arke").arkeText(.appTitle)
-            Text("Onde vamos?").arkeText(.screenTitle)
             GeometryReader { geometry in
                 let restingHeight = panelHeight ?? mapHeight(in: geometry.size.height)
                 let expandedHeight = min(geometry.size.height, max(restingHeight, geometry.size.height - 52))
@@ -74,7 +72,25 @@ struct HomeView: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
                             if state.context == .planning {
-                                Button { tripPath = []; showingTrips = true } label: { Label("Viagens", systemImage: "suitcase") }
+                                HStack {
+                                    Button { tripPath = []; showingTrips = true } label: {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "suitcase").font(.system(size: 15))
+                                            Text("Viagens").arkeText(.label)
+                                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                                        }
+                                        .padding(.horizontal, 14).frame(minHeight: 44)
+                                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                                        .contentShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("home.trips")
+                                    Spacer()
+                                    if places.ready {
+                                        Text(places.ideas.count == 1 ? "1 lugar" : "\(places.ideas.count) lugares")
+                                            .arkeText(.body).foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                                 if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
                                 if let error = places.error, !showingAddPlace {
@@ -167,44 +183,16 @@ struct HomeView: View {
                                 .blur(radius: 7)
                                 .allowsHitTesting(false)
                         }
-                        .overlay(alignment: .bottom) {
-                            HStack(spacing: 6) {
-                                Button { showingMapSearch = true } label: {
-                                    if compactMap {
-                                        Image(systemName: "magnifyingglass").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
-                                    } else {
-                                        Label("Buscar lugares", systemImage: "magnifyingglass")
-                                            .font(.subheadline).frame(maxWidth: .infinity, minHeight: 24)
-                                    }
-                                }
-                                .modifier(MapLocationButtonStyle(isPill: !compactMap))
-                                .accessibilityLabel("Buscar lugares")
-                                .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
-                                Button { location.request() } label: {
-                                    Image(systemName: "location.fill").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
-                                }
-                                .modifier(MapLocationButtonStyle())
-                                .accessibilityLabel("Minha localização")
-                                .accessibilityIdentifier("home.location")
-                                .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
-                                Button { setMapExpanded(!mapExpanded) } label: {
-                                    Image(systemName: mapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                                        .font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
-                                }
-                                .modifier(MapLocationButtonStyle())
-                                .accessibilityLabel(mapExpanded ? "Recolher mapa" : "Expandir mapa")
-                                .accessibilityIdentifier("home.expandMap")
-                                .disabled(keyboardVisible)
-                            }
-                            .padding(.horizontal, 12).padding(.bottom, 26)
+                        .overlay(alignment: .top) {
+                            mapControls(compact: compactMap)
                         }
-                        .overlay(alignment: .topLeading) {
+                        .overlay(alignment: .bottomLeading) {
                             if !compactMap, state.context == .planning,
                                let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
                                 Label(idea.name, systemImage: "bookmark")
                                     .font(.subheadline.weight(.semibold)).lineLimit(1)
                                     .padding(10).background(.regularMaterial, in: Capsule())
-                                    .padding(.leading, 12).padding(.trailing, 68).padding(.top, 18)
+                                    .padding(.leading, 12).padding(.trailing, 68).padding(.bottom, 34)
                                     .accessibilityLabel("Ideia selecionada: \(idea.name)")
                                     .allowsHitTesting(false)
                             }
@@ -346,30 +334,66 @@ struct HomeView: View {
 
     }
 
+    /// Controles sobre o mapa: busca em pílula à esquerda; localização e expandir empilhados à direita.
+    @ViewBuilder
+    private func mapControls(compact: Bool) -> some View {
+        let searchButton = Button { showingMapSearch = true } label: {
+            if compact {
+                Image(systemName: "magnifyingglass").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+            } else {
+                Label("Buscar lugares", systemImage: "magnifyingglass")
+                    .font(.subheadline).frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
+            }
+        }
+        .modifier(MapLocationButtonStyle(isPill: !compact))
+        .accessibilityLabel("Buscar lugares")
+        .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
+        let locateButton = Button { location.request() } label: {
+            Image(systemName: "location.fill").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+        }
+        .modifier(MapLocationButtonStyle())
+        .accessibilityLabel("Minha localização")
+        .accessibilityIdentifier("home.location")
+        .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
+        let expandButton = Button { setMapExpanded(!mapExpanded) } label: {
+            Image(systemName: mapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+        }
+        .modifier(MapLocationButtonStyle())
+        .accessibilityLabel(mapExpanded ? "Recolher mapa" : "Expandir mapa")
+        .accessibilityIdentifier("home.expandMap")
+        .disabled(keyboardVisible)
+        if compact {
+            HStack(spacing: 6) { searchButton; locateButton; expandButton }
+                .padding(.horizontal, 12).padding(.top, 8)
+        } else {
+            HStack(alignment: .top, spacing: 8) {
+                searchButton
+                VStack(spacing: 8) { locateButton; expandButton }
+            }
+            .padding(.horizontal, 12).padding(.top, 12)
+        }
+    }
+
     private var cardHeader: some View {
         HStack(spacing: 8) {
             let options = TravelContext.allCases
             let index = options.firstIndex(of: state.context) ?? 0
-            Button { showingAddPlace = true } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .medium))
-                    .frame(width: 48, height: 48)
-                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
-            }
-            .disabled(!places.ready || places.busy)
-            .accessibilityLabel("Adicionar lugar")
-            .accessibilityIdentifier("home.addPlace")
             HStack(spacing: 0) {
                 contextNeighbor(index - 1, forward: false)
                 VStack(spacing: 6) {
-                    Text(state.context.title)
-                        .arkeText(.contextTitle)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, minHeight: 28)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityIdentifier("home.contextTitle")
+                    HStack(spacing: 8) {
+                        Image(systemName: state.context.symbol).font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(ArkeUI.ink).accessibilityHidden(true)
+                        Text(state.context.title)
+                            .arkeText(.contextTitle)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityIdentifier("home.contextTitle")
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 28)
                     contextDots(index: index, count: options.count)
                 }
                 .frame(maxWidth: .infinity, minHeight: 48)
@@ -387,6 +411,16 @@ struct HomeView: View {
                 }
                 contextNeighbor(index + 1, forward: true)
             }
+            Button { showingAddPlace = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 22, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(ArkeUI.blue, in: Circle())
+                    .contentShape(Circle())
+            }
+            .disabled(!places.ready || places.busy)
+            .accessibilityLabel("Adicionar lugar")
+            .accessibilityIdentifier("home.addPlace")
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
@@ -404,8 +438,8 @@ struct HomeView: View {
         let options = TravelContext.allCases
         if options.indices.contains(index) {
             Button { selectContext(index) } label: {
-                Image(systemName: forward ? "chevron.right" : "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
+                Image(systemName: options[index].symbol)
+                    .font(.system(size: 18, weight: .medium))
                     .frame(width: 44, height: 48)
                     .contentShape(Rectangle())
             }
@@ -507,6 +541,16 @@ struct HomeView: View {
 }
 
 private extension TravelContext {
+    /// Ícone por contexto (D6).
+    var symbol: String {
+        switch self {
+        case .planning: "mappin.and.ellipse"
+        case .expenses: "receipt"
+        case .savings: "target"
+        case .reviews: "star"
+        case .memories: "photo"
+        }
+    }
     var title: String {
         switch self {
         case .planning: "Planejamento"

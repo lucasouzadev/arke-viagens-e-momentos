@@ -123,9 +123,8 @@ final class HeaderNavigationTests: XCTestCase {
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: confirm)
         waitForExpectations(timeout: 10)
         // Limpeza: remove a ideia criada para não afetar os outros testes.
-        let delete = app.buttons["Excluir Mapa de teste"]
-        for _ in 0..<4 where !delete.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
-        delete.tap()
+        openDetails("Mapa de teste", app: app)
+        app.buttons["detail.delete"].tap()
         app.alerts["Excluir ideia?"].buttons["Excluir"].tap()
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Mapa de teste"])
         waitForExpectations(timeout: 10)
@@ -167,15 +166,14 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         XCTAssertFalse(app.buttons["detail.next"].exists)
         app.buttons["detail.done"].tap()
-        let edit = app.buttons["Editar Museu de teste"]
-        if !edit.isHittable { app.scrollViews["home.contentBody"].swipeDown() }
-        edit.tap()
+        openDetails("Museu de teste", app: app)
+        app.buttons["detail.edit"].tap()
         XCTAssertTrue(app.staticTexts["place.title"].waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Museu de teste")
         tapEditorAction("place.cancel", app: app)
         XCTAssertFalse(app.alerts["Descartar rascunho?"].exists)
-        XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        edit.tap()
+        openDetails("Museu de teste", app: app)
+        app.buttons["detail.edit"].tap()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
         name.typeText(" temporário")
@@ -185,8 +183,8 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertTrue((name.value as? String)?.contains("temporário") == true)
         tapEditorAction("place.cancel", app: app)
         app.buttons["Descartar"].tap()
-        XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        edit.tap()
+        openDetails("Museu de teste", app: app)
+        app.buttons["detail.edit"].tap()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Museu de teste")
         replaceText(in: name, with: "Museu atualizado", app: app)
@@ -204,18 +202,13 @@ final class HeaderNavigationTests: XCTestCase {
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["Museu atualizado"].waitForExistence(timeout: 15))
-        let updatedDetails = app.buttons["Ver detalhes de Museu atualizado"]
-        if !updatedDetails.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
-        updatedDetails.tap()
-        XCTAssertTrue(app.staticTexts["detail.address"].waitForExistence(timeout: 5))
+        openDetails("Museu atualizado", app: app)
         XCTAssertEqual(app.staticTexts["detail.address"].label, "Endereço: Nova entrada, 200")
-        app.buttons["detail.done"].tap()
-        let delete = app.buttons["Excluir Museu atualizado"]
-        if !delete.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
-        delete.tap()
+        app.buttons["detail.delete"].tap()
         app.alerts["Excluir ideia?"].buttons["Cancelar"].tap()
-        XCTAssertTrue(app.staticTexts["Museu atualizado"].exists)
-        delete.tap()
+        XCTAssertTrue(app.staticTexts["Museu atualizado"].waitForExistence(timeout: 5))
+        openDetails("Museu atualizado", app: app)
+        app.buttons["detail.delete"].tap()
         app.alerts["Excluir ideia?"].buttons["Excluir"].tap()
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Museu atualizado"])
         waitForExpectations(timeout: 10)
@@ -409,6 +402,15 @@ final class HeaderNavigationTests: XCTestCase {
         add(locationCapture)
         app.terminate()
         app.resetAuthorizationStatus(for: .location)
+    }
+
+    /// Abre os detalhes do lugar pela home (rola até o botão se preciso).
+    private func openDetails(_ name: String, app: XCUIApplication) {
+        let open = app.buttons["Ver detalhes de \(name)"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10))
+        for _ in 0..<4 where !open.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
+        open.tap()
+        XCTAssertTrue(app.staticTexts["detail.name"].waitForExistence(timeout: 5))
     }
 
     private func tapEditorAction(_ identifier: String, app: XCUIApplication) {
