@@ -7,7 +7,8 @@ struct HomeView: View {
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
     @StateObject private var location = ForegroundLocation()
-    @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)))
+    // D4: sem Pins nem localização, o mapa abre no Brasil; com Pins salvos, enquadra todos (ver `frameSavedPins`).
+    @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: -14.2, longitude: -51.9), span: MKCoordinateSpan(latitudeDelta: 38, longitudeDelta: 38)))
     @State private var showingTrips = false
     @State private var pinPlan: LocalPinPlan?
     @State private var pinIdea: PlaceIdea?
@@ -274,7 +275,10 @@ struct HomeView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.hidden)
         }
-        .task { pinPlan = try? await places.loadPinPlan() }
+        .task {
+            pinPlan = try? await places.loadPinPlan()
+            frameSavedPins()
+        }
         .sheet(isPresented: $showingTrips) {
             NavigationStack(path: $tripPath) {
                 List {
@@ -373,6 +377,17 @@ struct HomeView: View {
             }
             .padding(.horizontal, 12).padding(.top, 12)
         }
+    }
+
+    /// D4: com Pins salvos, a câmera inicial enquadra todos; nunca pede permissão de localização sozinha.
+    private func frameSavedPins() {
+        guard let pins = pinPlan?.pins, !pins.isEmpty else { return }
+        let latitudes = pins.map(\.latitude), longitudes = pins.map(\.longitude)
+        guard let minLat = latitudes.min(), let maxLat = latitudes.max(),
+              let minLon = longitudes.min(), let maxLon = longitudes.max() else { return }
+        let center = CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2, longitude: (minLon + maxLon) / 2)
+        let span = MKCoordinateSpan(latitudeDelta: max((maxLat - minLat) * 1.6, 0.05), longitudeDelta: max((maxLon - minLon) * 1.6, 0.05))
+        camera = .region(MKCoordinateRegion(center: center, span: span))
     }
 
     private var cardHeader: some View {
