@@ -130,8 +130,9 @@ struct HomeView: View {
                                         .accessibilityLabel("Lugar selecionado: " + idea.name)
                                 }
                             }
-                            .padding(.bottom, 8)
-                            .background(.regularMaterial)
+                            .padding(.bottom, 12)
+                            // Fundo sólido igual ao do cartão: o material cinza aparecia como uma faixa estranha sobre o cartão branco.
+                            .background(ArkeUI.sheetSurface(colorScheme))
                         }
                         .frame(maxHeight: .infinity)
                         .arkeScrollEdges()
@@ -170,10 +171,10 @@ struct HomeView: View {
                             HStack(spacing: 6) {
                                 Button { showingMapSearch = true } label: {
                                     if compactMap {
-                                        Image(systemName: "magnifyingglass").frame(width: 44, height: 44)
+                                        Image(systemName: "magnifyingglass").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
                                     } else {
                                         Label("Buscar lugares", systemImage: "magnifyingglass")
-                                            .font(.subheadline).frame(maxWidth: .infinity, minHeight: 44)
+                                            .font(.subheadline).frame(maxWidth: .infinity, minHeight: 24)
                                     }
                                 }
                                 .modifier(MapLocationButtonStyle(isPill: !compactMap))
@@ -188,7 +189,7 @@ struct HomeView: View {
                                 .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
                                 Button { setMapExpanded(!mapExpanded) } label: {
                                     Image(systemName: mapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                                        .frame(width: 44, height: 44)
+                                        .font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
                                 }
                                 .modifier(MapLocationButtonStyle())
                                 .accessibilityLabel(mapExpanded ? "Recolher mapa" : "Expandir mapa")
