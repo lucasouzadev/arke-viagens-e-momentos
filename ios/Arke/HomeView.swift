@@ -862,6 +862,7 @@ private struct LocalFinanceView: View {
         var kind: String
     }
 
+    @Environment(\.colorScheme) private var colorScheme
     let trips: [LocalPinTrip]
     let savings: Bool
     let detailed: Bool
@@ -874,6 +875,9 @@ private struct LocalFinanceView: View {
     @FocusState private var financeFieldFocused: Bool
     @State private var editing: UUID?
     @State private var error: String?
+    @State private var showingForm = false
+
+    private let currencies = ["BRL", "USD", "EUR", "GBP", "JPY", "KWD"]
 
     private var records: [Entry] {
         (try? JSONDecoder().decode([Entry].self, from: stored)) ?? []
@@ -884,53 +888,216 @@ private struct LocalFinanceView: View {
 
     var body: some View {
         if let trip {
-            Picker("Viagem", selection: Binding(get: { trip }, set: { selectedTrip = $0; clearDraft() })) {
-                ForEach(trips, id: \.id) { Text($0.title).tag($0.id) }
-            }
             let entries = records.filter { $0.trip == trip && (savings ? ["goal", "saving"].contains($0.kind) : ["planned", "incurred"].contains($0.kind)) }
             let goal = entries.first { $0.kind == "goal" }
-            if savings, let goal {
-                let total = entries.filter { $0.kind == "saving" && $0.currency == goal.currency }.reduce(Int64(0)) { $0 + $1.amount }
-                Text("Reservado: \(formatted(total, goal.currency)) / \(formatted(goal.amount, goal.currency))")
-                ProgressView(value: min(Double(total), Double(goal.amount)), total: Double(goal.amount))
-                    .accessibilityLabel("Progresso da meta")
-                Text("Falta: \(formatted(max(0, goal.amount - total), goal.currency))")
-            }
-            if !savings {
-                ForEach(Set(entries.map(\.currency)).sorted(), id: \.self) { code in
-                    let subtotal = entries.filter { $0.currency == code }
-                    Text("Previsto: \(formatted(subtotal.filter { $0.kind == "planned" }.reduce(0) { $0 + $1.amount }, code))")
-                    Text("Realizado: \(formatted(subtotal.filter { $0.kind == "incurred" }.reduce(0) { $0 + $1.amount }, code))")
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Menu {
+                        ForEach(trips, id: \.id) { item in
+                            Button(item.title) { selectedTrip = item.id; clearDraft() }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "suitcase").font(.system(size: 15))
+                            Text(trips.first(where: { $0.id == trip })?.title ?? "Viagem").arkeText(.label).lineLimit(1)
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                        }
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                    }
+                    .accessibilityLabel("Viagem: " + (trips.first(where: { $0.id == trip })?.title ?? ""))
+                    Spacer()
+                    if savings {
+                        Label("Só você vê", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary)
+                    }
                 }
-            }
-            ForEach(detailed ? entries : Array(entries.suffix(3))) { entry in
-                Button {
-                    editing = entry.id; name = entry.name; currency = entry.currency; kind = entry.kind
-                    amount = displayAmount(entry.amount, code: entry.currency)
-                } label: { Text("\(entry.name) · \(formatted(entry.amount, entry.currency))") }
-            }
-            Picker("Tipo", selection: $kind) {
-                Text("Escolha o tipo").tag("")
-                if savings {
-                    Text("Meta").tag("goal")
-                    if goal != nil { Text("Valor reservado").tag("saving") }
+                if savings { savingsSummary(entries: entries, goal: goal) } else { totals(entries: entries) }
+                if entries.isEmpty {
+                    Text(savings ? "Defina uma meta para começar. É só um registro: o Arke não guarda dinheiro."
+                                 : "Nenhum gasto nesta viagem ainda.")
+                        .arkeText(.body).foregroundStyle(.secondary)
                 } else {
-                    Text("Prevista").tag("planned")
-                    Text("Realizada").tag("incurred")
+                    VStack(spacing: 0) {
+                        let shown = detailed ? entries : Array(entries.suffix(3))
+                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, entry in
+                            if index > 0 { Divider().padding(.leading, 56) }
+                            recordRow(entry)
+                        }
+                    }
+                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
                 }
-            }.disabled(editing != nil && savings)
-            if !savings { TextField("Descrição", text: $name) }
-            Picker("Moeda", selection: Binding(get: { savings && kind == "saving" ? (goal?.currency ?? currency) : currency }, set: { currency = $0 })) {
-                ForEach(["BRL", "USD", "EUR", "JPY", "KWD"], id: \.self) { Text($0).tag($0) }
-            }.disabled(savings && (kind == "saving" || entries.contains { $0.kind == "saving" }))
-            TextField("Valor", text: $amount).keyboardType(.decimalPad).focused($financeFieldFocused)
-            if financeFieldFocused { Button("Fechar teclado") { financeFieldFocused = false } }
-            if let error { Text(error).foregroundStyle(.red) }
-            Button(editing == nil ? "Salvar registro" : "Salvar alterações") { save(trip: trip, goal: goal) }
-            if editing != nil { Button("Cancelar edição") { clearDraft() } }
+                Button { clearDraft(); startForm(goal: goal); showingForm = true } label: {
+                    Label(savings ? (goal == nil ? "Definir meta" : "Registrar valor") : "Adicionar gasto", systemImage: "plus")
+                        .arkeText(.button).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 48).background(ArkeUI.blue, in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).accessibilityIdentifier(savings ? "savings.add" : "expenses.add")
+                if savings {
+                    Label("Registro informativo: o Arke não processa pagamentos nem guarda dinheiro.", systemImage: "info.circle")
+                        .arkeText(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .sheet(isPresented: $showingForm, onDismiss: { clearDraft() }) { formSheet(trip: trip, goal: goal) }
         } else {
-            Text("Crie uma viagem local para começar.")
+            Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
         }
+    }
+
+    private func startForm(goal: Entry?) {
+        if savings { kind = goal == nil ? "goal" : "saving"; if let goal { currency = goal.currency } }
+        else { kind = "planned" }
+    }
+
+    @ViewBuilder
+    private func totals(entries: [Entry]) -> some View {
+        let codes = Set(entries.map(\.currency)).sorted()
+        ForEach(codes, id: \.self) { code in
+            let subtotal = entries.filter { $0.currency == code }
+            HStack(spacing: 8) {
+                totalCard("Previsto", subtotal.filter { $0.kind == "planned" }.reduce(0) { $0 + $1.amount }, code)
+                totalCard("Realizado", subtotal.filter { $0.kind == "incurred" }.reduce(0) { $0 + $1.amount }, code)
+            }
+        }
+    }
+
+    private func totalCard(_ title: String, _ value: Int64, _ code: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).arkeText(.caption).foregroundStyle(.secondary)
+            Text(money(value, code)).font(.title3.weight(.semibold)).minimumScaleFactor(0.7).lineLimit(1)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func savingsSummary(entries: [Entry], goal: Entry?) -> some View {
+        if let goal {
+            let total = entries.filter { $0.kind == "saving" && $0.currency == goal.currency }.reduce(Int64(0)) { $0 + $1.amount }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Reservado").arkeText(.caption).foregroundStyle(.secondary)
+                Text("\(money(total, goal.currency)) de \(money(goal.amount, goal.currency))").font(.title3.weight(.semibold))
+                ProgressView(value: min(Double(total), Double(goal.amount)), total: Double(goal.amount))
+                    .tint(ArkeUI.blue).accessibilityLabel("Progresso da meta")
+                Text("Falta \(money(max(0, goal.amount - total), goal.currency))").arkeText(.body).foregroundStyle(.secondary)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func recordRow(_ entry: Entry) -> some View {
+        Button {
+            editing = entry.id; name = entry.name; currency = entry.currency; kind = entry.kind
+            amount = displayAmount(entry.amount, code: entry.currency)
+            showingForm = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: entry.kind == "incurred" ? "checkmark.circle.fill" : (entry.kind == "planned" ? "clock" : "target"))
+                    .font(.system(size: 20)).foregroundStyle(ArkeUI.ink).frame(width: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.name).arkeText(.body).lineLimit(1)
+                    Text(kindLabel(entry.kind)).arkeText(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                Text(money(entry.amount, entry.currency)).arkeText(.body).fontWeight(.semibold)
+            }
+            .padding(.horizontal, 16).frame(minHeight: 56).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(entry.name), \(kindLabel(entry.kind)), \(money(entry.amount, entry.currency))")
+        .accessibilityHint("Toque para editar")
+    }
+
+    private func kindLabel(_ kind: String) -> String {
+        switch kind {
+        case "planned": "Prevista"
+        case "incurred": "Realizada"
+        case "goal": "Meta"
+        default: "Valor reservado"
+        }
+    }
+
+    private func formSheet(trip: String, goal: Entry?) -> some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(editing == nil ? (savings ? (goal == nil ? "Definir meta" : "Registrar valor") : "Adicionar gasto") : "Editar registro")
+                        .font(.title.bold()).accessibilityAddTraits(.isHeader)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Valor").arkeText(.label).foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(currencySymbol(currency)).font(.title2).foregroundStyle(.secondary)
+                            TextField("0,00", text: $amount).font(.system(size: 36, weight: .bold)).keyboardType(.decimalPad)
+                                .focused($financeFieldFocused).accessibilityIdentifier("finance.amount")
+                        }
+                    }
+                    .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 8) {
+                            ForEach(currencies, id: \.self) { code in
+                                let locked = savings && (kind == "saving" || goal != nil) && editing == nil && goal != nil && code != goal?.currency
+                                Button { currency = code } label: {
+                                    Text(code).arkeText(.label).padding(.horizontal, 16).frame(minWidth: 64, minHeight: 44)
+                                        .foregroundStyle(currency == code ? Color.white : Color(uiColor: .label))
+                                        .background(currency == code ? AnyShapeStyle(ArkeUI.blue) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)), in: Capsule())
+                                }
+                                .buttonStyle(.plain).disabled(locked).opacity(locked ? 0.4 : 1)
+                                .accessibilityAddTraits(currency == code ? .isSelected : [])
+                            }
+                        }
+                    }.scrollIndicators(.hidden)
+                    if !savings {
+                        TextField("Descrição", text: $name).padding(16).frame(minHeight: 56)
+                            .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                    }
+                    Picker("Tipo", selection: $kind) {
+                        if savings {
+                            Text("Meta").tag("goal")
+                            if goal != nil { Text("Valor reservado").tag("saving") }
+                        } else {
+                            Text("Prevista").tag("planned")
+                            Text("Realizada").tag("incurred")
+                        }
+                    }
+                    .pickerStyle(.segmented).disabled(editing != nil && savings)
+                    if let error { Text(error).arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+                    Label("Registro informativo: o Arke não processa pagamentos.", systemImage: "info.circle")
+                        .arkeText(.caption).foregroundStyle(.secondary)
+                    Button("Cancelar") { showingForm = false }
+                        .frame(maxWidth: .infinity, minHeight: 48).foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 100)
+            }
+            .scrollDismissesKeyboard(.interactively).scrollIndicators(.hidden)
+            Button { save(trip: trip, goal: goal) } label: {
+                Text(editing == nil ? "Salvar registro" : "Salvar alterações").arkeText(.button).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 56).background(ArkeUI.blue, in: Capsule())
+            }
+            .buttonStyle(.plain).padding(.horizontal, 20).padding(.bottom, 14)
+            .accessibilityIdentifier("finance.save")
+        }
+        .presentationDetents([.large]).presentationDragIndicator(.hidden)
+    }
+
+    private func currencySymbol(_ code: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        return formatter.currencySymbol ?? code
+    }
+
+    /// Valor com símbolo e casas decimais da moeda (sem "BRL 95").
+    private func money(_ amount: Int64, _ code: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        formatter.minimumFractionDigits = digits(code)
+        formatter.maximumFractionDigits = digits(code)
+        return formatter.string(from: NSNumber(value: Double(amount) / pow(10, Double(digits(code))))) ?? "\(code) \(amount)"
     }
 
     private func displayAmount(_ amount: Int64, code: String) -> String {
@@ -941,7 +1108,6 @@ private struct LocalFinanceView: View {
         return formatter.string(from: NSNumber(value: Double(amount) / pow(10, Double(digits(code))))) ?? ""
     }
     private func digits(_ code: String) -> Int { code == "JPY" ? 0 : code == "KWD" ? 3 : 2 }
-    private func formatted(_ amount: Int64, _ code: String) -> String { "\(code) \(displayAmount(amount, code: code))" }
 
     private func clearDraft() {
         editing = nil; name = ""; amount = ""; kind = ""; error = nil
@@ -958,7 +1124,7 @@ private struct LocalFinanceView: View {
               (pieces.dropFirst().first?.count ?? 0) <= digits(code),
               let value = Decimal(string: pieces.joined(separator: "."), locale: Locale(identifier: "en_US_POSIX")),
               value > 0, value <= 1_000_000_000 else {
-            error = "Informe um tipo e um valor válido para a moeda."
+            error = "Informe uma descrição (nos gastos) e um valor válido para a moeda."
             return
         }
         do {
@@ -975,7 +1141,7 @@ private struct LocalFinanceView: View {
             else { entries.append(entry) }
             stored = try JSONEncoder().encode(entries)
             financeFieldFocused = false
-            clearDraft()
+            showingForm = false
         } catch { self.error = "Não foi possível salvar os registros." }
     }
 }
