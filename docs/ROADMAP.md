@@ -182,10 +182,11 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-DETAILS-UI-03](engenharia/M5-DETAILS-UI-03.md) | Sheet de detalhes compacto e agrupado | Em revisão; CI e 32 PNGs verificados no PR #2 |
 | [M5-FLOATING-01](engenharia/M5-FLOATING-01.md) | Cartões flutuantes, recuo e cabeçalho simplificado | 32 testes e 32 PNGs verificados; em revisão no PR #2, limites no contrato |
 | [M5-EDIT-01](engenharia/M5-EDIT-01.md) | Navegação limpa e edição segura de ideias | 34 testes e 40 PNGs verificados; em revisão no PR #2, limites no contrato |
-| [M5-UI-REDESIGN-03](engenharia/M5-UI-REDESIGN-03.md) | Marcar no mapa (recorte 03 do redesenho) | Aplicado na branch `ui/m5-ui-redesign-03`; CI NÃO executado; sem teste de UI do fluxo |
-| [M5-UI-REDESIGN-02](engenharia/M5-UI-REDESIGN-02.md) | Editor de lugar (recorte 02 do redesenho) | Aplicado na branch `ui/m5-ui-redesign-02`; build, testes e capturas NÃO EXECUTADOS |
-| [M5-UI-REDESIGN-PLANO](engenharia/M5-UI-REDESIGN-PLANO.md) | Contrato guarda-chuva do redesenho (recortes 01–06) com [DESIGN-007](design/DESIGN-007.md) | Direção aprovada no chat; só o 01 tem código; 02–06 aguardam confirmação e decisões D1–D6 |
-| [M5-UI-REDESIGN-01](engenharia/M5-UI-REDESIGN-01.md) | Redesenho de UI/UX em recortes; recorte 1: contraste da tinta, seletor de contexto, mapa expandido | Aplicado na branch `ui/m5-ui-redesign-01` (enviada, sem PR); build, testes e capturas NÃO EXECUTADOS; recortes 2–5 sem contrato |
+| [M5-UI-REDESIGN-03B](engenharia/M5-UI-REDESIGN-03B.md) | Sheet contínuo em todas as telas (recorte 03B) | Aplicado na branch `ui/m5-ui-redesign-03b`; Android com CI aprovado (run 42060849129); iOS sem resultado de CI |
+| [M5-UI-REDESIGN-03](engenharia/M5-UI-REDESIGN-03.md) | Marcar no mapa (recorte 03 do redesenho) | Aplicado na branch `ui/m5-ui-redesign-03`; CI aprovado (run 42028300048); sem teste de UI do fluxo (escrito na 03B, não executado) |
+| [M5-UI-REDESIGN-02](engenharia/M5-UI-REDESIGN-02.md) | Editor de lugar (recorte 02 do redesenho) | Aplicado na branch `ui/m5-ui-redesign-02`; CI aprovado (run 42015188832) |
+| [M5-UI-REDESIGN-PLANO](engenharia/M5-UI-REDESIGN-PLANO.md) | Contrato guarda-chuva do redesenho (recortes 01–06) com [DESIGN-007](design/DESIGN-007.md) | Direção aprovada no chat; 01, 02, 03 e 03B com código; 04–06 aguardam confirmação |
+| [M5-UI-REDESIGN-01](engenharia/M5-UI-REDESIGN-01.md) | Redesenho de UI/UX em recortes; recorte 1: contraste da tinta, seletor de contexto, mapa expandido | Aplicado na branch `ui/m5-ui-redesign-01` (enviada, sem PR); CI aprovado (run 42003942009) |
 | [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md) | Correções do QA da beta e posição pessoal contextual | Em revisão: fluxos/40 PNGs/posição simulada verificados; CI aprovada; matriz manual pendente no contrato |
 
 [Guia de desenvolvimento](engenharia/DEVELOPMENT.md). Os itens M0 historicamente em revisão descrevem a entrega original; integração está confirmada, sem transformar especificações propostas em decisões aceitas.

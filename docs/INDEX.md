@@ -1,12 +1,14 @@
 # Índice e maturidade da documentação
 
-[M5-UI-REDESIGN-03 — Marcar no mapa](engenharia/M5-UI-REDESIGN-03.md): aplicado na branch, CI pendente.
+[M5-UI-REDESIGN-03B — sheet contínuo](engenharia/M5-UI-REDESIGN-03B.md): aplicado na branch, Android com CI aprovado, iOS pendente.
 
-[M5-UI-REDESIGN-02 — editor de lugar](engenharia/M5-UI-REDESIGN-02.md): aplicado na branch, sem build nem teste.
+[M5-UI-REDESIGN-03 — Marcar no mapa](engenharia/M5-UI-REDESIGN-03.md): aplicado na branch, CI aprovado; sem teste de UI do fluxo.
 
-[M5-UI-REDESIGN — contrato de implementação](engenharia/M5-UI-REDESIGN-PLANO.md) e [DESIGN-007](design/DESIGN-007.md): direção aprovada a partir do protótipo; recortes 02–06 ainda sem código.
+[M5-UI-REDESIGN-02 — editor de lugar](engenharia/M5-UI-REDESIGN-02.md): aplicado na branch, CI aprovado.
 
-[M5-UI-REDESIGN-01 — redesenho de UI/UX, recorte 1](engenharia/M5-UI-REDESIGN-01.md): contraste da tinta, seletor de contexto e mapa expandido; aplicado na branch, sem build nem teste.
+[M5-UI-REDESIGN — contrato de implementação](engenharia/M5-UI-REDESIGN-PLANO.md) e [DESIGN-007](design/DESIGN-007.md): direção aprovada a partir do protótipo; recortes 04–06 ainda sem código.
+
+[M5-UI-REDESIGN-01 — redesenho de UI/UX, recorte 1](engenharia/M5-UI-REDESIGN-01.md): contraste da tinta, seletor de contexto e mapa expandido; aplicado na branch, CI aprovado.
 
 [M5-QA-FIX-01 — correções de interação da beta](engenharia/M5-QA-FIX-01.md): implementação e validação, com [análise original](qualidade/QA-BETA-01.md).
 

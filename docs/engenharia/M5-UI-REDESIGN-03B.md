@@ -21,3 +21,11 @@ Perda acidental de rascunho (mitigada pela confirmação); gestos conflitantes c
 
 ## Evidência
 Pendente: nenhuma build deste recorte foi executada ainda.
+
+### Atualização de evidência (05/11/2026)
+- Android: run 42060849129 (commit 847b221) — testes unitários, lint, build e **13/13 testes de UI** no emulador; capturas claras/escuras do editor, edição e detalhe inspecionadas (sem alça/X/“i”, título rola, botão flutuante).
+- iOS: build e testes unitários passam; **testes de UI deste commit sem resultado** (rodada 42052147589 falhou em 2 testes de detalhe, ajustados; rodada 42056595862 cancelada por nova execução; 42060849129 em andamento).
+- Corrigido depois, ainda NÃO EXECUTADO no CI: degradê sob os botões flutuantes (Android; iOS < 26), ícone próprio para Link (Android), cartão da foto de capa mais baixo (Android), testes iOS `testSwipeDownWithDraftAsksBeforeDiscarding` e `testMarkOnMapSheetConfirmsPointFromSimulatedLocation`.
+- Defeitos vistos nas capturas: botão flutuante cobre o campo Link em tela compacta (mitigado com o degradê, aceito por ser rolagem sob o botão).
+- Não coberto: arrastar com rascunho no iOS (teste novo ainda não rodou), VoiceOver/TalkBack manual, fonte muito grande, Marcar no mapa nas capturas.
+- Matriz G-01..G-15: NÃO PREENCHIDA — depende do CI iOS e da revisão humana das capturas.

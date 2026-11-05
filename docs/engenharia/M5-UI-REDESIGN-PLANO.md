@@ -1,6 +1,6 @@
 # M5-UI-REDESIGN — Contrato de implementação
 
-5 de novembro de 2026. **Status: aprovado em direção (protótipo aprovado no chat); implementação em recortes, só o recorte 1 aplicado.** Contrato guarda-chuva das tarefas M5-UI-REDESIGN-01 a 06. Cada recorte exige confirmação explícita do responsável antes de começar e termina em CI nativo, capturas inspecionadas e documentos atualizados. Sem merge, sem release, sem nova beta. Especificação visual: [DESIGN-007](../design/DESIGN-007.md).
+5 de novembro de 2026. **Status: aprovado em direção (protótipo aprovado no chat); implementação em recortes; 01, 02, 03 e 03B aplicados (CI aprovado em 01–03; 03B em andamento).** Contrato guarda-chuva das tarefas M5-UI-REDESIGN-01 a 06. Cada recorte exige confirmação explícita do responsável antes de começar e termina em CI nativo, capturas inspecionadas e documentos atualizados. Sem merge, sem release, sem nova beta. Especificação visual: [DESIGN-007](../design/DESIGN-007.md).
 
 ## Regras comuns a todos os recortes
 
@@ -29,7 +29,7 @@
 ## Recortes
 
 ### M5-UI-REDESIGN-01 — contraste, seletor e mapa expandido
-**Aplicado** na branch `ui/m5-ui-redesign-01` (commits 8d3ef6f e 5c0040d), **sem build nem teste**. Contrato próprio em [M5-UI-REDESIGN-01](M5-UI-REDESIGN-01.md). Falta: CI nativo, capturas e decisão D1.
+**Aplicado** na branch `ui/m5-ui-redesign-01` (commits 8d3ef6f e 5c0040d); **CI aprovado** (run 42003942009). Contrato próprio em [M5-UI-REDESIGN-01](M5-UI-REDESIGN-01.md).
 
 ### M5-UI-REDESIGN-02 — editor de lugar
 **Objetivo:** adicionar, editar e revisar lugar conforme DESIGN-007.
