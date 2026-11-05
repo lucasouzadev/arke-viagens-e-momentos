@@ -1,5 +1,7 @@
 # Índice e maturidade da documentação
 
+[M5-UI-REDESIGN-01 — redesenho de UI/UX, recorte 1](engenharia/M5-UI-REDESIGN-01.md): contraste da tinta, seletor de contexto e mapa expandido; aplicado localmente, sem build nem teste.
+
 [M5-QA-FIX-01 — correções de interação da beta](engenharia/M5-QA-FIX-01.md): implementação e validação, com [análise original](qualidade/QA-BETA-01.md).
 
 [M5-TESTFLIGHT-01 — primeira build beta](engenharia/M5-TESTFLIGHT-01.md) e [M5-DEVICE-01 — APK e teste em aparelho](engenharia/M5-DEVICE-01.md): recorte de distribuição de testes autorizado, sem publicação nas lojas.

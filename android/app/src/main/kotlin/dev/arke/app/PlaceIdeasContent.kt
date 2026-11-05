@@ -259,6 +259,7 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                 }
                 val isLast = index < 0 || index == ideas.lastIndex
                 Button(onClick = { if (isLast) onClose() else selectedID = ideas[index + 1].id }, shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = Color.White),
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag(if (isLast) "detail.done" else "detail.next")) {
                     Text(stringResource(if (isLast) R.string.detail_done else R.string.next_place))
                 }

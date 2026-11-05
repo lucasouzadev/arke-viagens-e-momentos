@@ -6,7 +6,7 @@ struct ArkeApp: App {
         WindowGroup {
             HomeView()
                 // Candidate in ADR-006, pending final visual approval.
-                .tint(ArkeUI.blue)
+                .tint(ArkeUI.ink)
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -248,6 +249,8 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     label = "mapExpansion",
                 )
                 val contentRecess by animateDpAsState(if (mapExpanded) 12.dp else 0.dp, label = "contentRecess")
+                // Com o mapa expandido só a borda do cartão fica à mostra: sem texto sob a alça.
+                val peekSurface = MaterialTheme.colorScheme.surface
                 val dragModifier = Modifier.draggable(
                     orientation = Orientation.Vertical,
                     enabled = !keyboardVisible,
@@ -279,7 +282,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     Card(
                         modifier = Modifier.fillMaxWidth().weight(1f).offset(y = contentRecess).drawWithContent {
                             drawContent()
-                            if (mapExpanded) drawRect(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.68f))
+                            if (mapExpanded) drawRect(peekSurface)
                         },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -392,12 +395,13 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                 )
                             }
                         }
-                        if (!mapExpanded) FilledTonalIconButton(
-                            onClick = { mapExpanded = true },
+                        FilledTonalIconButton(
+                            onClick = { mapExpanded = !mapExpanded },
                             enabled = !keyboardVisible,
                             modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp).testTag("home.expandMap"),
                         ) {
-                            Text("↗", Modifier.clearAndSetSemantics { contentDescription = "Expandir mapa" })
+                            val toggleLabel = if (mapExpanded) "Recolher mapa" else "Expandir mapa"
+                            Text(if (mapExpanded) "↙" else "↗", Modifier.clearAndSetSemantics { contentDescription = toggleLabel })
                         }
                     }
                 }
@@ -408,7 +412,9 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp)
                             .draggable(rememberDraggableState { closeDistance += it }, Orientation.Vertical,
                                 onDragStarted = { closeDistance = 0f },
-                                onDragStopped = { if (closeDistance > closeThreshold) mapExpanded = false })
+                                // Mesma direção da alça normal: arrastar para cima devolve espaço ao cartão.
+                                onDragStopped = { if (closeDistance < -closeThreshold) mapExpanded = false })
+                            .clickable { mapExpanded = false }
                             .semantics {
                                 contentDescription = "Recolher mapa"
                                 customActions = listOf(CustomAccessibilityAction("Recolher mapa") { mapExpanded = false; true })
@@ -515,10 +521,11 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
             ),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
-            ContextPreview(options.getOrNull(index - 1))
+            ContextNeighbor(options.getOrNull(index - 1), forward = false, onSelect = onSelect)
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 stringResource(context.title()),
-                modifier = Modifier.weight(1f).testTag("home.contextTitle").semantics {
+                modifier = Modifier.fillMaxWidth().testTag("home.contextTitle").semantics {
                     heading()
                     customActions = listOfNotNull(
                         options.getOrNull(index - 1)?.let { previous ->
@@ -533,19 +540,40 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
-            ContextPreview(options.getOrNull(index + 1))
+            ContextDots(index, options.size)
+            }
+            ContextNeighbor(options.getOrNull(index + 1), forward = true, onSelect = onSelect)
         }
     }
 }
 
+/** Vizinho do contexto atual: botão tocável, nunca texto cortado. O nome completo vai para a acessibilidade. */
 @Composable
-private fun ContextPreview(option: TravelContext?) {
-    Box(Modifier.width(56.dp)) {
-        if (option != null) {
-            Text(stringResource(option.title()), maxLines = 1, softWrap = false,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.34f),
-                modifier = Modifier.clearAndSetSemantics {})
+private fun ContextNeighbor(option: TravelContext?, forward: Boolean, onSelect: (TravelContext) -> Unit) {
+    if (option == null) {
+        Spacer(Modifier.size(44.dp, 48.dp))
+        return
+    }
+    val label = (if (forward) "Próximo contexto: " else "Contexto anterior: ") + stringResource(option.title())
+    IconButton(
+        onClick = { onSelect(option) },
+        modifier = Modifier.size(44.dp, 48.dp).testTag(if (forward) "home.contextNext" else "home.contextPrevious"),
+    ) {
+        Icon(painterResource(R.drawable.ic_back), contentDescription = label,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.graphicsLayer { rotationZ = if (forward) 180f else 0f })
+    }
+}
+
+/** Posição entre os cinco contextos, só como apoio visual (o seletor anuncia a posição por semântica). */
+@Composable
+private fun ContextDots(index: Int, count: Int) {
+    Row(Modifier.padding(top = 4.dp).clearAndSetSemantics {}, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        repeat(count) { position ->
+            val selected = position == index
+            Box(Modifier.size(if (selected) 16.dp else 6.dp, 6.dp).background(
+                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                RoundedCornerShape(3.dp)))
         }
     }
 }

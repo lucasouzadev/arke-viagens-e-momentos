@@ -134,7 +134,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
                         Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text("Sobre sua ideia", style = MaterialTheme.typography.titleMedium)
-                            Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.", modifier = Modifier.testTag("place.infoText"))
+                            Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. Para ver o endereço no mapa, use Marcar no mapa depois de salvar. Você pode salvar sem criar uma viagem.", modifier = Modifier.testTag("place.infoText"))
                             TextButton(onClick = { showingInfo = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("place.infoDismiss")) { Text("Entendi") }
                         }
                     }
@@ -198,6 +198,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                             reviewing = true
                         }
                     }, enabled = !saving && !loadingCover, shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
                         Text(stringResource(R.string.review_place))
                     }
@@ -211,6 +212,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     ) { Text(stringResource(R.string.edit_information)) }
                     Button(
                         onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.save"),
                     ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
                 }

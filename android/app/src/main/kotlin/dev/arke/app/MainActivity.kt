@@ -18,11 +18,12 @@ class MainActivity : ComponentActivity() {
         val places = ViewModelProvider(this)[PlaceIdeasViewModel::class.java]
         setContent {
             // Candidate from ADR-006; pending visual approval, not final identity.
-            val brandBlue = Color(0xFF4C728A)
+            // `primary` colors text/actions, so in dark it is the lighter ink of the same hue (contrast);
+            // filled buttons use ArkeColors.brand explicitly.
             val colors = if (isSystemInDarkTheme()) {
-                darkColorScheme(primary = brandBlue, onPrimary = Color.White)
+                darkColorScheme(primary = ArkeColors.inkDark, onPrimary = Color(0xFF0B0B10))
             } else {
-                lightColorScheme(primary = brandBlue, onPrimary = Color.White)
+                lightColorScheme(primary = ArkeColors.brand, onPrimary = Color.White)
             }
             MaterialTheme(colorScheme = colors, typography = ArkeTypography) {
                 ArkeHome(places, captureDetails = BuildConfig.DEBUG && intent.getBooleanExtra("capturePlaceDetails", false),

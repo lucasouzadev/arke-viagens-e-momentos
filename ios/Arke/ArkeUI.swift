@@ -13,6 +13,14 @@ enum ArkeUI {
     static let fieldRadius: CGFloat = 12
     static let cardRadius: CGFloat = 20
     static let blue = Color(red: 76 / 255, green: 114 / 255, blue: 138 / 255)
+    /// Tinta de texto e ações: mesma matiz do azul candidato, com luminosidade ajustada por tema.
+    /// Claro: o próprio azul (≈5,1:1 sobre branco). Escuro: versão mais clara (≈6,9:1 sobre o cartão),
+    /// já que o azul puro dá ≈3,3:1 no escuro.
+    static let ink = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 136 / 255, green: 170 / 255, blue: 190 / 255, alpha: 1)
+            : UIColor(red: 76 / 255, green: 114 / 255, blue: 138 / 255, alpha: 1)
+    })
 }
 
 enum ArkeTextRole {

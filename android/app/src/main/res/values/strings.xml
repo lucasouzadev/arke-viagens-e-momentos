@@ -58,7 +58,7 @@
     <string name="next_place">Próximo</string>
     <string name="place_position">Lugar %1$d de %2$d</string>
     <string name="place_unavailable">Este lugar não está mais disponível.</string>
-    <string name="place_detail_notice">Esta ideia fica só neste aparelho, sem backup. Desinstalar o app pode apagá-la. O endereço ainda não aparece no mapa.</string>
+    <string name="place_detail_notice">Esta ideia fica só neste aparelho, sem backup. Desinstalar o app pode apagá-la. Para vê-la no mapa, use Marcar no mapa.</string>
     <string name="view_place_details_label">Ver detalhes de %1$s</string>
     <string name="detail_header">Seus lugares</string>
     <string name="detail_info_label">Informações sobre este lugar</string>

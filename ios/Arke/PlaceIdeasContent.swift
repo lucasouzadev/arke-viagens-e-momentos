@@ -182,7 +182,7 @@ struct PlaceDetails: View {
                     .popover(isPresented: $showingInfo) {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Sobre este lugar").arkeText(.contextTitle)
-                            Text("Esta ideia fica só neste aparelho, sem backup. Desinstalar o app pode apagá-la. O endereço ainda não aparece no mapa.")
+                            Text("Esta ideia fica só neste aparelho, sem backup. Desinstalar o app pode apagá-la. Para vê-la no mapa, use Marcar no mapa.")
                                 .arkeText(.body).accessibilityIdentifier("detail.infoText")
                             Button { showingInfo = false } label: {
                                 Text("Entendi").arkeText(.button).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)

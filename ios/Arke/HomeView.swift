@@ -141,7 +141,8 @@ struct HomeView: View {
                     .padding(.top, 16)
                     .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
                     .clipShape(.rect(cornerRadius: 20))
-                    .overlay { if mapExpanded { Color.black.opacity(0.68) } }
+                    // Com o mapa expandido, só a borda do cartão fica à mostra: sem texto sob a alça.
+                    .overlay { if mapExpanded { Color(uiColor: .secondarySystemGroupedBackground) } }
                     .offset(y: mapExpanded ? 12 : 0)
                     .allowsHitTesting(!mapExpanded)
                     .accessibilityHidden(mapExpanded)
@@ -185,15 +186,14 @@ struct HomeView: View {
                                 .accessibilityLabel("Minha localização")
                                 .accessibilityIdentifier("home.location")
                                 .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
-                                if !mapExpanded {
-                                    Button { setMapExpanded(true) } label: {
-                                        Image(systemName: "arrow.up.left.and.arrow.down.right").frame(width: 44, height: 44)
-                                    }
-                                    .modifier(MapLocationButtonStyle())
-                                    .accessibilityLabel("Expandir mapa")
-                                    .accessibilityIdentifier("home.expandMap")
-                                    .disabled(keyboardVisible)
+                                Button { setMapExpanded(!mapExpanded) } label: {
+                                    Image(systemName: mapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                                        .frame(width: 44, height: 44)
                                 }
+                                .modifier(MapLocationButtonStyle())
+                                .accessibilityLabel(mapExpanded ? "Recolher mapa" : "Expandir mapa")
+                                .accessibilityIdentifier("home.expandMap")
+                                .disabled(keyboardVisible)
                             }
                             .padding(.horizontal, 12).padding(.bottom, 26)
                         }
@@ -219,8 +219,10 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity, minHeight: 48)
                             .contentShape(Rectangle())
                             .gesture(DragGesture(minimumDistance: 10).onEnded { value in
-                                if value.translation.height > 16 { setMapExpanded(false) }
+                                // Mesma direção da alça normal: arrastar para cima devolve espaço ao cartão.
+                                if value.translation.height < -16 { setMapExpanded(false) }
                             })
+                            .onTapGesture { setMapExpanded(false) }
                             .accessibilityLabel("Recolher mapa")
                             .accessibilityAddTraits(.isButton)
                             .accessibilityAction { setMapExpanded(false) }
@@ -355,27 +357,33 @@ struct HomeView: View {
             .disabled(!places.ready || places.busy)
             .accessibilityLabel("Adicionar lugar")
             .accessibilityIdentifier("home.addPlace")
-            HStack(spacing: 4) {
-                contextPreview(index - 1)
-                Text(state.context.title)
-                    .arkeText(.contextTitle)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("home.contextTitle")
-                contextPreview(index + 1)
-            }
-            .contentShape(Rectangle())
-            .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                selectContext(index + (value.translation.width < 0 ? 1 : -1))
-            })
-            .accessibilityAdjustableAction { direction in
-                switch direction {
-                case .increment: selectContext(index + 1)
-                case .decrement: selectContext(index - 1)
-                @unknown default: break
+            HStack(spacing: 0) {
+                contextNeighbor(index - 1, forward: false)
+                VStack(spacing: 6) {
+                    Text(state.context.title)
+                        .arkeText(.contextTitle)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, minHeight: 28)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("home.contextTitle")
+                    contextDots(index: index, count: options.count)
                 }
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .contentShape(Rectangle())
+                .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    selectContext(index + (value.translation.width < 0 ? 1 : -1))
+                })
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment: selectContext(index + 1)
+                    case .decrement: selectContext(index - 1)
+                    @unknown default: break
+                    }
+                }
+                contextNeighbor(index + 1, forward: true)
             }
         }
         .buttonStyle(.plain)
@@ -388,11 +396,36 @@ struct HomeView: View {
         contextValue = TravelContext.allCases[index].rawValue
     }
 
-    private func contextPreview(_ index: Int) -> some View {
+    /// Vizinho do contexto atual: botão tocável (nunca texto cortado). O nome completo vai para a acessibilidade.
+    @ViewBuilder
+    private func contextNeighbor(_ index: Int, forward: Bool) -> some View {
         let options = TravelContext.allCases
-        return Text(options.indices.contains(index) ? options[index].title : "")
-            .font(.caption.weight(.semibold)).lineLimit(1)
-            .frame(width: 56).opacity(0.34).accessibilityHidden(true)
+        if options.indices.contains(index) {
+            Button { selectContext(index) } label: {
+                Image(systemName: forward ? "chevron.right" : "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 44, height: 48)
+                    .contentShape(Rectangle())
+            }
+            .foregroundStyle(.secondary)
+            .accessibilityLabel((forward ? "Próximo contexto: " : "Contexto anterior: ") + options[index].title)
+            .accessibilityIdentifier(forward ? "home.contextNext" : "home.contextPrevious")
+        } else {
+            Color.clear.frame(width: 44, height: 48).accessibilityHidden(true)
+        }
+    }
+
+    /// Posição entre os cinco contextos, só como apoio visual (a posição é anunciada pelo seletor ajustável).
+    private func contextDots(index: Int, count: Int) -> some View {
+        HStack(spacing: 5) {
+            ForEach(0..<count, id: \.self) { position in
+                Capsule()
+                    .fill(position == index ? AnyShapeStyle(ArkeUI.ink) : AnyShapeStyle(Color.secondary.opacity(0.45)))
+                    .frame(width: position == index ? 16 : 6, height: 6)
+            }
+        }
+        .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: index)
+        .accessibilityHidden(true)
     }
 
     private func settlePanel(_ detent: PanelDetent) {

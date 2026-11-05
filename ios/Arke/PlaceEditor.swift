@@ -63,7 +63,7 @@ struct PlaceEditor: View {
                             .popover(isPresented: $showingInfo) {
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("Sobre sua ideia").arkeText(.contextTitle)
-                                    Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.").arkeText(.body)
+                                    Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. Para ver o endereço no mapa, use Marcar no mapa depois de salvar. Você pode salvar sem criar uma viagem.").arkeText(.body)
                                         .accessibilityIdentifier("place.infoText")
                                     Button("Entendi") { showingInfo = false }.frame(minHeight: 48).accessibilityIdentifier("place.infoDismiss")
                                 }.foregroundStyle(ink).frame(width: 240).padding(20).presentationCompactAdaptation(.popover)
