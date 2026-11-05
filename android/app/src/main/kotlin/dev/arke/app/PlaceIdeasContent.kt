@@ -229,6 +229,8 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                     } else Text(stringResource(R.string.place_unavailable))
                 }
             }
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(96.dp)
+                .background(Brush.verticalGradient(listOf(Color.Transparent, sheetColor))))
             Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (index > 0) {

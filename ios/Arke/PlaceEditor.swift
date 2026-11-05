@@ -104,6 +104,11 @@ struct PlaceEditor: View {
                             if let focused { proxy.scrollTo(focused, anchor: .center) }
                         }
                     }
+                    // Antes do iOS 26 não há desvanecimento nativo da rolagem: degradê curto sob os botões flutuantes.
+                    if #unavailable(iOS 26) {
+                        LinearGradient(colors: [.clear, ArkeUI.sheetSurface(colorScheme)], startPoint: .top, endPoint: .bottom)
+                            .frame(height: reviewing ? 150 : 96).allowsHitTesting(false)
+                    }
                     VStack(spacing: 10) {
                         if reviewing {
                             Button { reviewing = false } label: {

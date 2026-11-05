@@ -128,7 +128,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
                 )
                 if (!reviewing || draft.cover.isNotEmpty()) {
-                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(16.dp)).padding(horizontal = 16.dp, vertical = 12.dp),
+                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(16.dp)).padding(horizontal = 16.dp, vertical = if (draft.cover.isEmpty()) 4.dp else 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         val cover = remember(draft.cover) { decodePlaceCover(draft.cover) }
                         if (cover != null) {
@@ -170,7 +170,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                         PlaceSummary(stringResource(R.string.place_address), R.drawable.ic_pin, draft.normalized().address)
                         if (draft.link.isNotBlank()) {
                             HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                            PlaceSummary("Link", R.drawable.ic_note, draft.link.trim())
+                            PlaceSummary("Link", R.drawable.ic_link, draft.link.trim())
                         }
                         HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                         PlaceSummary("Nota", R.drawable.ic_note, draft.normalized().note.ifEmpty { stringResource(R.string.no_note) })
@@ -183,7 +183,7 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                             draft.address, { draft = draft.copy(address = it) }, 68.dp, 1, 4, saving, "place.address")
                         PlaceInput("Nota", R.drawable.ic_note, "Opcional", "O que não pode esquecer?",
                             draft.note, { draft = draft.copy(note = it) }, 104.dp, 3, 6, saving, "place.note")
-                        PlaceInput("Link", R.drawable.ic_note, "Opcional", "exemplo.com",
+                        PlaceInput("Link", R.drawable.ic_link, "Opcional", "exemplo.com",
                             draft.link, { draft = draft.copy(link = it) }, 68.dp, 1, 1, saving, "place.link")
                         if (submitted) draft.issue?.let { issue ->
                             Text(stringResource(issue.message()), style = MaterialTheme.typography.bodySmall,
@@ -202,6 +202,9 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                 TextButton(colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.cancel")) { Text(stringResource(R.string.cancel)) }
             }
+            // O conteúdo passa por baixo das ações: degradê curto para o texto não aparecer cortado atrás do botão.
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(if (reviewing) 150.dp else 96.dp)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color.Transparent, arkeSheetColor()))))
             Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (reviewing) {

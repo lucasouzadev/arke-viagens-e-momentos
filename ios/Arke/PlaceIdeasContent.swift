@@ -203,6 +203,10 @@ struct PlaceDetails: View {
                 .id(selectedID).accessibilityIdentifier("detail.body")
                 .modifier(ArkeScrollEdges())
                 .scrollBounceBehavior(.basedOnSize)
+                if #unavailable(iOS 26) {
+                    LinearGradient(colors: [.clear, ArkeUI.sheetSurface(colorScheme)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 96).allowsHitTesting(false)
+                }
                 HStack(spacing: 10) {
                     if let index, index > 0 {
                         Button { selectedID = ideas[index - 1].id } label: {
