@@ -38,7 +38,7 @@ Fonte nativa, escalável. Título 22/28 · contexto 19/24 · cabeçalho 17/22 ·
 
 - Cabeçalho único: **X à esquerda (48), título central, ação ou “i” à direita ou coluna vazia**. Alça nativa; fade de 24–28 no topo e na base; indicadores de rolagem ocultos.
 - Ação principal **sempre no rodapé**, acima do teclado e da área segura; secundária acima dela na revisão.
-- Campos: rótulo persistente com ícone e marcação **Obrigatório/Opcional**, placeholder legível (≥ 4,5:1), foco com contorno. Nome 68, endereço 68 e cresce, nota 104, link 68 (alturas mínimas, **substituem 56/96/120 do DESIGN-006**). O texto do campo alinha com o do rótulo; um tipo de campo só (sem mistura de `TextField` e `TextEditor` com recuos diferentes).
+- Campos: rótulo persistente com ícone e marcação **Obrigatório/Opcional**, placeholder legível (≥ 4,5:1), foco com contorno. Cada campo é um cartão próprio com altura mínima de 68 (nome, endereço, link) e 104 (nota), **substituindo 56/96/120 do DESIGN-006**. No Android o texto cresce até 4 linhas (endereço) e 6 (nota). No iOS endereço (44) e nota (72) usam `TextEditor` de altura fixa dentro do cartão e rolam internamente; crescimento automático fica para depois. O texto do campo alinha com o do rótulo; um tipo de campo só (sem mistura de `TextField` e `TextEditor` com recuos diferentes).
 - Foto de capa: linha-botão com ícone, texto, “Opcional” e seta; trocar/remover são ações separadas de 48, remover em cor de perigo.
 - Revisão: resumo compacto em grupo único (rótulo + valor), sem blocos vazios; Editar informações acima de Salvar neste aparelho.
 - Teclado: campo ativo visível acima do teclado, nunca sob o cabeçalho; ação principal sobe junto.

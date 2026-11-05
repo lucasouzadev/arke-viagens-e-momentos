@@ -24,6 +24,8 @@
 | D5 | Forma de autenticação para compartilhar (conta Arke, método) | Recorte 5 | Seguir GROUP-001; até decidir, manter o fluxo atual atrás de “Compartilhar”, sem login de teste na interface |
 | D6 | Ícone por contexto no seletor (iOS SF Symbols; Android novos vetores) | Recorte 6 | Aprovar o conjunto: pin, receipt, target, star, photo |
 
+**D1 a D6 aprovadas pelo responsável em 05/11/2026, conforme as propostas da tabela.**
+
 ## Recortes
 
 ### M5-UI-REDESIGN-01 — contraste, seletor e mapa expandido
