@@ -350,40 +350,62 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
             showingTrips = false
             tripDetailsID = null
         }
-        AlertDialog(
-            onDismissRequest = { if (trip == null) closeTrips() else tripDetailsID = null },
-            title = { Text(trip?.title ?: "Viagens") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    when {
-                        plan == null -> Text("Não foi possível abrir as viagens.")
-                        trip != null -> {
-                            val ideas = placeState.ideas.filter { idea ->
-                                plan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
-                            }
-                            if (ideas.isEmpty()) Text("Nenhum Pin nesta viagem.")
-                            ideas.forEach { idea ->
-                                Column(Modifier.padding(vertical = 8.dp)) {
-                                    Text(idea.name, style = MaterialTheme.typography.titleMedium)
-                                    Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    plan.pins.firstOrNull { it.ideaID == idea.id }?.let { pin ->
-                                        TextButton(onClick = { pinToShare = idea.name to pin }) { Text("Compartilhar Pin") }
-                                    }
-                                }
-                            }
+        // Sheet contínuo: título rola com o conteúdo; fechar é arrastar para baixo (ou Voltar).
+        ArkeFloatingSheet(onDismiss = { if (trip == null) closeTrips() else tripDetailsID = null }, tagPrefix = "trips",
+            modifier = Modifier.fillMaxHeight(0.8f)) {
+            Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp).padding(top = 28.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(trip?.title ?: "Viagens", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.semantics { heading() })
+                @Composable
+                fun TripRow(iconRes: Int, title: String, detail: String, onClick: (() -> Unit)?) {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(arkeInsetColor())
+                        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Box(Modifier.size(48.dp).clip(CircleShape).background(arkeSheetColor()), contentAlignment = Alignment.Center) {
+                            Icon(painterResource(iconRes), null, Modifier.size(22.dp))
                         }
-                        plan.trips.isEmpty() -> Text("Suas viagens aparecem aqui quando você vincula um Pin.")
-                        else -> plan.trips.forEach { item ->
-                            TextButton(onClick = { tripDetailsID = item.id }) { Text(item.title) }
+                        Column(Modifier.weight(1f)) {
+                            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
-            },
-            confirmButton = { TextButton(onClick = { closeTrips() }) { Text("Fechar") } },
-            dismissButton = {
-                if (trip != null) TextButton(onClick = { tripDetailsID = null }) { Text("Voltar") }
-            },
-        )
+                when {
+                    plan == null -> Text("Não foi possível abrir as viagens.")
+                    trip != null -> {
+                        val ideas = placeState.ideas.filter { idea ->
+                            plan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
+                        }
+                        if (ideas.isEmpty()) Text("Nenhum Pin nesta viagem.")
+                        ideas.forEach { idea ->
+                            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(arkeInsetColor()).padding(16.dp)) {
+                                Text(idea.name, style = MaterialTheme.typography.titleMedium)
+                                Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                plan.pins.firstOrNull { it.ideaID == idea.id }?.let { pin ->
+                                    TextButton(onClick = { pinToShare = idea.name to pin }) { Text("Compartilhar Pin") }
+                                }
+                            }
+                        }
+                        TextButton(onClick = { tripDetailsID = null }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Voltar") }
+                    }
+                    else -> {
+                        if (plan.trips.isEmpty()) Text("Suas viagens aparecem aqui quando você vincula um Pin.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        plan.trips.forEach { item ->
+                            val count = plan.pins.count { it.tripID == item.id }
+                            TripRow(R.drawable.ic_suitcase, item.title, if (count == 1) "1 lugar" else "$count lugares") { tripDetailsID = item.id }
+                        }
+                        Text("Fora de viagens", style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp, start = 4.dp))
+                        val loose = placeState.ideas.count { idea -> plan.pins.none { it.ideaID == idea.id && it.tripID != null } }
+                        TripRow(R.drawable.ic_pin, "Ideias soltas", if (loose == 1) "1 lugar sem viagem" else "$loose lugares sem viagem", null)
+                    }
+                }
+            }
+        }
     }
     pinIdea?.let { idea ->
         PinEditor(idea, places, onClose = { pinIdea = null }) { plan ->
