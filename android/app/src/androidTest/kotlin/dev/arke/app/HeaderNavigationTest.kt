@@ -79,8 +79,11 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("place.name").scrollIntoView().performTextReplacement("Rascunho de teste")
         compose.onNodeWithTag("place.review").scrollIntoView().performClick()
         compose.onNodeWithText("Informe um endereço ou referência.").assertExists()
-        // Back (e o gesto de arrastar) com rascunho abrem a confirmação em vez de fechar.
-        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        // Arrastar o sheet para baixo com rascunho abre a confirmação em vez de fechar.
+        compose.onNodeWithTag("place.dismiss.card").performTouchInput {
+            swipe(Offset(centerX, 20f), Offset(centerX, height - 20f), 300)
+        }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Continuar editando").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Continuar editando").performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho de teste")
         compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
@@ -97,7 +100,7 @@ class HeaderNavigationTest {
         compose.onNode(hasText("Museu de teste") and hasAnyAncestor(hasTestTag("place.fields"))).assertExists()
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
-        compose.onNodeWithTag("place.review").scrollIntoView().performClick()
+        openReviewAndWaitForSave()
         compose.onNodeWithTag("place.save").performClick()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
@@ -131,7 +134,7 @@ class HeaderNavigationTest {
         compose.onNode(hasText("Museu atualizado") and hasAnyAncestor(hasTestTag("place.fields"))).assertExists()
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu atualizado")
-        compose.onNodeWithTag("place.review").scrollIntoView().performClick()
+        openReviewAndWaitForSave()
         compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.title").fetchSemanticsNodes().isEmpty() }
         compose.activityRule.scenario.recreate()
@@ -278,5 +281,16 @@ class HeaderNavigationTest {
     /** O conteúdo só rola quando excede a altura; com tudo visível não há ação de rolagem. */
     private fun androidx.compose.ui.test.SemanticsNodeInteraction.scrollIntoView() = apply {
         runCatching { performScrollTo() }
+    }
+
+    /** O teclado reabre ao voltar para os campos e move o botão; repete o toque até a revisão abrir. */
+    private fun openReviewAndWaitForSave() {
+        repeat(3) {
+            if (compose.onAllNodesWithTag("place.save").fetchSemanticsNodes().isEmpty()) {
+                compose.onNodeWithTag("place.review").performClick()
+                runCatching { compose.waitUntil(3_000) { compose.onAllNodesWithTag("place.save").fetchSemanticsNodes().isNotEmpty() } }
+            }
+        }
+        compose.onNodeWithTag("place.save").assertExists()
     }
 }
