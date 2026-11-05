@@ -190,9 +190,12 @@ struct PlaceEditor: View {
                         Image(systemName: "photo").font(.system(size: 18))
                             .frame(width: 40, height: 40)
                             .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12))
-                        Text("Adicionar foto de capa").arkeText(.body).fontWeight(.semibold).foregroundStyle(ink)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Adicionar foto de capa").arkeText(.body).fontWeight(.semibold).foregroundStyle(ink)
+                                .multilineTextAlignment(.leading)
+                            Text("Opcional").arkeText(.caption).foregroundStyle(.secondary)
+                        }
                         Spacer(minLength: 8)
-                        Text("Opcional").arkeText(.caption).foregroundStyle(.secondary)
                         Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(.secondary)
                     }
                     .frame(minHeight: 48).contentShape(Rectangle())

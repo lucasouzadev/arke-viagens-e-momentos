@@ -1,6 +1,8 @@
 # STATUS — Estado verificável do Arke
 
-**M5-UI-REDESIGN-02 (editor de lugar) — aplicado na branch `ui/m5-ui-redesign-02`, NÃO compilado nem testado.** [Contrato](engenharia/M5-UI-REDESIGN-02.md). Decisões D1–D6 aprovadas pelo responsável. Campos em cartões próprios com placeholder e “Obrigatório/Opcional”, foco centralizado, fades em meia altura, foto de capa como botão e revisão compacta, nas duas plataformas. Branch empilhada sobre a 01; o CI nativo do recorte 01 foi disparado, resultado a registrar.
+**CI do redesenho:** recorte 01 aprovado em Android e iOS (run 42003942009). Recorte 02 aprovado na repetição (run 42008889411); a primeira execução teve um teste de UI iOS intermitente que passou de 3 min.
+
+**M5-UI-REDESIGN-02 (editor de lugar) — aplicado na branch `ui/m5-ui-redesign-02`, CI aprovado; ajuste do texto da foto de capa no iOS ainda sem CI.** [Contrato](engenharia/M5-UI-REDESIGN-02.md). Decisões D1–D6 aprovadas pelo responsável. Campos em cartões próprios com placeholder e “Obrigatório/Opcional”, foco centralizado, fades em meia altura, foto de capa como botão e revisão compacta, nas duas plataformas. Branch empilhada sobre a 01; o CI nativo do recorte 01 foi disparado, resultado a registrar.
 
 **Redesenho de UI/UX aprovado em direção (05/11/2026).** O responsável aprovou o protótipo tela por tela. O [contrato de implementação](engenharia/M5-UI-REDESIGN-PLANO.md) define os recortes 01–06, regras comuns, decisões pendentes D1–D6 e aceite; a [DESIGN-007](design/DESIGN-007.md) fixa a especificação visual. Somente o recorte 01 tem código, e sem build nem teste. Os recortes 02–06 aguardam confirmação para começar; nenhum PR, merge ou CI disparado.
 

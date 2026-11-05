@@ -1,6 +1,6 @@
 # M5-UI-REDESIGN-02 — Editor de lugar
 
-5 de novembro de 2026. **Status: aplicado na branch `ui/m5-ui-redesign-02` (empilhada sobre a 01), NÃO compilado nem testado.** Contrato guarda-chuva: [M5-UI-REDESIGN-PLANO](M5-UI-REDESIGN-PLANO.md); especificação: [DESIGN-007](../design/DESIGN-007.md). Decisão D3 aprovada. Plataformas: iOS e Android. Sem PR, merge ou release.
+5 de novembro de 2026. **Status: aplicado na branch `ui/m5-ui-redesign-02` (empilhada sobre a 01); CI nativo aprovado nas duas plataformas na segunda execução (run [42008889411](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/42008889411)). Falta revisão humana das capturas.** Contrato guarda-chuva: [M5-UI-REDESIGN-PLANO](M5-UI-REDESIGN-PLANO.md); especificação: [DESIGN-007](../design/DESIGN-007.md). Decisão D3 aprovada. Plataformas: iOS e Android. Sem PR, merge ou release.
 
 ## Objetivo
 
@@ -49,6 +49,13 @@ G-01 revisado no diff (dois cartões, um azul, nativo). G-02 este contrato. G-04
 - **P2 — `TextEditor` com padding negativo e placeholder em sobreposição:** alinhamento só verificável em captura.
 - **P3 — `if #unavailable(iOS 26)` em `background`:** conferir no CI.
 - Recuperação: descartar a branch; a 01 e a main ficam intactas.
+
+## Evidência de CI
+
+- **Run 42000055639 (primeira):** Android aprovado; iOS compilou e passou nos unitários, mas `testSaveReviewReopenAndConfirmedDelete` passou de 3 min (buscas de `place.name` levando ~30 s) e derrubou a etapa de captura. O mesmo teste passa na branch 01 (run 42003942009).
+- **Run 42008889411 (repetição, mesmo código):** Android e iOS aprovados, incluindo todos os testes de UI; 45 PNGs. A falha anterior foi **intermitente**: a captura levou 32 min contra 27 min na 01, então o simulador pode estar lento, mas a causa não está provada. Se voltar a ocorrer, investigar o editor (elemento de acessibilidade por campo, `TextEditor` com padding negativo, bordas de rolagem sempre ativas).
+- **Inspecionado (iOS, escuro e claro, padrão e compacto; Android, escuro e claro):** campos em cartões com placeholder e Obrigatório/Opcional, edição com valores preenchidos, botão “Revisar lugar” sem faixa atrás. Defeitos vistos: no iOS o texto “Adicionar foto de capa” quebrava em duas linhas porque o “Opcional” ao lado tomava a largura (corrigido depois do run: “Opcional” passou para baixo do título; **a correção não foi verificada por CI**); em largura compacta o último campo aparece parcialmente por trás do botão antes de rolar (comportamento de rolagem, sem fade forte).
+- **Não coberto:** capturas da revisão compacta e do teclado aberto, VoiceOver/TalkBack, fonte 200%, landscape, tablets, aparelho físico.
 
 ## Próximo handoff
 

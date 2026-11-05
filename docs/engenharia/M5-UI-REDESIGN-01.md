@@ -1,6 +1,6 @@
 # M5-UI-REDESIGN-01 — Redesenho de UI/UX, recorte 1
 
-5 de novembro de 2026. **Status: em andamento, recorte 1 aplicado na branch `ui/m5-ui-redesign-01` (commit 8d3ef6f, enviada à origem) e ainda NÃO compilado nem testado.** Milestone M5. Plataformas: iOS e Android. Sem PR, sem merge, sem publicação, sem nova beta.
+5 de novembro de 2026. **Status: recorte 1 aplicado na branch `ui/m5-ui-redesign-01` e com CI nativo aprovado nas duas plataformas (run [42003942009](https://github.com/lucasouzadev/arke-viagens-e-momentos/actions/runs/42003942009), fonte 4fdd3b9). Decisão D1 aprovada. Falta revisão humana; o mapa expandido não tem captura (nenhum teste cobre esse estado).** Milestone M5. Plataformas: iOS e Android. Sem PR, sem merge, sem publicação, sem nova beta.
 
 ## Objetivo e contexto
 
@@ -86,6 +86,14 @@ iOS: `ios/Arke/ArkeUI.swift`, `ArkeApp.swift`, `HomeView.swift`, `PlaceEditor.sw
 ## Impacto público
 
 Sim, perceptível: texto de ação mais legível no escuro, título de contexto completo e mapa expandido mais claro. Texto leigo candidato para o CHANGELOG, somente quando houver release: “Ficou mais fácil ler os botões no modo escuro e trocar de seção sem nomes cortados.”
+
+## Evidência de CI (run 42003942009, 05/11/2026)
+
+- **Android:** testes unitários, lint, build debug e testes instrumentados no emulador aprovados.
+- **iOS:** testes unitários, build para simulador sem assinatura e todos os testes de UI aprovados; 44 PNGs gerados.
+- **Inspecionado:** quatro capturas iOS em escuro (Home padrão e compacta, editor, Avaliações). O título do contexto aparece inteiro, com seta de vizinho e cinco pontos; links e botões de texto ficaram legíveis no escuro. A faixa cinza de cantos retos atrás do cabeçalho e o editor antigo seguem como antes (recortes 04 e 02).
+- **Não coberto:** mapa expandido (sem teste nem captura), VoiceOver/TalkBack, fonte 200%, landscape, tablets, aparelho físico, profiling.
+- O workflow `native-checks.yml` desta linha de branches não tinha o job de simulador iOS; ele foi restaurado do ramo antigo (sem assinatura, sem envio), commit 4fdd3b9.
 
 ## Próximo handoff
 
