@@ -182,6 +182,7 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-DETAILS-UI-03](engenharia/M5-DETAILS-UI-03.md) | Sheet de detalhes compacto e agrupado | Em revisão; CI e 32 PNGs verificados no PR #2 |
 | [M5-FLOATING-01](engenharia/M5-FLOATING-01.md) | Cartões flutuantes, recuo e cabeçalho simplificado | 32 testes e 32 PNGs verificados; em revisão no PR #2, limites no contrato |
 | [M5-EDIT-01](engenharia/M5-EDIT-01.md) | Navegação limpa e edição segura de ideias | 34 testes e 40 PNGs verificados; em revisão no PR #2, limites no contrato |
+| [M5-UI-REDESIGN-PLANO](engenharia/M5-UI-REDESIGN-PLANO.md) | Contrato guarda-chuva do redesenho (recortes 01–06) com [DESIGN-007](design/DESIGN-007.md) | Direção aprovada no chat; só o 01 tem código; 02–06 aguardam confirmação e decisões D1–D6 |
 | [M5-UI-REDESIGN-01](engenharia/M5-UI-REDESIGN-01.md) | Redesenho de UI/UX em recortes; recorte 1: contraste da tinta, seletor de contexto, mapa expandido | Aplicado na branch `ui/m5-ui-redesign-01` (enviada, sem PR); build, testes e capturas NÃO EXECUTADOS; recortes 2–5 sem contrato |
 | [M5-QA-FIX-01](engenharia/M5-QA-FIX-01.md) | Correções do QA da beta e posição pessoal contextual | Em revisão: fluxos/40 PNGs/posição simulada verificados; CI aprovada; matriz manual pendente no contrato |
 
