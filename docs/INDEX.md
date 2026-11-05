@@ -1,6 +1,6 @@
 # Índice e maturidade da documentação
 
-[M5-UI-REDESIGN-01 — redesenho de UI/UX, recorte 1](engenharia/M5-UI-REDESIGN-01.md): contraste da tinta, seletor de contexto e mapa expandido; aplicado localmente, sem build nem teste.
+[M5-UI-REDESIGN-01 — redesenho de UI/UX, recorte 1](engenharia/M5-UI-REDESIGN-01.md): contraste da tinta, seletor de contexto e mapa expandido; aplicado na branch, sem build nem teste.
 
 [M5-QA-FIX-01 — correções de interação da beta](engenharia/M5-QA-FIX-01.md): implementação e validação, com [análise original](qualidade/QA-BETA-01.md).
 

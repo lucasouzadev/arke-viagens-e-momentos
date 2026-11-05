@@ -1,6 +1,6 @@
 # M5-UI-REDESIGN-01 — Redesenho de UI/UX, recorte 1
 
-5 de novembro de 2026. **Status: em andamento, recorte 1 aplicado localmente e ainda NÃO compilado nem testado.** Milestone M5. Plataformas: iOS e Android. Sem merge, sem publicação, sem nova beta.
+5 de novembro de 2026. **Status: em andamento, recorte 1 aplicado na branch `ui/m5-ui-redesign-01` (commit 8d3ef6f, enviada à origem) e ainda NÃO compilado nem testado.** Milestone M5. Plataformas: iOS e Android. Sem PR, sem merge, sem publicação, sem nova beta.
 
 ## Objetivo e contexto
 
@@ -90,7 +90,7 @@ Sim, perceptível: texto de ação mais legível no escuro, título de contexto 
 ## Próximo handoff
 
 1. Revisão humana do diff e decisão sobre a tinta no escuro.
-2. Com autorização para push, disparar o CI nativo na branch e inspecionar os PNGs em padrão/compacto, claro/escuro.
+2. Com autorização, disparar o CI nativo na branch e inspecionar os PNGs em padrão/compacto, claro/escuro.
 3. Abrir contrato do recorte 2 (editor de lugar) depois de aprovar o DESIGN-006 revisado.
 
 [AGENTS](../../AGENTS.md) · [DESIGN-006](../design/DESIGN-006.md) · [QA-BETA-01](../qualidade/QA-BETA-01.md) · [QUALITY-GATES](../agents/QUALITY-GATES.md)
