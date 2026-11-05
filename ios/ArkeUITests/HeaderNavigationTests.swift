@@ -430,9 +430,11 @@ final class HeaderNavigationTests: XCTestCase {
             if field.isHittable { break }
             app.scrollViews["place.fields"].swipeDown()
         }
-        field.tap()
-        // Each fixture is one paragraph; use the system paragraph-selection gesture.
-        field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
+        // Cursor no fim do texto e apagar tudo: o gesto de triplo toque falhou de forma intermitente no CI
+        // (o texto novo era anexado ao antigo).
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: 0.5)).tap()
+        let existing = (field.value as? String) ?? ""
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 4))
         field.typeText(value)
         if field.value as? String != value {
             print(app.debugDescription)
