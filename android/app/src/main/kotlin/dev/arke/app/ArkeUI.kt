@@ -68,15 +68,7 @@ fun ArkeFloatingSheet(
         onDismissRequest = onDismiss, sheetState = sheetState, modifier = Modifier.testTag("$tagPrefix.dismiss.card"),
         containerColor = arkeSheetColor(), contentColor = MaterialTheme.colorScheme.onSurface, tonalElevation = 0.dp,
         shape = RoundedCornerShape(36.dp),
-        dragHandle = {
-            val dismissLabel = stringResource(dev.arke.app.R.string.sheet_dismiss)
-            TextButton(onClick = onDismiss, enabled = enabled, contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("$tagPrefix.dismiss").semantics { contentDescription = dismissLabel },
-            ) {
-                BottomSheetDefaults.DragHandle()
-
-            }
-        },
+        dragHandle = null,
     ) {
         Column(modifier.fillMaxWidth(), content = content)
     }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -91,7 +92,6 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     LaunchedEffect(reviewing) { editorScroll.scrollTo(0) }
     var submitted by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by remember { mutableStateOf(false) }
-    var showingInfo by remember { mutableStateOf(false) }
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
     val focus = LocalFocusManager.current
@@ -102,7 +102,11 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
         if (!saving) { if (!hasChanges) onCancel() else confirmingDiscard = true }
     }
     val canDismiss by rememberUpdatedState(!hasChanges && !saving)
-    val confirmSheetChange = remember { { value: SheetValue -> value != SheetValue.Hidden || canDismiss } }
+    val confirmSheetChange = remember { { value: SheetValue ->
+        val allowed = value != SheetValue.Hidden || canDismiss
+        if (!allowed) confirmingDiscard = true
+        allowed
+    } }
     val sheet = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
         confirmValueChange = confirmSheetChange,
@@ -111,44 +115,18 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
         onDismiss = { if (!saving) cancel() }, tagPrefix = "place", sheetState = sheet, enabled = !saving,
         modifier = Modifier.fillMaxHeight(0.9f).imePadding(),
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
-                    contentPadding = PaddingValues(0.dp),
-                    shape = CircleShape,
-                    modifier = Modifier.width(48.dp).heightIn(min = 48.dp).testTag("place.cancel"),
-                ) {
-                    Box(Modifier.size(48.dp).background(arkeInsetColor(), CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.ic_close), stringResource(R.string.cancel))
-                    }
-                }
-                Spacer(Modifier.width(28.dp))
-                Text(
-                    stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
-                    Modifier.weight(1f).testTag("place.title").semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
-                )
-                Box(Modifier.width(76.dp), contentAlignment = Alignment.CenterEnd) {
-                    IconButton(onClick = { focus.clearFocus(); keyboard?.hide(); showingInfo = true },
-                        modifier = Modifier.size(48.dp).background(arkeInsetColor(), CircleShape).testTag("place.info")) {
-                        Icon(painterResource(R.drawable.ic_info), "Informações sobre salvar lugares")
-                    }
-                    DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
-                        Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("Sobre sua ideia", style = MaterialTheme.typography.titleMedium)
-                            Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. Para ver o endereço no mapa, use Marcar no mapa depois de salvar. Você pode salvar sem criar uma viagem.", modifier = Modifier.testTag("place.infoText"))
-                            TextButton(onClick = { showingInfo = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("place.infoDismiss")) { Text("Entendi") }
-                        }
-                    }
-                }
-            }
+        // Sheet contínuo: título rola com o conteúdo; ações flutuam sobre ele.
+        Box(Modifier.fillMaxWidth().weight(1f)) {
             Column(
-                Modifier.fillMaxWidth().weight(1f)
-                    .verticalScroll(editorScroll).testTag("place.fields")
-                    .padding(top = 16.dp, bottom = 12.dp),
+                Modifier.fillMaxSize().verticalScroll(editorScroll).testTag("place.fields")
+                    .padding(horizontal = 20.dp).padding(top = 28.dp, bottom = if (reviewing) 156.dp else 96.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                Text(
+                    stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
+                    Modifier.testTag("place.title").semantics { heading() },
+                    style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                )
                 if (!reviewing || draft.cover.isNotEmpty()) {
                     Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(16.dp)).padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -214,7 +192,30 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                     }
                 }
                 if (saveError != null) Text(saveError, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.saveError"))
-                if (!reviewing) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 4.dp)) {
+                    Icon(painterResource(R.drawable.ic_info), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    Text("Fica salvo só neste aparelho, sem backup.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("place.infoText"))
+                }
+                // Cancelar sem gesto: fim do conteúdo, alternativa ao arrastar para baixo.
+                TextButton(colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.cancel")) { Text(stringResource(R.string.cancel)) }
+            }
+            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (reviewing) {
+                    TextButton(
+                        colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving, shape = CircleShape,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).shadow(6.dp, CircleShape)
+                            .background(arkeInsetColor(), CircleShape).testTag("place.edit"),
+                    ) { Text(stringResource(R.string.edit_information)) }
+                    Button(
+                        onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).shadow(6.dp, CircleShape).testTag("place.save"),
+                    ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
+                } else {
                     Button(onClick = {
                         submitted = true
                         if (draft.issue == null) {
@@ -224,22 +225,9 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                         }
                     }, enabled = !saving && !loadingCover, shape = CircleShape,
                         colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).shadow(6.dp, CircleShape).testTag("place.review")) {
                         Text(stringResource(R.string.review_place))
                     }
-                }
-            }
-            if (reviewing) {
-                Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(
-                        colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).background(arkeInsetColor(), CircleShape).testTag("place.edit"),
-                    ) { Text(stringResource(R.string.edit_information)) }
-                    Button(
-                        onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.save"),
-                    ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
                 }
             }
         }

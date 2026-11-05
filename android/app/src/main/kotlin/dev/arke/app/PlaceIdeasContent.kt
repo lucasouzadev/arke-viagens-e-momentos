@@ -1,6 +1,8 @@
 package dev.arke.app
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.rememberScrollState
@@ -193,51 +195,26 @@ private val PendingDraftSaver = Saver<PlaceDraft?, List<String>>(
 @Composable
 fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit) {
     var selectedID by rememberSaveable(initialID) { mutableStateOf(initialID) }
-    var showingInfo by remember { mutableStateOf(false) }
     val index = ideas.indexOfFirst { it.id == selectedID }
     val sheetColor = arkeSheetColor()
     val insetColor = arkeInsetColor()
     val ink = MaterialTheme.colorScheme.onSurface
     val maximumHeight = with(LocalDensity.current) { (LocalWindowInfo.current.containerSize.height * 0.9f).toDp() }
     ArkeFloatingSheet(onDismiss = onClose, tagPrefix = "detail", modifier = Modifier.heightIn(max = maximumHeight)) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.width(48.dp))
-                Text(stringResource(R.string.detail_header), Modifier.weight(1f).testTag("detail.title").semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                Box {
-                    IconButton(onClick = { showingInfo = true }, modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.info")) {
-                        Icon(painterResource(R.drawable.ic_info), stringResource(R.string.detail_info_label), tint = ink)
-                    }
-                    DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
-                        Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(stringResource(R.string.detail_info_title), style = MaterialTheme.typography.titleMedium)
-                            Text(stringResource(R.string.place_detail_notice), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("detail.infoText"))
-                            TextButton(onClick = { showingInfo = false }, colors = ButtonDefaults.textButtonColors(contentColor = ink),
-                                modifier = Modifier.heightIn(min = 48.dp).testTag("detail.infoDismiss")) { Text(stringResource(R.string.detail_info_dismiss)) }
-                        }
-                    }
-                }
-            }
+        // Sheet contínuo: o nome é o título e rola com o conteúdo; navegação flutua sobre ele.
+        Box(Modifier.fillMaxWidth()) {
             key(selectedID) {
                 val detailScroll = rememberScrollState()
-                Column(Modifier.fillMaxWidth().weight(1f, fill = false).drawWithContent {
-                    drawContent()
-                    if (detailScroll.canScrollBackward) drawRect(Brush.verticalGradient(listOf(sheetColor, Color.Transparent), 0f, 12.dp.toPx()))
-                    if (detailScroll.canScrollForward) drawRect(Brush.verticalGradient(listOf(Color.Transparent, sheetColor),
-                        startY = (size.height - 32.dp.toPx()).coerceAtLeast(0f), endY = size.height))
-                }.verticalScroll(detailScroll).testTag("detail.body").padding(vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Column(Modifier.fillMaxWidth().verticalScroll(detailScroll).testTag("detail.body")
+                    .padding(horizontal = 20.dp).padding(top = 28.dp, bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     if (index >= 0) {
                         val idea = ideas[index]
                         val positionLabel = stringResource(R.string.place_position, index + 1, ideas.size)
-                        Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                            Icon(painterResource(R.drawable.ic_bookmark), null, modifier = Modifier.size(24.dp, 28.dp).testTag("detail.nameIcon"))
-                            Text(idea.name, style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.weight(1f).testTag("detail.name").semantics {
-                                    heading(); liveRegion = LiveRegionMode.Polite; stateDescription = positionLabel
-                                })
-                        }
+                        Text(idea.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth().testTag("detail.name").semantics {
+                                heading(); liveRegion = LiveRegionMode.Polite; stateDescription = positionLabel
+                            })
                         Column(Modifier.fillMaxWidth().background(insetColor, RoundedCornerShape(24.dp)).padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)) {
                             DetailContentRow(idea.address, R.drawable.ic_pin, stringResource(R.string.place_address), "detail.address")
@@ -247,20 +224,23 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                             }
                             if (idea.note.isNotEmpty()) DetailContentRow(idea.note, R.drawable.ic_note, stringResource(R.string.place_note), "detail.note")
                         }
+                        Text(stringResource(R.string.place_detail_notice), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp).testTag("detail.infoText"))
                     } else Text(stringResource(R.string.place_unavailable))
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (index > 0) {
                     IconButton(onClick = { selectedID = ideas[index - 1].id },
-                        modifier = Modifier.size(48.dp).background(insetColor, CircleShape).testTag("detail.previous")) {
+                        modifier = Modifier.size(56.dp).shadow(6.dp, CircleShape).background(insetColor, CircleShape).testTag("detail.previous")) {
                         Icon(painterResource(R.drawable.ic_back), stringResource(R.string.previous_place), tint = ink)
                     }
                 }
                 val isLast = index < 0 || index == ideas.lastIndex
                 Button(onClick = { if (isLast) onClose() else selectedID = ideas[index + 1].id }, shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = Color.White),
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag(if (isLast) "detail.done" else "detail.next")) {
+                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).shadow(6.dp, CircleShape).testTag(if (isLast) "detail.done" else "detail.next")) {
                     Text(stringResource(if (isLast) R.string.detail_done else R.string.next_place))
                 }
             }
