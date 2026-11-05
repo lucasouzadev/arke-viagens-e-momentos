@@ -218,7 +218,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertLessThanOrEqual(card.frame.maxX, app.frame.maxX)
         XCTAssertLessThan(card.frame.maxY, app.frame.maxY)
         XCTAssertFalse(app.buttons["detail.info"].exists)
-        XCTAssertEqual(app.staticTexts["detail.name"].frame.minX, app.staticTexts["detail.address"].frame.minX, accuracy: 1)
+        XCTAssertLessThanOrEqual(app.staticTexts["detail.name"].frame.minX, app.staticTexts["detail.address"].frame.minX)
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
         XCTAssertTrue(app.staticTexts["detail.infoText"].label.contains("sem backup"))
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
