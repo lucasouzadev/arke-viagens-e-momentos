@@ -17,6 +17,10 @@ import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -88,7 +92,6 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
     LaunchedEffect(reviewing) { editorScroll.scrollTo(0) }
     var submitted by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by remember { mutableStateOf(false) }
-    var showingInfo by remember { mutableStateOf(false) }
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     val textButtonColors = ButtonDefaults.textButtonColors(contentColor = actionColor)
     val focus = LocalFocusManager.current
@@ -99,7 +102,11 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
         if (!saving) { if (!hasChanges) onCancel() else confirmingDiscard = true }
     }
     val canDismiss by rememberUpdatedState(!hasChanges && !saving)
-    val confirmSheetChange = remember { { value: SheetValue -> value != SheetValue.Hidden || canDismiss } }
+    val confirmSheetChange = remember { { value: SheetValue ->
+        val allowed = value != SheetValue.Hidden || canDismiss
+        if (!allowed) confirmingDiscard = true
+        allowed
+    } }
     val sheet = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
         confirmValueChange = confirmSheetChange,
@@ -108,88 +115,110 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
         onDismiss = { if (!saving) cancel() }, tagPrefix = "place", sheetState = sheet, enabled = !saving,
         modifier = Modifier.fillMaxHeight(0.9f).imePadding(),
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp)) {
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
-                    contentPadding = PaddingValues(0.dp),
-                    shape = CircleShape,
-                    modifier = Modifier.width(48.dp).heightIn(min = 48.dp).testTag("place.cancel"),
-                ) {
-                    Box(Modifier.size(48.dp).background(arkeInsetColor(), CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.ic_close), stringResource(R.string.cancel))
-                    }
-                }
-                Spacer(Modifier.width(28.dp))
-                Text(
-                    stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
-                    Modifier.weight(1f).testTag("place.title").semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
-                )
-                Box(Modifier.width(76.dp), contentAlignment = Alignment.CenterEnd) {
-                    IconButton(onClick = { focus.clearFocus(); keyboard?.hide(); showingInfo = true },
-                        modifier = Modifier.size(48.dp).background(arkeInsetColor(), CircleShape).testTag("place.info")) {
-                        Icon(painterResource(R.drawable.ic_info), "Informações sobre salvar lugares")
-                    }
-                    DropdownMenu(expanded = showingInfo, onDismissRequest = { showingInfo = false }) {
-                        Column(Modifier.width(280.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("Sobre sua ideia", style = MaterialTheme.typography.titleMedium)
-                            Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.", modifier = Modifier.testTag("place.infoText"))
-                            TextButton(onClick = { showingInfo = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("place.infoDismiss")) { Text("Entendi") }
-                        }
-                    }
-                }
-            }
+        // Sheet contínuo: título rola com o conteúdo; ações flutuam sobre ele.
+        Box(Modifier.fillMaxWidth().weight(1f)) {
             Column(
-                Modifier.fillMaxWidth().weight(1f)
-                    .verticalScroll(editorScroll).testTag("place.fields")
-                    .padding(top = 16.dp, bottom = 12.dp),
+                Modifier.fillMaxSize().verticalScroll(editorScroll).testTag("place.fields")
+                    .padding(horizontal = 20.dp).padding(top = 28.dp, bottom = if (reviewing) 156.dp else 96.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                Text(
+                    stringResource(if (reviewing) R.string.review_place else if (initialIdea == null) R.string.add_place else R.string.edit_place),
+                    Modifier.testTag("place.title").semantics { heading() },
+                    style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                )
                 if (!reviewing || draft.cover.isNotEmpty()) {
-                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(20.dp)).padding(16.dp)) {
+                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(16.dp)).padding(horizontal = 16.dp, vertical = if (draft.cover.isEmpty()) 4.dp else 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         val cover = remember(draft.cover) { decodePlaceCover(draft.cover) }
                         if (cover != null) {
                             Image(cover.asImageBitmap(), contentDescription = null,
-                                modifier = Modifier.size(width = 112.dp, height = 80.dp), contentScale = ContentScale.Crop)
+                                modifier = Modifier.size(width = 112.dp, height = 80.dp).clip(RoundedCornerShape(12.dp)), contentScale = ContentScale.Crop)
                         }
                         if (!reviewing) {
-                            TextButton(enabled = !saving && !loadingCover, onClick = {
-                                picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
-                            }) { Text(if (cover == null) "Adicionar foto de capa" else "Trocar foto de capa") }
-                            if (cover != null) {
-                                TextButton(enabled = !saving && !loadingCover, onClick = {
-                                    draft = draft.copy(cover = "")
-                                    coverError = false
-                                }) { Text("Remover foto") }
+                            if (cover == null) {
+                                // Linha-botão com a superfície inteira tocável.
+                                Row(
+                                    Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                        .clickable(enabled = !saving && !loadingCover) { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
+                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    Text("Adicionar foto de capa", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                                    Text("Opcional", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TextButton(colors = textButtonColors, enabled = !saving && !loadingCover, onClick = {
+                                        picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                                    }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text("Trocar foto de capa") }
+                                    TextButton(colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                        enabled = !saving && !loadingCover, onClick = {
+                                            draft = draft.copy(cover = "")
+                                            coverError = false
+                                        }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Remover foto") }
+                                }
                             }
                             if (loadingCover) Text("Carregando foto…")
                             if (coverError) Text("Não foi possível abrir esta foto.", color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
-                Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(24.dp)).padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 if (reviewing) {
-                    PlaceSummary(stringResource(R.string.place_name), draft.normalized().name, 56.dp)
-                    PlaceSummary(stringResource(R.string.place_address), draft.normalized().address, 96.dp)
-                    if (draft.link.isNotBlank()) PlaceSummary("Link", draft.link.trim(), 48.dp)
-                    PlaceSummary(stringResource(R.string.place_note), draft.normalized().note.ifEmpty { stringResource(R.string.no_note) }, 120.dp)
+                    Column(Modifier.fillMaxWidth().background(arkeInsetColor(), RoundedCornerShape(20.dp))) {
+                        PlaceSummary(stringResource(R.string.place_name), R.drawable.ic_bookmark, draft.normalized().name)
+                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                        PlaceSummary(stringResource(R.string.place_address), R.drawable.ic_pin, draft.normalized().address)
+                        if (draft.link.isNotBlank()) {
+                            HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                            PlaceSummary("Link", R.drawable.ic_link, draft.link.trim())
+                        }
+                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                        PlaceSummary("Nota", R.drawable.ic_note, draft.normalized().note.ifEmpty { stringResource(R.string.no_note) })
+                    }
                 } else {
-                    PlaceInput(stringResource(R.string.place_name), draft.name, { draft = draft.copy(name = it) }, 56.dp, 1, 1, saving, "place.name")
-                    HorizontalDivider()
-                    PlaceInput(stringResource(R.string.place_address), draft.address, { draft = draft.copy(address = it) }, 96.dp, 2, 4, saving, "place.address")
-                    HorizontalDivider()
-                    PlaceInput(stringResource(R.string.place_note), draft.note, { draft = draft.copy(note = it) }, 120.dp, 3, 6, saving, "place.note")
-                    HorizontalDivider()
-                    PlaceInput("Link opcional", draft.link, { draft = draft.copy(link = it) }, 48.dp, 1, 1, saving, "place.link")
-                    if (submitted) draft.issue?.let { issue ->
-                        Text(stringResource(issue.message()), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.validation"))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PlaceInput(stringResource(R.string.place_name), R.drawable.ic_bookmark, "Obrigatório", "Ex.: Pão de Açúcar",
+                            draft.name, { draft = draft.copy(name = it) }, 68.dp, 1, 1, saving, "place.name")
+                        PlaceInput(stringResource(R.string.place_address), R.drawable.ic_pin, "Obrigatório", "Rua, bairro ou ponto de referência",
+                            draft.address, { draft = draft.copy(address = it) }, 68.dp, 1, 4, saving, "place.address")
+                        PlaceInput("Nota", R.drawable.ic_note, "Opcional", "O que não pode esquecer?",
+                            draft.note, { draft = draft.copy(note = it) }, 104.dp, 3, 6, saving, "place.note")
+                        PlaceInput("Link", R.drawable.ic_link, "Opcional", "exemplo.com",
+                            draft.link, { draft = draft.copy(link = it) }, 68.dp, 1, 1, saving, "place.link")
+                        if (submitted) draft.issue?.let { issue ->
+                            Text(stringResource(issue.message()), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 4.dp).testTag("place.validation"))
+                        }
                     }
                 }
-                }
                 if (saveError != null) Text(saveError, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place.saveError"))
-                if (!reviewing) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 4.dp)) {
+                    Icon(painterResource(R.drawable.ic_info), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    Text("Fica salvo só neste aparelho, sem backup.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("place.infoText"))
+                }
+                // Cancelar sem gesto: fim do conteúdo, alternativa ao arrastar para baixo.
+                TextButton(colors = textButtonColors, onClick = { cancel() }, enabled = !saving,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.cancel")) { Text(stringResource(R.string.cancel)) }
+            }
+            // O conteúdo passa por baixo das ações: degradê curto para o texto não aparecer cortado atrás do botão.
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(if (reviewing) 150.dp else 96.dp)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color.Transparent, arkeSheetColor()))))
+            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (reviewing) {
+                    TextButton(
+                        colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving, shape = CircleShape,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).shadow(6.dp, CircleShape)
+                            .background(arkeInsetColor(), CircleShape).testTag("place.edit"),
+                    ) { Text(stringResource(R.string.edit_information)) }
+                    Button(
+                        onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).shadow(6.dp, CircleShape).testTag("place.save"),
+                    ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
+                } else {
                     Button(onClick = {
                         submitted = true
                         if (draft.issue == null) {
@@ -198,21 +227,10 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
                             reviewing = true
                         }
                     }, enabled = !saving && !loadingCover, shape = CircleShape,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.review")) {
+                        colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).shadow(6.dp, CircleShape).testTag("place.review")) {
                         Text(stringResource(R.string.review_place))
                     }
-                }
-            }
-            if (reviewing) {
-                Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(
-                        colors = textButtonColors, onClick = { reviewing = false }, enabled = !saving,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).background(arkeInsetColor(), CircleShape).testTag("place.edit"),
-                    ) { Text(stringResource(R.string.edit_information)) }
-                    Button(
-                        onClick = { onSave(draft.normalized()) }, enabled = !saving, shape = CircleShape,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("place.save"),
-                    ) { Text(stringResource(if (saving) R.string.saving else if (initialIdea == null) R.string.save_on_device else R.string.save_changes)) }
                 }
             }
         }
@@ -229,14 +247,25 @@ fun PlaceEditor(saving: Boolean, saveError: String?, onSave: (PlaceDraft) -> Uni
 }
 
 @Composable
-private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit, minHeight: Dp, minLines: Int, maxLines: Int, saving: Boolean, tag: String) {
+private fun PlaceInput(label: String, iconRes: Int, requirement: String, placeholder: String, value: String, onChange: (String) -> Unit,
+                       minHeight: Dp, minLines: Int, maxLines: Int, saving: Boolean, tag: String) {
     val focus = LocalFocusManager.current
     val requester = remember { FocusRequester() }
-    Column(Modifier.clickable(enabled = !saving) { requester.requestFocus() }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(if (label == stringResource(R.string.place_name)) R.drawable.ic_bookmark else if (label == stringResource(R.string.place_address)) R.drawable.ic_pin else R.drawable.ic_note), null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(24.dp))
-            Text(label, style = MaterialTheme.typography.labelMedium)
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(16.dp)
+    // Cartão próprio por campo: a superfície inteira foca o campo; o contorno marca o campo ativo.
+    Column(
+        Modifier.fillMaxWidth().heightIn(min = minHeight)
+            .background(arkeInsetColor(), shape)
+            .then(if (focused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape) else Modifier)
+            .clickable(enabled = !saving) { requester.requestFocus() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(iconRes), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+            Text(label, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(requirement, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         BasicTextField(
             value = value, onValueChange = onChange, enabled = !saving,
@@ -245,22 +274,28 @@ private fun PlaceInput(label: String, value: String, onChange: (String) -> Unit,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions(capitalization = if (maxLines == 1) KeyboardCapitalization.Words else KeyboardCapitalization.Sentences, imeAction = if (maxLines == 1) ImeAction.Next else ImeAction.Default),
             keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
-            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).padding(start = 36.dp, end = 4.dp)
+            decorationBox = { inner ->
+                Box {
+                    if (value.isEmpty()) {
+                        Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    inner()
+                }
+            },
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
                 .focusRequester(requester).testTag(tag).semantics { contentDescription = label },
         )
     }
 }
 
 @Composable
-private fun PlaceSummary(label: String, value: String, minHeight: Dp) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(if (label == stringResource(R.string.place_name)) R.drawable.ic_bookmark else if (label == stringResource(R.string.place_address)) R.drawable.ic_pin else R.drawable.ic_note), null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(24.dp))
-            Text(label, style = MaterialTheme.typography.labelMedium)
+private fun PlaceSummary(label: String, iconRes: Int, value: String) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(iconRes), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text(value, style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth().heightIn(min = minHeight))
+        Text(value, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth())
     }
 }
 

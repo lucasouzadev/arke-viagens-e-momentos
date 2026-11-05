@@ -7,7 +7,8 @@ struct HomeView: View {
     @SceneStorage("home.context") private var contextValue = TravelContext.planning.rawValue
     @SceneStorage("home.detent") private var detentValue = PanelDetent.balanced.rawValue
     @StateObject private var location = ForegroundLocation()
-    @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 120, longitudeDelta: 160)))
+    // D4: sem Pins nem localização, o mapa abre no Brasil; com Pins salvos, enquadra todos (ver `frameSavedPins`).
+    @State private var camera: MapCameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: -14.2, longitude: -51.9), span: MKCoordinateSpan(latitudeDelta: 38, longitudeDelta: 38)))
     @State private var showingTrips = false
     @State private var pinPlan: LocalPinPlan?
     @State private var pinIdea: PlaceIdea?
@@ -54,8 +55,6 @@ struct HomeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Arke").arkeText(.appTitle)
-            Text("Onde vamos?").arkeText(.screenTitle)
             GeometryReader { geometry in
                 let restingHeight = panelHeight ?? mapHeight(in: geometry.size.height)
                 let expandedHeight = min(geometry.size.height, max(restingHeight, geometry.size.height - 52))
@@ -74,7 +73,25 @@ struct HomeView: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
                             if state.context == .planning {
-                                Button { tripPath = []; showingTrips = true } label: { Label("Viagens", systemImage: "suitcase") }
+                                HStack {
+                                    Button { tripPath = []; showingTrips = true } label: {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "suitcase").font(.system(size: 15))
+                                            Text("Viagens").arkeText(.label)
+                                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                                        }
+                                        .padding(.horizontal, 14).frame(minHeight: 44)
+                                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                                        .contentShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("home.trips")
+                                    Spacer()
+                                    if places.ready {
+                                        Text(places.ideas.count == 1 ? "1 lugar" : "\(places.ideas.count) lugares")
+                                            .arkeText(.body).foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                                 if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
                                 if let error = places.error, !showingAddPlace {
@@ -130,8 +147,9 @@ struct HomeView: View {
                                         .accessibilityLabel("Lugar selecionado: " + idea.name)
                                 }
                             }
-                            .padding(.bottom, 8)
-                            .background(.regularMaterial)
+                            .padding(.bottom, 12)
+                            // Fundo sólido igual ao do cartão: o material cinza aparecia como uma faixa estranha sobre o cartão branco.
+                            .background(ArkeUI.sheetSurface(colorScheme))
                         }
                         .frame(maxHeight: .infinity)
                         .arkeScrollEdges()
@@ -141,7 +159,8 @@ struct HomeView: View {
                     .padding(.top, 16)
                     .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
                     .clipShape(.rect(cornerRadius: 20))
-                    .overlay { if mapExpanded { Color.black.opacity(0.68) } }
+                    // Com o mapa expandido, só a borda do cartão fica à mostra: sem texto sob a alça.
+                    .overlay { if mapExpanded { Color(uiColor: .secondarySystemGroupedBackground) } }
                     .offset(y: mapExpanded ? 12 : 0)
                     .allowsHitTesting(!mapExpanded)
                     .accessibilityHidden(mapExpanded)
@@ -165,45 +184,16 @@ struct HomeView: View {
                                 .blur(radius: 7)
                                 .allowsHitTesting(false)
                         }
-                        .overlay(alignment: .bottom) {
-                            HStack(spacing: 6) {
-                                Button { showingMapSearch = true } label: {
-                                    if compactMap {
-                                        Image(systemName: "magnifyingglass").frame(width: 44, height: 44)
-                                    } else {
-                                        Label("Buscar lugares", systemImage: "magnifyingglass")
-                                            .font(.subheadline).frame(maxWidth: .infinity, minHeight: 44)
-                                    }
-                                }
-                                .modifier(MapLocationButtonStyle(isPill: !compactMap))
-                                .accessibilityLabel("Buscar lugares")
-                                .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
-                                Button { location.request() } label: {
-                                    Image(systemName: "location.fill").frame(width: 44, height: 44)
-                                }
-                                .modifier(MapLocationButtonStyle())
-                                .accessibilityLabel("Minha localização")
-                                .accessibilityIdentifier("home.location")
-                                .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
-                                if !mapExpanded {
-                                    Button { setMapExpanded(true) } label: {
-                                        Image(systemName: "arrow.up.left.and.arrow.down.right").frame(width: 44, height: 44)
-                                    }
-                                    .modifier(MapLocationButtonStyle())
-                                    .accessibilityLabel("Expandir mapa")
-                                    .accessibilityIdentifier("home.expandMap")
-                                    .disabled(keyboardVisible)
-                                }
-                            }
-                            .padding(.horizontal, 12).padding(.bottom, 26)
+                        .overlay(alignment: .top) {
+                            mapControls(compact: compactMap)
                         }
-                        .overlay(alignment: .topLeading) {
+                        .overlay(alignment: .bottomLeading) {
                             if !compactMap, state.context == .planning,
                                let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
                                 Label(idea.name, systemImage: "bookmark")
                                     .font(.subheadline.weight(.semibold)).lineLimit(1)
                                     .padding(10).background(.regularMaterial, in: Capsule())
-                                    .padding(.leading, 12).padding(.trailing, 68).padding(.top, 18)
+                                    .padding(.leading, 12).padding(.trailing, 68).padding(.bottom, 34)
                                     .accessibilityLabel("Ideia selecionada: \(idea.name)")
                                     .allowsHitTesting(false)
                             }
@@ -219,8 +209,10 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity, minHeight: 48)
                             .contentShape(Rectangle())
                             .gesture(DragGesture(minimumDistance: 10).onEnded { value in
-                                if value.translation.height > 16 { setMapExpanded(false) }
+                                // Mesma direção da alça normal: arrastar para cima devolve espaço ao cartão.
+                                if value.translation.height < -16 { setMapExpanded(false) }
                             })
+                            .onTapGesture { setMapExpanded(false) }
                             .accessibilityLabel("Recolher mapa")
                             .accessibilityAddTraits(.isButton)
                             .accessibilityAction { setMapExpanded(false) }
@@ -281,19 +273,42 @@ struct HomeView: View {
             }
             .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: false))
             .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+            .presentationDragIndicator(.hidden)
         }
-        .task { pinPlan = try? await places.loadPinPlan() }
+        .task {
+            pinPlan = try? await places.loadPinPlan()
+            frameSavedPins()
+        }
         .sheet(isPresented: $showingTrips) {
             NavigationStack(path: $tripPath) {
-                List {
-                    if let plan = pinPlan {
-                        if plan.trips.isEmpty { Text("Suas viagens aparecem aqui quando você vincula um Pin.") }
-                        ForEach(plan.trips, id: \.id) { trip in
-                            NavigationLink(trip.title, value: trip.id)
-                        }
-                    } else { Text("Não foi possível abrir as viagens.") }
+                // Sheet contínuo: o título rola com o conteúdo; fechar é arrastar para baixo.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Viagens").font(.title.bold()).padding(.bottom, 6).accessibilityAddTraits(.isHeader)
+                        if let plan = pinPlan {
+                            if plan.trips.isEmpty {
+                                Text("Suas viagens aparecem aqui quando você vincula um Pin.").foregroundStyle(.secondary)
+                            }
+                            ForEach(plan.trips, id: \.id) { trip in
+                                let count = plan.pins.filter { $0.tripID == trip.id }.count
+                                NavigationLink(value: trip.id) {
+                                    tripRow(icon: "suitcase", title: trip.title,
+                                            detail: count == 1 ? "1 lugar" : "\(count) lugares", chevron: true)
+                                }.buttonStyle(.plain)
+                            }
+                            Text("Fora de viagens").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                                .padding(.top, 10).padding(.leading, 4)
+                            let loose = places.ideas.filter { idea in
+                                !plan.pins.contains { $0.ideaID == idea.id && $0.tripID != nil }
+                            }.count
+                            tripRow(icon: "mappin", title: "Ideias soltas",
+                                    detail: loose == 1 ? "1 lugar sem viagem" : "\(loose) lugares sem viagem", chevron: false)
+                        } else { Text("Não foi possível abrir as viagens.") }
+                    }
+                    .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 32)
                 }
+                .scrollIndicators(.hidden)
+                .toolbar(.hidden, for: .navigationBar)
 
                 .navigationDestination(for: String.self) { id in
                     if let plan = pinPlan, let trip = plan.trips.first(where: { $0.id == id }) {
@@ -314,9 +329,8 @@ struct HomeView: View {
                         }.navigationTitle(trip.title)
                     }
                 }
-                .navigationTitle("Viagens")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { showingTrips = false } } }
             }
+            .presentationDragIndicator(.hidden)
         }
         .sheet(item: $mapDetailIdea) { idea in
             PlaceDetails(ideas: places.ideas, initialID: idea.id) { mapDetailIdea = nil }
@@ -342,41 +356,120 @@ struct HomeView: View {
 
     }
 
+    /// Controles sobre o mapa: busca em pílula à esquerda; localização e expandir empilhados à direita.
+    @ViewBuilder
+    private func mapControls(compact: Bool) -> some View {
+        let searchButton = Button { showingMapSearch = true } label: {
+            if compact {
+                Image(systemName: "magnifyingglass").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+            } else {
+                Label("Buscar lugares", systemImage: "magnifyingglass")
+                    .font(.subheadline).frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
+            }
+        }
+        .modifier(MapLocationButtonStyle(isPill: !compact))
+        .accessibilityLabel("Buscar lugares")
+        .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
+        let locateButton = Button { location.request() } label: {
+            Image(systemName: "location.fill").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+        }
+        .modifier(MapLocationButtonStyle())
+        .accessibilityLabel("Minha localização")
+        .accessibilityIdentifier("home.location")
+        .accessibilityValue(location.coordinate == nil ? "" : "Localização disponível")
+        let expandButton = Button { setMapExpanded(!mapExpanded) } label: {
+            Image(systemName: mapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+        }
+        .modifier(MapLocationButtonStyle())
+        .accessibilityLabel(mapExpanded ? "Recolher mapa" : "Expandir mapa")
+        .accessibilityIdentifier("home.expandMap")
+        .disabled(keyboardVisible)
+        if compact {
+            HStack(spacing: 6) { searchButton; locateButton; expandButton }
+                .padding(.horizontal, 12).padding(.top, 8)
+        } else {
+            HStack(alignment: .top, spacing: 8) {
+                searchButton
+                VStack(spacing: 8) { locateButton; expandButton }
+            }
+            .padding(.horizontal, 12).padding(.top, 12)
+        }
+    }
+
+    private func tripRow(icon: String, title: String, detail: String, chevron: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(ArkeUI.ink)
+                .frame(width: 48, height: 48).background(ArkeUI.sheetSurface(colorScheme), in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).arkeText(.contextTitle).lineLimit(1)
+                Text(detail).arkeText(.body).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            if chevron { Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(.tertiary) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading)
+        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 26))
+        .contentShape(Rectangle())
+    }
+
+    /// D4: com Pins salvos, a câmera inicial enquadra todos; nunca pede permissão de localização sozinha.
+    private func frameSavedPins() {
+        guard let pins = pinPlan?.pins, !pins.isEmpty else { return }
+        let latitudes = pins.map(\.latitude), longitudes = pins.map(\.longitude)
+        guard let minLat = latitudes.min(), let maxLat = latitudes.max(),
+              let minLon = longitudes.min(), let maxLon = longitudes.max() else { return }
+        let center = CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2, longitude: (minLon + maxLon) / 2)
+        let span = MKCoordinateSpan(latitudeDelta: max((maxLat - minLat) * 1.6, 0.05), longitudeDelta: max((maxLon - minLon) * 1.6, 0.05))
+        camera = .region(MKCoordinateRegion(center: center, span: span))
+    }
+
     private var cardHeader: some View {
         HStack(spacing: 8) {
             let options = TravelContext.allCases
             let index = options.firstIndex(of: state.context) ?? 0
+            HStack(spacing: 0) {
+                contextNeighbor(index - 1, forward: false)
+                VStack(spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: state.context.symbol).font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(ArkeUI.ink).accessibilityHidden(true)
+                        Text(state.context.title)
+                            .arkeText(.contextTitle)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityIdentifier("home.contextTitle")
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 28)
+                    contextDots(index: index, count: options.count)
+                }
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .contentShape(Rectangle())
+                .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    selectContext(index + (value.translation.width < 0 ? 1 : -1))
+                })
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment: selectContext(index + 1)
+                    case .decrement: selectContext(index - 1)
+                    @unknown default: break
+                    }
+                }
+                contextNeighbor(index + 1, forward: true)
+            }
             Button { showingAddPlace = true } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .medium))
-                    .frame(width: 48, height: 48)
-                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
+                    .font(.system(size: 22, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(ArkeUI.blue, in: Circle())
+                    .contentShape(Circle())
             }
             .disabled(!places.ready || places.busy)
             .accessibilityLabel("Adicionar lugar")
             .accessibilityIdentifier("home.addPlace")
-            HStack(spacing: 4) {
-                contextPreview(index - 1)
-                Text(state.context.title)
-                    .arkeText(.contextTitle)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("home.contextTitle")
-                contextPreview(index + 1)
-            }
-            .contentShape(Rectangle())
-            .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                selectContext(index + (value.translation.width < 0 ? 1 : -1))
-            })
-            .accessibilityAdjustableAction { direction in
-                switch direction {
-                case .increment: selectContext(index + 1)
-                case .decrement: selectContext(index - 1)
-                @unknown default: break
-                }
-            }
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
@@ -388,11 +481,36 @@ struct HomeView: View {
         contextValue = TravelContext.allCases[index].rawValue
     }
 
-    private func contextPreview(_ index: Int) -> some View {
+    /// Vizinho do contexto atual: botão tocável (nunca texto cortado). O nome completo vai para a acessibilidade.
+    @ViewBuilder
+    private func contextNeighbor(_ index: Int, forward: Bool) -> some View {
         let options = TravelContext.allCases
-        return Text(options.indices.contains(index) ? options[index].title : "")
-            .font(.caption.weight(.semibold)).lineLimit(1)
-            .frame(width: 56).opacity(0.34).accessibilityHidden(true)
+        if options.indices.contains(index) {
+            Button { selectContext(index) } label: {
+                Image(systemName: options[index].symbol)
+                    .font(.system(size: 18, weight: .medium))
+                    .frame(width: 44, height: 48)
+                    .contentShape(Rectangle())
+            }
+            .foregroundStyle(.secondary)
+            .accessibilityLabel((forward ? "Próximo contexto: " : "Contexto anterior: ") + options[index].title)
+            .accessibilityIdentifier(forward ? "home.contextNext" : "home.contextPrevious")
+        } else {
+            Color.clear.frame(width: 44, height: 48).accessibilityHidden(true)
+        }
+    }
+
+    /// Posição entre os cinco contextos, só como apoio visual (a posição é anunciada pelo seletor ajustável).
+    private func contextDots(index: Int, count: Int) -> some View {
+        HStack(spacing: 5) {
+            ForEach(0..<count, id: \.self) { position in
+                Capsule()
+                    .fill(position == index ? AnyShapeStyle(ArkeUI.ink) : AnyShapeStyle(Color.secondary.opacity(0.45)))
+                    .frame(width: position == index ? 16 : 6, height: 6)
+            }
+        }
+        .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: index)
+        .accessibilityHidden(true)
     }
 
     private func settlePanel(_ detent: PanelDetent) {
@@ -472,6 +590,16 @@ struct HomeView: View {
 }
 
 private extension TravelContext {
+    /// Ícone por contexto (D6).
+    var symbol: String {
+        switch self {
+        case .planning: "mappin.and.ellipse"
+        case .expenses: "receipt"
+        case .savings: "target"
+        case .reviews: "star"
+        case .memories: "photo"
+        }
+    }
     var title: String {
         switch self {
         case .planning: "Planejamento"
@@ -543,6 +671,7 @@ private struct MapPlaceSearch: View {
     @State private var query: String
     @State private var results: [MKMapItem] = []
     @State private var message: String?
+    @State private var searching = false
 
     init(initialQuery: String = "", onSelect: @escaping (MKMapItem) -> Void) {
         _query = State(initialValue: initialQuery)
@@ -552,6 +681,10 @@ private struct MapPlaceSearch: View {
     var body: some View {
         NavigationStack {
             List {
+                if searching {
+                    HStack(spacing: 12) { ProgressView(); Text("Buscando…").foregroundStyle(.secondary) }
+                        .accessibilityElement(children: .combine).accessibilityIdentifier("search.loading")
+                }
                 if let message { Text(message).foregroundStyle(.secondary) }
                 ForEach(results.indices, id: \.self) { index in
                     let item = results[index]
@@ -573,7 +706,8 @@ private struct MapPlaceSearch: View {
             results = []
             message = nil
             let phrase = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard phrase.count >= 2 else { return }
+            guard phrase.count >= 2 else { searching = false; return }
+            searching = true
             do {
                 try await Task.sleep(for: .milliseconds(350))
                 let request = MKLocalSearch.Request()
@@ -581,9 +715,10 @@ private struct MapPlaceSearch: View {
                 let response = try await MKLocalSearch(request: request).start()
                 try Task.checkCancellation()
                 results = response.mapItems
-                if results.isEmpty { message = "Nenhum lugar encontrado." }
+                searching = false
+                if results.isEmpty { message = "Nenhum lugar encontrado. Confira o nome ou mova o mapa para marcar o ponto." }
             } catch {
-                if !Task.isCancelled { message = "Não foi possível buscar. Tente novamente." }
+                if !Task.isCancelled { message = "Não foi possível buscar. Tente novamente."; searching = false }
             }
         }
     }
@@ -633,75 +768,160 @@ private struct TripJournalView: View {
     @State private var draft = ""
     @State private var error = false
 
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showingForm = false
+
     var body: some View {
         let activePlan = preview ? try? JSONDecoder().decode(LocalPinPlan.self, from: Data(
             #"{"pins":[],"trips":[{"id":"preview","title":"Milano"}]}"#.utf8)) : plan
         if let plan = activePlan, let trip = plan.trips.first(where: { $0.id == selectedTrip }) ?? plan.trips.first {
-            Picker("Viagem", selection: Binding(get: { trip.id }, set: {
-                selectedTrip = $0
-                draft = ""
-                placeID = nil
-                error = false
-            })) {
-                ForEach(plan.trips, id: \.id) { Text($0.title).tag($0.id) }
-            }
             let source = preview ? [
                 Entry(tripID: "preview", text: reviews ? "Chegamos cedo e encontramos a praça tranquila." : "A primeira manhã na praça do Duomo.", rating: reviews ? 4 : nil, placeID: nil)
             ] : ((try? JSONDecoder().decode([Entry].self, from: data)) ?? [])
-            let entries = source
-                .filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
-            if entries.isEmpty { Text(reviews ? "Nenhuma avaliação nesta viagem." : "Nenhuma memória nesta viagem.").foregroundStyle(.secondary) }
-            ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
-                let layout = detailed || reviews
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
-                    : AnyLayout(HStackLayout(alignment: .center, spacing: 10))
-                layout {
-                    if let rating = entry.rating {
-                        Label("\(rating) de 5", systemImage: "star.fill").arkeText(.contextTitle)
-                    } else if let image = journalCover(entry) {
-                        Image(uiImage: image).resizable().scaledToFit().frame(maxWidth: detailed ? .infinity : 64, maxHeight: detailed ? 190 : 44)
-                            .padding(10)
-                            .background {
-                                Color(uiColor: .systemBackground)
-                                    .mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
-                            }
-                            .accessibilityHidden(true)
-                    } else {
-                        Label("Memória", systemImage: "photo.on.rectangle").arkeText(.contextTitle)
+            let entries = source.filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Menu {
+                        ForEach(plan.trips, id: \.id) { item in
+                            Button(item.title) { selectedTrip = item.id; draft = ""; placeID = nil; error = false }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "suitcase").font(.system(size: 15))
+                            Text(trip.title).arkeText(.label).lineLimit(1)
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                        }
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
                     }
-                    Text(entry.text).lineLimit(detailed ? nil : 2)
-                }.padding(.vertical, 6)
-            }
-            if detailed {
-                if reviews {
-                    Stepper("Nota: \(rating) de 5", value: $rating, in: 1...5)
-                } else {
-                    Picker("Capa do lugar", selection: $placeID) {
-                        Text("Sem capa").tag(nil as String?)
-                        ForEach(ideas.filter { idea in
-                            idea.cover != nil && plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
-                        }) { idea in Text(idea.name).tag(Optional(idea.id)) }
-                    }
+                    .accessibilityLabel("Viagem: " + trip.title)
+                    Spacer()
+                    if !reviews { Label("Privado", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary) }
                 }
-                TextField(reviews ? "Escreva sua avaliação" : "Escreva sua memória", text: $draft, axis: .vertical)
-                Button(reviews ? "Salvar avaliação" : "Salvar memória") {
-                    let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !text.isEmpty, text.count <= 1000 else { return }
-                    do {
-                        var all = data.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: data)
-                        all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID))
-                        data = try JSONEncoder().encode(all)
-                        draft = ""
-                        placeID = nil
-                        error = false
-                    } catch { self.error = true }
-                }.disabled(preview || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
-                if error { Text("Não foi possível salvar.").foregroundStyle(.red) }
+                if reviews {
+                    if entries.isEmpty {
+                        Text("Nenhuma avaliação nesta viagem.").arkeText(.body).foregroundStyle(.secondary)
+                    }
+                    ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
+                        VStack(alignment: .leading, spacing: 6) {
+                            stars(entry.rating ?? 0)
+                            Text(entry.text).arkeText(.body).lineLimit(detailed ? nil : 3)
+                        }
+                        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
+                        .accessibilityElement(children: .combine)
+                    }
+                } else {
+                    let shown = detailed ? entries.reversed().map { $0 } : Array(entries.suffix(2))
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                        ForEach(shown) { entry in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Group {
+                                    if let image = journalCover(entry) {
+                                        Image(uiImage: image).resizable().scaledToFill()
+                                    } else {
+                                        Image(systemName: "photo").font(.system(size: 22)).foregroundStyle(.secondary)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity).frame(height: 84).background(ArkeUI.sheetSurface(colorScheme))
+                                .clipShape(.rect(cornerRadius: 10)).accessibilityHidden(true)
+                                Text(entry.text).arkeText(.caption).lineLimit(2)
+                            }
+                            .padding(8).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        Button { showingForm = true } label: {
+                            VStack(spacing: 6) {
+                                Image(systemName: "plus").font(.system(size: 22))
+                                Text("Nova memória").arkeText(.caption)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 120)
+                            .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
+                            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5])).foregroundStyle(.tertiary) }
+                        }
+                        .buttonStyle(.plain).disabled(preview).accessibilityIdentifier("memories.add")
+                    }
+                    if entries.isEmpty { Text("Nenhuma memória nesta viagem.").arkeText(.body).foregroundStyle(.secondary) }
+                }
+                if reviews {
+                    Button { showingForm = true } label: {
+                        Label("Avaliar este lugar", systemImage: "star").arkeText(.button).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 48).background(ArkeUI.blue, in: Capsule())
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).disabled(preview).accessibilityIdentifier("reviews.add")
+                }
             }
+            .sheet(isPresented: $showingForm) { formSheet(trip: trip, plan: plan) }
         } else {
-            Text("Crie uma viagem local para começar.").foregroundStyle(.secondary)
+            Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
         }
     }
+
+    private func stars(_ rating: Int) -> some View {
+        HStack(spacing: 3) {
+            ForEach(1...5, id: \.self) { index in
+                Image(systemName: index <= rating ? "star.fill" : "star").foregroundStyle(index <= rating ? Color(uiColor: .systemOrange) : Color.secondary)
+            }
+            Text("\(rating) de 5").arkeText(.caption).foregroundStyle(.secondary).padding(.leading, 6)
+        }
+        .accessibilityElement(children: .ignore).accessibilityLabel("Nota \(rating) de 5")
+    }
+
+    private func formSheet(trip: LocalPinTrip, plan: LocalPinPlan) -> some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(reviews ? "Avaliar este lugar" : "Nova memória").font(.title.bold()).accessibilityAddTraits(.isHeader)
+                    if reviews {
+                        HStack(spacing: 8) {
+                            ForEach(1...5, id: \.self) { index in
+                                Button { rating = index } label: {
+                                    Image(systemName: index <= rating ? "star.fill" : "star").font(.system(size: 30))
+                                        .foregroundStyle(index <= rating ? Color(uiColor: .systemOrange) : Color.secondary)
+                                        .frame(width: 48, height: 48)
+                                }
+                                .buttonStyle(.plain).accessibilityLabel("\(index) de 5").accessibilityAddTraits(index == rating ? .isSelected : [])
+                            }
+                        }
+                    } else {
+                        Picker("Capa do lugar", selection: $placeID) {
+                            Text("Sem capa").tag(nil as String?)
+                            ForEach(ideas.filter { idea in
+                                idea.cover != nil && plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
+                            }) { idea in Text(idea.name).tag(Optional(idea.id)) }
+                        }
+                    }
+                    TextField(reviews ? "Escreva sua avaliação" : "Escreva sua memória", text: $draft, axis: .vertical)
+                        .lineLimit(4...8).padding(16).frame(minHeight: 120, alignment: .topLeading)
+                        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                    if error { Text("Não foi possível salvar.").arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+                    Button("Cancelar") { showingForm = false }.frame(maxWidth: .infinity, minHeight: 48).foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 100)
+            }
+            .scrollDismissesKeyboard(.interactively).scrollIndicators(.hidden)
+            Button {
+                let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !text.isEmpty, text.count <= 1000 else { return }
+                do {
+                    var all = data.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: data)
+                    all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID))
+                    data = try JSONEncoder().encode(all)
+                    draft = ""
+                    placeID = nil
+                    error = false
+                    showingForm = false
+                } catch { self.error = true }
+            } label: {
+                Text(reviews ? "Salvar avaliação" : "Salvar memória").arkeText(.button).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 56).background(ArkeUI.blue, in: Capsule())
+            }
+            .buttonStyle(.plain).disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
+            .padding(.horizontal, 20).padding(.bottom, 14)
+        }
+        .presentationDetents([.large]).presentationDragIndicator(.hidden)
+    }
+
     private func journalCover(_ entry: Entry) -> UIImage? {
         #if DEBUG
         if preview {
@@ -727,6 +947,7 @@ private struct LocalFinanceView: View {
         var kind: String
     }
 
+    @Environment(\.colorScheme) private var colorScheme
     let trips: [LocalPinTrip]
     let savings: Bool
     let detailed: Bool
@@ -739,6 +960,9 @@ private struct LocalFinanceView: View {
     @FocusState private var financeFieldFocused: Bool
     @State private var editing: UUID?
     @State private var error: String?
+    @State private var showingForm = false
+
+    private let currencies = ["BRL", "USD", "EUR", "GBP", "JPY", "KWD"]
 
     private var records: [Entry] {
         (try? JSONDecoder().decode([Entry].self, from: stored)) ?? []
@@ -749,53 +973,216 @@ private struct LocalFinanceView: View {
 
     var body: some View {
         if let trip {
-            Picker("Viagem", selection: Binding(get: { trip }, set: { selectedTrip = $0; clearDraft() })) {
-                ForEach(trips, id: \.id) { Text($0.title).tag($0.id) }
-            }
             let entries = records.filter { $0.trip == trip && (savings ? ["goal", "saving"].contains($0.kind) : ["planned", "incurred"].contains($0.kind)) }
             let goal = entries.first { $0.kind == "goal" }
-            if savings, let goal {
-                let total = entries.filter { $0.kind == "saving" && $0.currency == goal.currency }.reduce(Int64(0)) { $0 + $1.amount }
-                Text("Reservado: \(formatted(total, goal.currency)) / \(formatted(goal.amount, goal.currency))")
-                ProgressView(value: min(Double(total), Double(goal.amount)), total: Double(goal.amount))
-                    .accessibilityLabel("Progresso da meta")
-                Text("Falta: \(formatted(max(0, goal.amount - total), goal.currency))")
-            }
-            if !savings {
-                ForEach(Set(entries.map(\.currency)).sorted(), id: \.self) { code in
-                    let subtotal = entries.filter { $0.currency == code }
-                    Text("Previsto: \(formatted(subtotal.filter { $0.kind == "planned" }.reduce(0) { $0 + $1.amount }, code))")
-                    Text("Realizado: \(formatted(subtotal.filter { $0.kind == "incurred" }.reduce(0) { $0 + $1.amount }, code))")
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Menu {
+                        ForEach(trips, id: \.id) { item in
+                            Button(item.title) { selectedTrip = item.id; clearDraft() }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "suitcase").font(.system(size: 15))
+                            Text(trips.first(where: { $0.id == trip })?.title ?? "Viagem").arkeText(.label).lineLimit(1)
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                        }
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                    }
+                    .accessibilityLabel("Viagem: " + (trips.first(where: { $0.id == trip })?.title ?? ""))
+                    Spacer()
+                    if savings {
+                        Label("Só você vê", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary)
+                    }
                 }
-            }
-            ForEach(detailed ? entries : Array(entries.suffix(3))) { entry in
-                Button {
-                    editing = entry.id; name = entry.name; currency = entry.currency; kind = entry.kind
-                    amount = displayAmount(entry.amount, code: entry.currency)
-                } label: { Text("\(entry.name) · \(formatted(entry.amount, entry.currency))") }
-            }
-            Picker("Tipo", selection: $kind) {
-                Text("Escolha o tipo").tag("")
-                if savings {
-                    Text("Meta").tag("goal")
-                    if goal != nil { Text("Valor reservado").tag("saving") }
+                if savings { savingsSummary(entries: entries, goal: goal) } else { totals(entries: entries) }
+                if entries.isEmpty {
+                    Text(savings ? "Defina uma meta para começar. É só um registro: o Arke não guarda dinheiro."
+                                 : "Nenhum gasto nesta viagem ainda.")
+                        .arkeText(.body).foregroundStyle(.secondary)
                 } else {
-                    Text("Prevista").tag("planned")
-                    Text("Realizada").tag("incurred")
+                    VStack(spacing: 0) {
+                        let shown = detailed ? entries : Array(entries.suffix(3))
+                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, entry in
+                            if index > 0 { Divider().padding(.leading, 56) }
+                            recordRow(entry)
+                        }
+                    }
+                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
                 }
-            }.disabled(editing != nil && savings)
-            if !savings { TextField("Descrição", text: $name) }
-            Picker("Moeda", selection: Binding(get: { savings && kind == "saving" ? (goal?.currency ?? currency) : currency }, set: { currency = $0 })) {
-                ForEach(["BRL", "USD", "EUR", "JPY", "KWD"], id: \.self) { Text($0).tag($0) }
-            }.disabled(savings && (kind == "saving" || entries.contains { $0.kind == "saving" }))
-            TextField("Valor", text: $amount).keyboardType(.decimalPad).focused($financeFieldFocused)
-            if financeFieldFocused { Button("Fechar teclado") { financeFieldFocused = false } }
-            if let error { Text(error).foregroundStyle(.red) }
-            Button(editing == nil ? "Salvar registro" : "Salvar alterações") { save(trip: trip, goal: goal) }
-            if editing != nil { Button("Cancelar edição") { clearDraft() } }
+                Button { clearDraft(); startForm(goal: goal); showingForm = true } label: {
+                    Label(savings ? (goal == nil ? "Definir meta" : "Registrar valor") : "Adicionar gasto", systemImage: "plus")
+                        .arkeText(.button).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 48).background(ArkeUI.blue, in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).accessibilityIdentifier(savings ? "savings.add" : "expenses.add")
+                if savings {
+                    Label("Registro informativo: o Arke não processa pagamentos nem guarda dinheiro.", systemImage: "info.circle")
+                        .arkeText(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .sheet(isPresented: $showingForm, onDismiss: { clearDraft() }) { formSheet(trip: trip, goal: goal) }
         } else {
-            Text("Crie uma viagem local para começar.")
+            Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
         }
+    }
+
+    private func startForm(goal: Entry?) {
+        if savings { kind = goal == nil ? "goal" : "saving"; if let goal { currency = goal.currency } }
+        else { kind = "planned" }
+    }
+
+    @ViewBuilder
+    private func totals(entries: [Entry]) -> some View {
+        let codes = Set(entries.map(\.currency)).sorted()
+        ForEach(codes, id: \.self) { code in
+            let subtotal = entries.filter { $0.currency == code }
+            HStack(spacing: 8) {
+                totalCard("Previsto", subtotal.filter { $0.kind == "planned" }.reduce(0) { $0 + $1.amount }, code)
+                totalCard("Realizado", subtotal.filter { $0.kind == "incurred" }.reduce(0) { $0 + $1.amount }, code)
+            }
+        }
+    }
+
+    private func totalCard(_ title: String, _ value: Int64, _ code: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).arkeText(.caption).foregroundStyle(.secondary)
+            Text(money(value, code)).font(.title3.weight(.semibold)).minimumScaleFactor(0.7).lineLimit(1)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func savingsSummary(entries: [Entry], goal: Entry?) -> some View {
+        if let goal {
+            let total = entries.filter { $0.kind == "saving" && $0.currency == goal.currency }.reduce(Int64(0)) { $0 + $1.amount }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Reservado").arkeText(.caption).foregroundStyle(.secondary)
+                Text("\(money(total, goal.currency)) de \(money(goal.amount, goal.currency))").font(.title3.weight(.semibold))
+                ProgressView(value: min(Double(total), Double(goal.amount)), total: Double(goal.amount))
+                    .tint(ArkeUI.blue).accessibilityLabel("Progresso da meta")
+                Text("Falta \(money(max(0, goal.amount - total), goal.currency))").arkeText(.body).foregroundStyle(.secondary)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func recordRow(_ entry: Entry) -> some View {
+        Button {
+            editing = entry.id; name = entry.name; currency = entry.currency; kind = entry.kind
+            amount = displayAmount(entry.amount, code: entry.currency)
+            showingForm = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: entry.kind == "incurred" ? "checkmark.circle.fill" : (entry.kind == "planned" ? "clock" : "target"))
+                    .font(.system(size: 20)).foregroundStyle(ArkeUI.ink).frame(width: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.name).arkeText(.body).lineLimit(1)
+                    Text(kindLabel(entry.kind)).arkeText(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                Text(money(entry.amount, entry.currency)).arkeText(.body).fontWeight(.semibold)
+            }
+            .padding(.horizontal, 16).frame(minHeight: 56).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(entry.name), \(kindLabel(entry.kind)), \(money(entry.amount, entry.currency))")
+        .accessibilityHint("Toque para editar")
+    }
+
+    private func kindLabel(_ kind: String) -> String {
+        switch kind {
+        case "planned": "Prevista"
+        case "incurred": "Realizada"
+        case "goal": "Meta"
+        default: "Valor reservado"
+        }
+    }
+
+    private func formSheet(trip: String, goal: Entry?) -> some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(editing == nil ? (savings ? (goal == nil ? "Definir meta" : "Registrar valor") : "Adicionar gasto") : "Editar registro")
+                        .font(.title.bold()).accessibilityAddTraits(.isHeader)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Valor").arkeText(.label).foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(currencySymbol(currency)).font(.title2).foregroundStyle(.secondary)
+                            TextField("0,00", text: $amount).font(.system(size: 36, weight: .bold)).keyboardType(.decimalPad)
+                                .focused($financeFieldFocused).accessibilityIdentifier("finance.amount")
+                        }
+                    }
+                    .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 8) {
+                            ForEach(currencies, id: \.self) { code in
+                                let locked = savings && (kind == "saving" || goal != nil) && editing == nil && goal != nil && code != goal?.currency
+                                Button { currency = code } label: {
+                                    Text(code).arkeText(.label).padding(.horizontal, 16).frame(minWidth: 64, minHeight: 44)
+                                        .foregroundStyle(currency == code ? Color.white : Color(uiColor: .label))
+                                        .background(currency == code ? AnyShapeStyle(ArkeUI.blue) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)), in: Capsule())
+                                }
+                                .buttonStyle(.plain).disabled(locked).opacity(locked ? 0.4 : 1)
+                                .accessibilityAddTraits(currency == code ? .isSelected : [])
+                            }
+                        }
+                    }.scrollIndicators(.hidden)
+                    if !savings {
+                        TextField("Descrição", text: $name).padding(16).frame(minHeight: 56)
+                            .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                    }
+                    Picker("Tipo", selection: $kind) {
+                        if savings {
+                            Text("Meta").tag("goal")
+                            if goal != nil { Text("Valor reservado").tag("saving") }
+                        } else {
+                            Text("Prevista").tag("planned")
+                            Text("Realizada").tag("incurred")
+                        }
+                    }
+                    .pickerStyle(.segmented).disabled(editing != nil && savings)
+                    if let error { Text(error).arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+                    Label("Registro informativo: o Arke não processa pagamentos.", systemImage: "info.circle")
+                        .arkeText(.caption).foregroundStyle(.secondary)
+                    Button("Cancelar") { showingForm = false }
+                        .frame(maxWidth: .infinity, minHeight: 48).foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 100)
+            }
+            .scrollDismissesKeyboard(.interactively).scrollIndicators(.hidden)
+            Button { save(trip: trip, goal: goal) } label: {
+                Text(editing == nil ? "Salvar registro" : "Salvar alterações").arkeText(.button).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 56).background(ArkeUI.blue, in: Capsule())
+            }
+            .buttonStyle(.plain).padding(.horizontal, 20).padding(.bottom, 14)
+            .accessibilityIdentifier("finance.save")
+        }
+        .presentationDetents([.large]).presentationDragIndicator(.hidden)
+    }
+
+    private func currencySymbol(_ code: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        return formatter.currencySymbol ?? code
+    }
+
+    /// Valor com símbolo e casas decimais da moeda (sem "BRL 95").
+    private func money(_ amount: Int64, _ code: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        formatter.minimumFractionDigits = digits(code)
+        formatter.maximumFractionDigits = digits(code)
+        return formatter.string(from: NSNumber(value: Double(amount) / pow(10, Double(digits(code))))) ?? "\(code) \(amount)"
     }
 
     private func displayAmount(_ amount: Int64, code: String) -> String {
@@ -806,7 +1193,6 @@ private struct LocalFinanceView: View {
         return formatter.string(from: NSNumber(value: Double(amount) / pow(10, Double(digits(code))))) ?? ""
     }
     private func digits(_ code: String) -> Int { code == "JPY" ? 0 : code == "KWD" ? 3 : 2 }
-    private func formatted(_ amount: Int64, _ code: String) -> String { "\(code) \(displayAmount(amount, code: code))" }
 
     private func clearDraft() {
         editing = nil; name = ""; amount = ""; kind = ""; error = nil
@@ -823,7 +1209,7 @@ private struct LocalFinanceView: View {
               (pieces.dropFirst().first?.count ?? 0) <= digits(code),
               let value = Decimal(string: pieces.joined(separator: "."), locale: Locale(identifier: "en_US_POSIX")),
               value > 0, value <= 1_000_000_000 else {
-            error = "Informe um tipo e um valor válido para a moeda."
+            error = "Informe uma descrição (nos gastos) e um valor válido para a moeda."
             return
         }
         do {
@@ -840,108 +1226,35 @@ private struct LocalFinanceView: View {
             else { entries.append(entry) }
             stored = try JSONEncoder().encode(entries)
             financeFieldFocused = false
-            clearDraft()
+            showingForm = false
         } catch { self.error = "Não foi possível salvar os registros." }
     }
 }
+/// Compartilhar exige conta (D5 pendente, GROUP-001). Sem credencial, URL de servidor ou formulário de login no código:
+/// nada é enviado e o lugar continua só neste aparelho.
 private struct SharePinForm: View {
-    struct Trip: Decodable, Identifiable { let id: UUID; let title: String }
-    struct Session: Decodable { let access_token: String }
     let name: String
     let pin: LocalMapPin
-    @State private var email = ""
-    @State private var password = ""
-    @State private var token: String?
-    @State private var trips: [Trip] = []
-    @State private var destination: UUID?
-    @State private var newTitle = ""
-    @State private var busy = false
-    @State private var message: String?
-    @State private var published = false
 
     var body: some View {
-        Form {
-            Text("Compartilhará o nome e as coordenadas de \(name) com os membros da viagem escolhida.")
-            if let token {
-                Picker("Viagem compartilhada", selection: $destination) {
-                    Text("Escolha uma viagem").tag(nil as UUID?)
-                    ForEach(trips) { Text($0.title).tag(Optional($0.id)) }
-                }
-                Button("Confirmar compartilhamento") {
-                    guard let destination else { return }
-                    perform {
-                        _ = try await request("/rest/v1/shared_trip_pins", token: token, body: [
-                            "trip_id": destination.uuidString, "title": name,
-                            "latitude": pin.latitude, "longitude": pin.longitude
-                        ])
-                        published = true
-                        message = "Pin compartilhado."
-                    }
-                }.disabled(destination == nil || published)
-                if !published {
-                    TextField("Nome da nova viagem compartilhada", text: $newTitle)
-                    Button("Criar viagem compartilhada") {
-                        perform {
-                            let data = try await request("/rest/v1/shared_trips", token: token, body: ["title": newTitle], representation: true)
-                            let created = try JSONDecoder().decode([Trip].self, from: data)
-                            trips.append(contentsOf: created)
-                            destination = created.first?.id
-                            newTitle = ""
-                        }
-                    }.disabled(newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            } else {
-                TextField("E-mail", text: $email).keyboardType(.emailAddress).textInputAutocapitalization(.never)
-                SecureField("Senha", text: $password)
-                Button("Entrar") {
-                    perform {
-                        defer { password = "" }
-                        let auth = try await request("/auth/v1/token?grant_type=password", body: ["email": email, "password": password])
-                        let session = try JSONDecoder().decode(Session.self, from: auth)
-                        let data = try await request("/rest/v1/shared_trips?select=id,title&order=title", token: session.access_token)
-                        trips = try JSONDecoder().decode([Trip].self, from: data)
-                        token = session.access_token
-                    }
-                }.disabled(email.isEmpty || password.isEmpty)
-            }
-            if let message { Text(message) }
-        }.disabled(busy)
-            .interactiveDismissDisabled(busy)
-            .navigationTitle("Compartilhar Pin")
-    }
-
-    private func perform(_ action: @escaping () async throws -> Void) {
-        busy = true
-        message = nil
-        Task {
-            defer { busy = false }
-            do { try await action() }
-            catch { message = "Não foi possível concluir. Confira a conexão e suas permissões." }
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Compartilhar exige uma conta Arke").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+            Text("O compartilhamento de viagens ainda não está disponível nesta versão. \(name) continua salvo só neste aparelho e nada é enviado.")
+                .accessibilityIdentifier("share.unavailable")
+            Label("O Cofrinho continua só seu.", systemImage: "lock").foregroundStyle(.secondary)
+            Spacer()
         }
-    }
-
-    private func request(_ path: String, token: String? = nil, body: [String: Any]? = nil, representation: Bool = false) async throws -> Data {
-        var request = URLRequest(url: URL(string: "https://nbfvflfjegiufbtyjuch.supabase.co" + path)!)
-        request.setValue("sb_publishable_KN5XnD4anPn4_vANwr_-Fg_4_UZIsGB", forHTTPHeaderField: "apikey")
-        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        if representation { request.setValue("return=representation", forHTTPHeaderField: "Prefer") }
-        if let body {
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
-        return data
+        .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+        .navigationTitle("Compartilhar Pin")
     }
 }
+/// Marcar no mapa: o mapa é o conteúdo; o painel inferior concentra a decisão (lugar, ponto, viagem opcional e confirmação).
 private struct PinEditor: View {
     let idea: PlaceIdea
     let places: PlaceIdeasStore
     let onSaved: (LocalPinPlan) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var camera: MapCameraPosition = .automatic
     @StateObject private var pinLocation = ForegroundLocation()
     @State private var searchingAddress = false
@@ -954,69 +1267,163 @@ private struct PinEditor: View {
     @State private var busy = false
     @State private var error: String?
 
+    private var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var canConfirm: Bool { point != nil && plan != nil && !busy && !(creating && trimmedTitle.isEmpty) }
+
+    /// Explica por que a confirmação está indisponível; nunca deixa o botão apagado sem motivo.
+    private var hint: String? {
+        if plan == nil { return error == nil ? "Abrindo seus Pins…" : nil }
+        if point == nil { return "Mova o mapa ou busque um endereço para marcar o ponto." }
+        if creating && trimmedTitle.isEmpty { return "Dê um nome à nova viagem para continuar." }
+        return nil
+    }
+
+    private var pointDescription: String {
+        guard let point else { return "Nenhum ponto marcado ainda" }
+        return String(format: "Ponto marcado: %.4f, %.4f", point.latitude, point.longitude)
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(idea.name) {
-                    Text(idea.address)
-                    HStack {
-                        Button { searchingAddress = true } label: { Label("Buscar endereço", systemImage: "magnifyingglass") }
-                        Button { pinLocation.request() } label: { Label("Minha localização", systemImage: "location") }
-                    }.buttonStyle(.borderless)
-                    Text("Mova o mapa para posicionar a marca no centro.")
-                    Map(position: $camera)
-                        .onMapCameraChange(frequency: .continuous) { update in
-                            if camera.positionedByUser { point = update.region.center }
-                        }
-                        .overlay { Image(systemName: "mappin").font(.title).allowsHitTesting(false) }
-                        .frame(height: 230)
+        ZStack {
+            Map(position: $camera)
+                .onMapCameraChange(frequency: .continuous) { update in
+                    if camera.positionedByUser { point = update.region.center }
                 }
-                Section("Viagem") {
-                    Picker("Vínculo", selection: $tripID) {
-                        Text("Sem viagem").tag(nil as String?)
-                        ForEach(plan?.trips ?? [], id: \.id) { trip in
-                            Text(trip.title).tag(Optional(trip.id))
-                        }
-                    }.disabled(creating)
-                    Toggle("Criar viagem", isOn: $creating)
-                    if creating { TextField("Nome da viagem", text: $title) }
-                }
-                if let error { Text(error).foregroundStyle(.red) }
-                Button("Confirmar ponto e salvar Pin") { save() }
-                    .disabled(point == nil || plan == nil || busy || (creating && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+                .ignoresSafeArea()
+                .accessibilityLabel("Mapa. Mova para posicionar a marca no centro.")
+            // O ponto salvo é o centro do mapa: o pontinho marca o ponto exato e o pino fica logo acima dele.
+            ZStack {
+                Circle().fill(.white).frame(width: 8, height: 8)
+                    .overlay(Circle().stroke(ArkeUI.blue, lineWidth: 2))
+                Image(systemName: "mappin").font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(ArkeUI.blue).shadow(radius: 2, y: 1).offset(y: -22)
             }
-            .navigationTitle("Marcar no mapa")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() }.disabled(busy) } }
-            .interactiveDismissDisabled(busy)
-            .sheet(isPresented: $searchingAddress) {
-                MapPlaceSearch(initialQuery: idea.address) { item in
-                    centerMap(on: item.placemark.coordinate)
-                    searchingAddress = false
-                }
-            }
-            .onReceive(pinLocation.$coordinate) { if let coordinate = $0 { centerMap(on: coordinate) } }
-            .task {
-                do {
-                    let loaded = try await places.loadPinPlan()
-                    if let pin = loaded.pins.first(where: { $0.ideaID == idea.id }) {
-                        let center = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
-                        point = center
-                        tripID = pin.tripID
-                        camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
-                    }
-                    plan = loaded
-                    if point == nil || !loaded.pins.contains(where: { $0.ideaID == idea.id }) {
-                        let request = MKLocalSearch.Request()
-                        request.naturalLanguageQuery = idea.address
-                        if let results = try? await MKLocalSearch(request: request).start(),
-                           results.mapItems.count == 1, let match = results.mapItems.first,
-                           !Task.isCancelled {
-                            centerMap(on: match.placemark.coordinate)
-                        }
-                    }
-                } catch { self.error = "Não foi possível abrir os Pins." }
+            .allowsHitTesting(false).accessibilityHidden(true)
+        }
+        .overlay(alignment: .top) { topControls }
+        .overlay(alignment: .bottom) { panel }
+        .interactiveDismissDisabled(busy)
+        .sheet(isPresented: $searchingAddress) {
+            MapPlaceSearch(initialQuery: idea.address) { item in
+                centerMap(on: item.placemark.coordinate)
+                searchingAddress = false
             }
         }
+        .alert("Minha localização", isPresented: Binding(get: { pinLocation.message != nil }, set: { if !$0 { pinLocation.message = nil } })) {
+            Button("Entendi", role: .cancel) { pinLocation.message = nil }
+        } message: { Text(pinLocation.message ?? "") }
+        .onReceive(pinLocation.$coordinate) { if let coordinate = $0 { centerMap(on: coordinate) } }
+        .task {
+            do {
+                let loaded = try await places.loadPinPlan()
+                if let pin = loaded.pins.first(where: { $0.ideaID == idea.id }) {
+                    let center = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
+                    point = center
+                    tripID = pin.tripID
+                    camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
+                }
+                plan = loaded
+                if point == nil || !loaded.pins.contains(where: { $0.ideaID == idea.id }) {
+                    let request = MKLocalSearch.Request()
+                    request.naturalLanguageQuery = idea.address
+                    if let results = try? await MKLocalSearch(request: request).start(),
+                       results.mapItems.count == 1, let match = results.mapItems.first,
+                       !Task.isCancelled {
+                        centerMap(on: match.placemark.coordinate)
+                    }
+                }
+            } catch { self.error = "Não foi possível abrir os Pins." }
+        }
+    }
+
+    private var topControls: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+                }
+                .modifier(MapLocationButtonStyle()).disabled(busy)
+                .accessibilityLabel("Cancelar").accessibilityIdentifier("pin.cancel")
+                Spacer()
+                Text("Marcar no mapa").arkeText(.contextTitle)
+                    .padding(.horizontal, 18).padding(.vertical, 7)
+                    .background(.regularMaterial, in: Capsule())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button { pinLocation.request() } label: {
+                    Image(systemName: "location.fill").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
+                }
+                .modifier(MapLocationButtonStyle())
+                .accessibilityLabel("Minha localização").accessibilityIdentifier("pin.location")
+            }
+            Button { searchingAddress = true } label: {
+                Label("Buscar endereço", systemImage: "magnifyingglass")
+                    .font(.subheadline).frame(maxWidth: .infinity, minHeight: 24, alignment: .leading).padding(.horizontal, 4)
+            }
+            .modifier(MapLocationButtonStyle(isPill: true))
+            .accessibilityIdentifier("pin.search")
+        }
+        .padding(.horizontal, 16).padding(.top, 8)
+    }
+
+    private var panel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(idea.name).arkeText(.cardTitle).lineLimit(1)
+                Text(idea.address).arkeText(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Label(pointDescription, systemImage: "mappin.and.ellipse")
+                .arkeText(.caption).foregroundStyle(point == nil ? .secondary : .primary)
+                .accessibilityIdentifier("pin.point")
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Vincular a uma viagem (opcional)").arkeText(.label).foregroundStyle(.secondary)
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        chip("Sem viagem", selected: !creating && tripID == nil) { creating = false; tripID = nil }
+                        ForEach(plan?.trips ?? [], id: \.id) { trip in
+                            chip(trip.title, selected: !creating && tripID == trip.id) { creating = false; tripID = trip.id }
+                        }
+                        chip("Nova viagem", icon: "plus", selected: creating) { creating = true; tripID = nil }
+                    }
+                }
+                .scrollIndicators(.hidden)
+                if creating {
+                    TextField("Nome da viagem", text: $title)
+                        .padding(.horizontal, 16).frame(minHeight: 48)
+                        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 16))
+                        .accessibilityIdentifier("pin.tripTitle")
+                }
+            }
+            if let error { Text(error).arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+            if let hint { Text(hint).arkeText(.caption).foregroundStyle(.secondary).accessibilityIdentifier("pin.hint") }
+            Button { save() } label: {
+                Text(busy ? "Salvando…" : "Confirmar ponto").arkeText(.button)
+                    .foregroundStyle(canConfirm ? Color.white : Color.secondary)
+                    .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
+                    .background(canConfirm ? AnyShapeStyle(ArkeUI.blue) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)), in: Capsule())
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).disabled(!canConfirm)
+            .accessibilityIdentifier("pin.confirm")
+        }
+        .padding(16)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 32))
+        .padding(.horizontal, 12).padding(.bottom, 8)
+    }
+
+    private func chip(_ title: String, icon: String? = nil, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if let icon { Image(systemName: icon).font(.system(size: 13, weight: .bold)) }
+                else if selected { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)) }
+                Text(title).arkeText(.label).lineLimit(1)
+            }
+            .padding(.horizontal, 14).frame(minHeight: 44)
+            .foregroundStyle(selected ? Color.white : Color(uiColor: .label))
+            .background(selected ? AnyShapeStyle(ArkeUI.blue) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)), in: Capsule())
+        }
+        .buttonStyle(.plain).disabled(busy)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func centerMap(on coordinate: CLLocationCoordinate2D) {

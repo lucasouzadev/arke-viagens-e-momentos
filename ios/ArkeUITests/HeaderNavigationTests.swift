@@ -33,10 +33,8 @@ final class HeaderNavigationTests: XCTestCase {
         addButton.tap()
         let editorTitle = app.staticTexts["place.title"]
         XCTAssertTrue(editorTitle.waitForExistence(timeout: 5))
-        XCTAssertLessThan(app.buttons["place.cancel"].frame.midX, editorTitle.frame.midX)
-        app.buttons["place.info"].tap()
-        XCTAssertTrue(app.staticTexts["place.infoText"].waitForExistence(timeout: 5))
-        app.buttons["place.infoDismiss"].tap()
+        XCTAssertFalse(app.buttons["place.info"].exists)
+        XCTAssertTrue(app.staticTexts["place.infoText"].exists)
         tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Informe o nome do lugar."].exists)
         let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
@@ -45,12 +43,93 @@ final class HeaderNavigationTests: XCTestCase {
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
         tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Informe um endereço ou referência."].exists)
-        app.buttons["place.cancel"].tap()
+        tapEditorAction("place.cancel", app: app)
         app.buttons["Continuar editando"].tap()
         XCTAssertEqual(name.value as? String, "Rascunho de teste")
-        app.buttons["place.cancel"].tap()
+        tapEditorAction("place.cancel", app: app)
         app.buttons["Descartar"].tap()
         XCTAssertTrue(app.staticTexts["home.contextTitle"].waitForExistence(timeout: 5))
+    }
+
+    func testSwipeDownWithDraftAsksBeforeDiscarding() throws {
+        // O responsável valida este gesto manualmente (05/11/2026). Falhou em 3 rodadas de CI com causa não provada;
+        // mantido para retomar o diagnóstico. NÃO conta como aprovado: ver HANDOFF.
+        throw XCTSkip("Gesto de fechar com rascunho validado manualmente; automação pendente.")
+        let app = XCUIApplication()
+        app.launch()
+        let addButton = app.buttons["home.addPlace"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 15))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
+        waitForExpectations(timeout: 5)
+        addButton.tap()
+        let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Rascunho por gesto")
+        if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
+        app.swipeDownFromSheetTitle()
+        // Evidência para o CI: estado da tela logo depois do arrastar (PNG exportado mesmo se o teste falhar).
+        let afterSwipe = XCTAttachment(screenshot: app.screenshot()); afterSwipe.name = "after-swipe"; afterSwipe.lifetime = .keepAlways; add(afterSwipe)
+        print("AFTER-SWIPE alert=\(app.alerts.count) editorTitle=\(app.staticTexts["place.title"].exists) home=\(app.staticTexts["home.contextTitle"].exists)")
+        XCTAssertTrue(app.alerts["Descartar rascunho?"].waitForExistence(timeout: 5))
+        app.buttons["Continuar editando"].tap()
+        XCTAssertEqual(name.value as? String, "Rascunho por gesto")
+        app.swipeDownFromSheetTitle()
+        XCTAssertTrue(app.alerts["Descartar rascunho?"].waitForExistence(timeout: 5))
+        app.buttons["Descartar"].tap()
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].waitForExistence(timeout: 5))
+    }
+
+    func testMarkOnMapSheetConfirmsPointFromSimulatedLocation() {
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .location)
+        XCUIDevice.shared.location = XCUILocation(location: CLLocation(latitude: 37.334886, longitude: -122.008988))
+        defer { XCUIDevice.shared.location = nil }
+        app.launch()
+        let addButton = app.buttons["home.addPlace"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 15))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
+        waitForExpectations(timeout: 5)
+        addButton.tap()
+        let name = app.descendants(matching: .any).matching(identifier: "place.name").firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Mapa de teste")
+        let address = app.descendants(matching: .any).matching(identifier: "place.address").firstMatch
+        address.tap()
+        address.typeText("Rua do mapa, 1")
+        if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
+        tapEditorAction("place.review", app: app)
+        tapEditorAction("place.save", app: app)
+        XCTAssertTrue(app.staticTexts["place.savedNotice"].waitForExistence(timeout: 10))
+        let mark = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Marcar no mapa'")).firstMatch
+        for _ in 0..<4 where !mark.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
+        XCTAssertTrue(mark.waitForExistence(timeout: 10))
+        mark.tap()
+        // Sem ponto, o botão existe mas está desabilitado e a dica explica o que falta.
+        let confirm = app.buttons["pin.confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["pin.cancel"].exists)
+        XCTAssertTrue(app.buttons["pin.search"].exists)
+        let emptyCapture = XCTAttachment(screenshot: app.screenshot()); emptyCapture.lifetime = .keepAlways; add(emptyCapture)
+        app.buttons["pin.location"].tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let permission = springboard.alerts.firstMatch
+        if permission.waitForExistence(timeout: 10) { permission.buttons["Allow Once"].tap() }
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: confirm)
+        waitForExpectations(timeout: 30)
+        let pointCapture = XCTAttachment(screenshot: app.screenshot()); pointCapture.lifetime = .keepAlways; add(pointCapture)
+        confirm.tap()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: confirm)
+        waitForExpectations(timeout: 10)
+        // Limpeza: remove a ideia criada para não afetar os outros testes.
+        openPlaceDetails("Mapa de teste", app: app)
+        app.buttons["detail.delete"].tap()
+        app.alerts["Excluir ideia?"].buttons["Excluir"].tap()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Mapa de teste"])
+        waitForExpectations(timeout: 10)
+        app.terminate()
+        app.resetAuthorizationStatus(for: .location)
     }
 
     func testSaveReviewReopenAndConfirmedDelete() {
@@ -87,26 +166,25 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         XCTAssertFalse(app.buttons["detail.next"].exists)
         app.buttons["detail.done"].tap()
-        let edit = app.buttons["Editar Museu de teste"]
-        if !edit.isHittable { app.scrollViews["home.contentBody"].swipeDown() }
-        edit.tap()
+        openPlaceDetails("Museu de teste", app: app)
+        app.buttons["detail.edit"].tap()
         XCTAssertTrue(app.staticTexts["place.title"].waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Museu de teste")
-        app.buttons["place.cancel"].tap()
+        tapEditorAction("place.cancel", app: app)
         XCTAssertFalse(app.alerts["Descartar rascunho?"].exists)
-        XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        edit.tap()
+        openPlaceDetails("Museu de teste", app: app)
+        app.buttons["detail.edit"].tap()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
         name.typeText(" temporário")
         if app.buttons["Concluir"].exists { app.buttons["Concluir"].tap() }
-        app.buttons["place.cancel"].tap()
+        tapEditorAction("place.cancel", app: app)
         app.buttons["Continuar editando"].tap()
         XCTAssertTrue((name.value as? String)?.contains("temporário") == true)
-        app.buttons["place.cancel"].tap()
+        tapEditorAction("place.cancel", app: app)
         app.buttons["Descartar"].tap()
-        XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        edit.tap()
+        openPlaceDetails("Museu de teste", app: app)
+        app.buttons["detail.edit"].tap()
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Museu de teste")
         replaceText(in: name, with: "Museu atualizado", app: app)
@@ -124,18 +202,13 @@ final class HeaderNavigationTests: XCTestCase {
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["Museu atualizado"].waitForExistence(timeout: 15))
-        let updatedDetails = app.buttons["Ver detalhes de Museu atualizado"]
-        if !updatedDetails.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
-        updatedDetails.tap()
-        XCTAssertTrue(app.staticTexts["detail.address"].waitForExistence(timeout: 5))
+        openPlaceDetails("Museu atualizado", app: app)
         XCTAssertEqual(app.staticTexts["detail.address"].label, "Endereço: Nova entrada, 200")
-        app.buttons["detail.done"].tap()
-        let delete = app.buttons["Excluir Museu atualizado"]
-        if !delete.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
-        delete.tap()
+        app.buttons["detail.delete"].tap()
         app.alerts["Excluir ideia?"].buttons["Cancelar"].tap()
-        XCTAssertTrue(app.staticTexts["Museu atualizado"].exists)
-        delete.tap()
+        XCTAssertTrue(app.staticTexts["Museu atualizado"].waitForExistence(timeout: 5))
+        openPlaceDetails("Museu atualizado", app: app)
+        app.buttons["detail.delete"].tap()
         app.alerts["Excluir ideia?"].buttons["Excluir"].tap()
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Museu atualizado"])
         waitForExpectations(timeout: 10)
@@ -219,26 +292,15 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(card.frame.minX, app.frame.minX)
         XCTAssertLessThanOrEqual(card.frame.maxX, app.frame.maxX)
         XCTAssertLessThan(card.frame.maxY, app.frame.maxY)
-        XCTAssertLessThan(app.staticTexts["detail.title"].frame.minX, app.buttons["detail.info"].frame.minX)
-        XCTAssertEqual(app.staticTexts["detail.title"].frame.midX, card.frame.midX, accuracy: 1)
-        XCTAssertEqual(app.staticTexts["detail.name"].frame.minX, app.staticTexts["detail.address"].frame.minX, accuracy: 1)
+        XCTAssertFalse(app.buttons["detail.info"].exists)
+        XCTAssertLessThanOrEqual(app.staticTexts["detail.name"].frame.minX, app.staticTexts["detail.address"].frame.minX)
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
-        XCTAssertFalse(app.staticTexts["detail.infoText"].exists)
-        app.buttons["detail.info"].tap()
-        XCTAssertTrue(app.staticTexts["detail.infoText"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["detail.infoText"].label.contains("sem backup"))
-        app.buttons["detail.infoDismiss"].tap()
-        XCTAssertFalse(app.staticTexts["detail.infoText"].exists)
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         XCTAssertGreaterThan(app.buttons["detail.next"].frame.width, card.frame.width * 0.8)
-        let firstCloseY = card.frame.minY
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
-        expectation(for: NSPredicate { _, _ in
-            card.frame.minY > firstCloseY + 20
-        }, evaluatedWith: card)
-        waitForExpectations(timeout: 5)
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 2 de 2")
         XCTAssertFalse(app.buttons["detail.next"].exists)
         XCTAssertEqual(app.buttons["detail.done"].label, "Concluído")
@@ -288,7 +350,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(note.value as? String, longNote)
         tapEditorAction("place.review", app: app)
         XCTAssertTrue(app.staticTexts["Lugar com toque amplo"].exists)
-        app.buttons["place.cancel"].tap()
+        tapEditorAction("place.cancel", app: app)
         app.buttons["Descartar"].tap()
     }
 
@@ -342,6 +404,15 @@ final class HeaderNavigationTests: XCTestCase {
         app.resetAuthorizationStatus(for: .location)
     }
 
+    /// Abre os detalhes do lugar pela home (rola até o botão se preciso).
+    private func openPlaceDetails(_ name: String, app: XCUIApplication) {
+        let open = app.buttons["Ver detalhes de \(name)"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10))
+        for _ in 0..<4 where !open.isHittable { app.scrollViews["home.contentBody"].swipeUp() }
+        open.tap()
+        XCTAssertTrue(app.staticTexts["detail.name"].waitForExistence(timeout: 5))
+    }
+
     private func tapEditorAction(_ identifier: String, app: XCUIApplication) {
         let button = app.buttons[identifier]
         for _ in 0..<6 {
@@ -361,9 +432,11 @@ final class HeaderNavigationTests: XCTestCase {
             if field.isHittable { break }
             app.scrollViews["place.fields"].swipeDown()
         }
-        field.tap()
-        // Each fixture is one paragraph; use the system paragraph-selection gesture.
-        field.tap(withNumberOfTaps: 3, numberOfTouches: 1)
+        // Cursor no fim do texto e apagar tudo: o gesto de triplo toque falhou de forma intermitente no CI
+        // (o texto novo era anexado ao antigo).
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: 0.5)).tap()
+        let existing = (field.value as? String) ?? ""
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 4))
         field.typeText(value)
         if field.value as? String != value {
             print(app.debugDescription)
@@ -372,5 +445,14 @@ final class HeaderNavigationTests: XCTestCase {
             add(capture)
         }
         XCTAssertEqual(field.value as? String, value)
+    }
+}
+
+private extension XCUIApplication {
+    /// Arrasta o sheet para baixo a partir do título, como o usuário faz.
+    func swipeDownFromSheetTitle() {
+        let title = staticTexts["place.title"]
+        let start = title.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
     }
 }

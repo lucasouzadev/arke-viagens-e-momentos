@@ -14,7 +14,6 @@ struct PlaceEditor: View {
     @State private var reviewing = false
     @State private var submitted = false
     @State private var confirmingDiscard = false
-    @State private var showingInfo = false
     @State private var coverSelection: PhotosPickerItem?
     @State private var coverLoading = false
     @State private var coverError = false
@@ -39,113 +38,104 @@ struct PlaceEditor: View {
     var body: some View {
         ArkeFloatingSheet(dismissIdentifier: "place.dismiss") {
             ArkeKeyboardViewport {
-                NavigationStack {
-                    VStack(spacing: 0) {
-                        HStack(spacing: 0) {
-                            Button(action: cancel) {
-                                Image(systemName: "xmark").font(.system(size: 20)).foregroundStyle(ink)
-                                    .frame(width: 48, height: 48)
-                                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
-                                    .contentShape(Rectangle())
-                            }
-                            .frame(width: 76, alignment: .leading).disabled(saving).accessibilityLabel("Cancelar").accessibilityIdentifier("place.cancel")
-                            Text(reviewing ? "Revisar lugar" : (original == nil ? "Adicionar lugar" : "Editar lugar"))
-                                .arkeText(.contextTitle).foregroundStyle(ink)
-                                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
-                                .accessibilityIdentifier("place.title")
-                            Button { field = nil; showingInfo = true } label: {
-                                Image(systemName: "info.circle").font(.system(size: 22))
-                                    .frame(width: 48, height: 48)
-                                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
-                            }.frame(width: 76, alignment: .trailing)
-                            .accessibilityLabel("Informações sobre salvar lugares").accessibilityIdentifier("place.info")
-                            .popover(isPresented: $showingInfo) {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Sobre sua ideia").arkeText(.contextTitle)
-                                    Text("Nome e endereço são obrigatórios. A nota é opcional. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. O endereço não será marcado no mapa. Você pode salvar sem criar uma viagem.").arkeText(.body)
-                                        .accessibilityIdentifier("place.infoText")
-                                    Button("Entendi") { showingInfo = false }.frame(minHeight: 48).accessibilityIdentifier("place.infoDismiss")
-                                }.foregroundStyle(ink).frame(width: 240).padding(20).presentationCompactAdaptation(.popover)
-                            }
-                        }
-                        .buttonStyle(.plain).padding(.top, 12)
-                        ScrollViewReader { proxy in
+                ZStack(alignment: .bottom) {
+                    ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(spacing: 16) {
-                            VStack(alignment: .leading, spacing: 16) {
-                                if !reviewing || draft.cover != nil {
-                                    coverField.frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(16).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
-                                }
-                                VStack(alignment: .leading, spacing: 20) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                // Sheet contínuo: o título é o primeiro item e rola com o conteúdo.
+                                Text(reviewing ? "Revisar lugar" : (original == nil ? "Adicionar lugar" : "Editar lugar"))
+                                    .font(.title.bold()).foregroundStyle(ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .padding(.bottom, 8)
+                                    .accessibilityAddTraits(.isHeader).accessibilityIdentifier("place.title")
+                                if !reviewing || draft.cover != nil { coverField }
                                 if reviewing {
-                                    summary("Nome do lugar", value: draft.normalized.name, height: 56)
-                                    summary("Endereço ou referência", value: draft.normalized.address, height: 96)
-                                    if let link = draft.normalized.link, !link.isEmpty { summary("Link", value: link, height: 48) }
-                                    summary("Nota opcional", value: draft.normalized.note.isEmpty ? "Sem nota" : draft.normalized.note, height: 120)
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        summary("Nome do lugar", icon: "bookmark.fill", value: draft.normalized.name)
+                                        Divider().padding(.horizontal, 16)
+                                        summary("Endereço ou referência", icon: "mappin", value: draft.normalized.address)
+                                        if let link = draft.normalized.link, !link.isEmpty {
+                                            Divider().padding(.horizontal, 16)
+                                            summary("Link", icon: "link", value: link)
+                                        }
+                                        Divider().padding(.horizontal, 16)
+                                        summary("Nota", icon: "text.alignleft", value: draft.normalized.note.isEmpty ? "Sem nota" : draft.normalized.note)
+                                    }
+                                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
                                 } else {
-                                    input("Nome do lugar", text: $draft.name, height: 56, focus: .name, identifier: "place.name")
-                                    Divider()
-                                    input("Endereço ou referência", text: $draft.address, height: 96, focus: .address, identifier: "place.address")
-                                    Divider()
-                                    input("Nota opcional", text: $draft.note, height: 120, focus: .note, identifier: "place.note")
-                                    Divider()
-                                    input("Link opcional", text: Binding(
+                                    input("Nome do lugar", icon: "bookmark.fill", requirement: "Obrigatório", prompt: "Ex.: Pão de Açúcar",
+                                          text: $draft.name, editorHeight: nil, minimum: 68, focus: .name, identifier: "place.name")
+                                    input("Endereço ou referência", icon: "mappin", requirement: "Obrigatório", prompt: "Rua, bairro ou ponto de referência",
+                                          text: $draft.address, editorHeight: 44, minimum: 68, focus: .address, identifier: "place.address")
+                                    input("Nota", icon: "text.alignleft", requirement: "Opcional", prompt: "O que não pode esquecer?",
+                                          text: $draft.note, editorHeight: 72, minimum: 104, focus: .note, identifier: "place.note")
+                                    input("Link", icon: "link", requirement: "Opcional", prompt: "exemplo.com", text: Binding(
                                         get: { draft.link ?? "" },
                                         set: { draft.link = $0.isEmpty ? nil : $0 }
-                                    ), height: 48, focus: .link, identifier: "place.link")
+                                    ), editorHeight: nil, minimum: 68, focus: .link, identifier: "place.link")
                                     if submitted, let issue = draft.issue {
-                                        Text(issue.message).arkeText(.caption).accessibilityIdentifier("place.validation")
+                                        Text(issue.message).arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed))
+                                            .padding(.horizontal, 4).accessibilityIdentifier("place.validation")
                                     }
                                 }
-                                }.padding(20).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
                                 if let saveError {
-                                    Text(saveError).arkeText(.caption).accessibilityIdentifier("place.saveError")
+                                    Text(saveError).arkeText(.caption).padding(.horizontal, 4).accessibilityIdentifier("place.saveError")
                                 }
+                                Label(original == nil ? "Fica salvo só neste aparelho, sem backup." : "Alterações ficam salvas só neste aparelho, sem backup.", systemImage: "lock")
+                                    .arkeText(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.top, 6)
+                                    .accessibilityIdentifier("place.infoText")
+                                // Cancelar sem gesto: fim do conteúdo, como alternativa ao arrastar para baixo.
+                                Button(action: cancel) {
+                                    Text("Cancelar").arkeText(.button).foregroundStyle(ink)
+                                        .frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
+                                }
+                                .disabled(saving).accessibilityIdentifier("place.cancel")
                             }
                             .foregroundStyle(ink).frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 24).padding(.bottom, 16)
-                            }
+                            .padding(.horizontal, 20).padding(.top, 28)
+                            // Respiro para a última linha passar por baixo dos botões flutuantes.
+                            .padding(.bottom, reviewing ? 156 : 96)
                         }
-                        .modifier(ArkeScrollEdges(active: editorDetent == .large))
+                        .modifier(ArkeScrollEdges())
                         .scrollDismissesKeyboard(.interactively)
                         .accessibilityIdentifier("place.fields").scrollIndicators(.hidden)
-                        .safeAreaInset(edge: .bottom, spacing: 0) {
-                            VStack(spacing: 12) {
-                                if reviewing {
-                                    Button { reviewing = false } label: {
-                                        Text("Editar informações").arkeText(.button).foregroundStyle(ink)
-                                            .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
-                                            .background(ArkeUI.insetSurface(colorScheme), in: Capsule()).contentShape(Rectangle())
-                                    }
-                                    .disabled(saving).accessibilityIdentifier("place.edit")
-                                    primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
-                                } else {
-                                    primary("Revisar lugar", identifier: "place.review") {
-                                        submitted = true
-                                        if draft.issue == nil && !coverLoading { field = nil; reviewing = true }
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain).foregroundStyle(ink).padding(.vertical, 8)
-                            .background(ArkeUI.sheetSurface(colorScheme))
-                        }
                         .onChange(of: field) { _, focused in
-                            if let focused { proxy.scrollTo(focused, anchor: .top) }
+                            // Centraliza o campo ativo na área visível.
+                            if let focused { proxy.scrollTo(focused, anchor: .center) }
                         }
+                    }
+                    // Antes do iOS 26 não há desvanecimento nativo da rolagem: degradê curto sob os botões flutuantes.
+                    if #unavailable(iOS 26) {
+                        LinearGradient(colors: [.clear, ArkeUI.sheetSurface(colorScheme)], startPoint: .top, endPoint: .bottom)
+                            .frame(height: reviewing ? 150 : 96).allowsHitTesting(false)
+                    }
+                    VStack(spacing: 10) {
+                        if reviewing {
+                            Button { reviewing = false } label: {
+                                Text("Editar informações").arkeText(.button).foregroundStyle(ink)
+                                    .frame(maxWidth: .infinity, minHeight: 56)
+                                    .arkeGlassCapsule().contentShape(Capsule())
+                            }
+                            .disabled(saving).accessibilityIdentifier("place.edit")
+                            primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
+                        } else {
+                            primary("Revisar lugar", identifier: "place.review") {
+                                submitted = true
+                                if draft.issue == nil && !coverLoading { field = nil; reviewing = true }
+                            }
                         }
-
                     }
-                    .padding(.horizontal, ArkeUI.margin)
-                    .toolbar(.hidden, for: .navigationBar)
-                    .alert("Descartar rascunho?", isPresented: $confirmingDiscard) {
-                        Button("Continuar editando", role: .cancel) {}
-                        Button("Descartar", role: .destructive) { onCancel() }
-                    } message: {
-                        Text("As informações deste rascunho ainda não foram salvas.")
-                    }
+                    .buttonStyle(.plain).foregroundStyle(ink)
+                    .padding(.horizontal, 20).padding(.bottom, 14)
                 }
+                .alert("Descartar rascunho?", isPresented: $confirmingDiscard) {
+                    Button("Continuar editando", role: .cancel) {}
+                    Button("Descartar", role: .destructive) { onCancel() }
+                } message: {
+                    Text("As informações deste rascunho ainda não foram salvas.")
+                }
+                .accessibilityAction(.escape) { cancel() }
+                .background { ArkeDismissAttempt { if !saving { field = nil; confirmingDiscard = true } } }
                 .tint(actionInk)
             }
         }
@@ -155,28 +145,56 @@ struct PlaceEditor: View {
         .task(id: coverSelection) { await loadCover() }
     }
 
+    /// Foto de capa: linha-botão quando vazia; miniatura com ações separadas de 48 quando existe.
     private var coverField: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             if let data = draft.cover, let image = UIImage(data: data) {
                 Image(uiImage: image).resizable().scaledToFill()
                     .frame(width: 112, height: 80).clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityHidden(true)
+                if !reviewing {
+                    HStack(spacing: 8) {
+                        PhotosPicker(selection: $coverSelection, matching: .images) {
+                            Label("Trocar foto de capa", systemImage: "photo")
+                                .arkeText(.label).foregroundStyle(ink)
+                                .frame(maxWidth: .infinity, minHeight: 48)
+                                .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                        }.disabled(saving)
+                        Button(role: .destructive) {
+                            coverSelection = nil
+                            draft.cover = nil
+                            coverError = false
+                        } label: {
+                            Text("Remover foto").arkeText(.label).foregroundStyle(Color(uiColor: .systemRed))
+                                .padding(.horizontal, 16).frame(minHeight: 48)
+                        }.disabled(saving)
+                    }
+                }
+            } else if !reviewing {
+                PhotosPicker(selection: $coverSelection, matching: .images) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "photo").font(.system(size: 18))
+                            .frame(width: 40, height: 40)
+                            .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12))
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Adicionar foto de capa").arkeText(.body).fontWeight(.semibold).foregroundStyle(ink)
+                                .multilineTextAlignment(.leading)
+                            Text("Opcional").arkeText(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(.secondary)
+                    }
+                    .frame(minHeight: 48).contentShape(Rectangle())
+                }.disabled(saving)
             }
             if !reviewing {
-                PhotosPicker(selection: $coverSelection, matching: .images) {
-                    Label(draft.cover == nil ? "Adicionar foto de capa" : "Trocar foto de capa", systemImage: "photo")
-                }.disabled(saving)
-                if draft.cover != nil {
-                    Button("Remover foto", role: .destructive) {
-                        coverSelection = nil
-                        draft.cover = nil
-                        coverError = false
-                    }.disabled(saving)
-                }
                 if coverLoading { ProgressView("Carregando foto…") }
-                if coverError { Text("Não foi possível abrir esta foto.").arkeText(.caption) }
+                if coverError { Text("Não foi possível abrir esta foto.").arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
             }
         }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
     }
 
     private func loadCover() async {
@@ -214,32 +232,50 @@ struct PlaceEditor: View {
         if !hasChanges { onCancel() } else { confirmingDiscard = true }
     }
 
-    private func input(_ title: String, text: Binding<String>, height: CGFloat, focus: Field, identifier: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: title == "Nome do lugar" ? "bookmark.fill" : (title == "Endereço ou referência" ? "mappin" : "text.alignleft"))
-                .arkeText(.label).labelStyle(EditorFieldLabelStyle())
+    /// Campo em cartão próprio: rótulo persistente com “Obrigatório/Opcional”, placeholder e a superfície inteira focando o campo.
+    /// `editorHeight` nil usa `TextField` de uma linha; com valor, `TextEditor` com essa altura de texto.
+    private func input(_ title: String, icon: String, requirement: String, prompt: String, text: Binding<String>,
+                       editorHeight: CGFloat?, minimum: CGFloat, focus: Field, identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Label(title, systemImage: icon).arkeText(.label).labelStyle(EditorFieldLabelStyle())
+                Spacer(minLength: 8)
+                Text(requirement).arkeText(.caption).foregroundStyle(.secondary)
+            }
             Group {
-                if focus == .name || focus == .link {
-                    TextField(title, text: text, prompt: Text(""))
-                        .focused($field, equals: focus).accessibilityLabel(title).accessibilityIdentifier(identifier)
-                        .keyboardType(focus == .link ? .URL : .default)
-                        .submitLabel(focus == .link ? .done : .next)
-                        .onSubmit { field = focus == .link ? nil : .address }
-                } else {
+                if let editorHeight {
                     TextEditor(text: text)
                         .scrollContentBackground(.hidden)
                         .focused($field, equals: focus)
                         .accessibilityLabel(title)
                         .accessibilityIdentifier(identifier)
-                        .frame(height: height)
+                        .frame(height: editorHeight)
+                        .overlay(alignment: .topLeading) {
+                            if text.wrappedValue.isEmpty {
+                                Text(prompt).foregroundStyle(.secondary)
+                                    .padding(.top, 8).padding(.leading, 5)
+                                    .allowsHitTesting(false).accessibilityHidden(true)
+                            }
+                        }
+                        // O TextEditor traz recuo interno de 5 pt; compensa para alinhar com o rótulo e com o TextField.
+                        .padding(.horizontal, -5)
+                } else {
+                    TextField(title, text: text, prompt: Text(prompt))
+                        .focused($field, equals: focus).accessibilityLabel(title).accessibilityIdentifier(identifier)
+                        .keyboardType(focus == .link ? .URL : .default)
+                        .submitLabel(focus == .link ? .done : .next)
+                        .onSubmit { field = focus == .link ? nil : .address }
                 }
             }
             .arkeText(.body)
             .textInputAutocapitalization(focus == .link ? .never : (focus == .name ? .words : .sentences))
-            .frame(maxWidth: .infinity, minHeight: focus == .name ? 48 : height, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
             .disabled(saving)
-
         }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: minimum, alignment: .topLeading)
+        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(ArkeUI.ink, lineWidth: 2).opacity(field == focus ? 1 : 0).allowsHitTesting(false) }
         .contentShape(Rectangle())
         .simultaneousGesture(TapGesture().onEnded { if !saving { field = focus } })
         .accessibilityElement(children: .contain)
@@ -247,19 +283,20 @@ struct PlaceEditor: View {
         .id(focus)
     }
 
-    private func summary(_ title: String, value: String, height: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: title == "Nome do lugar" ? "bookmark.fill" : (title == "Endereço ou referência" ? "mappin" : "text.alignleft"))
-                .arkeText(.label).labelStyle(EditorFieldLabelStyle())
+    private func summary(_ title: String, icon: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: icon).arkeText(.label).labelStyle(EditorFieldLabelStyle())
             Text(value).arkeText(.body)
-                .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private func primary(_ title: String, identifier: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).arkeText(.button).foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
+                .frame(maxWidth: .infinity, minHeight: 56)
                 .background(ArkeUI.blue, in: Capsule())
                 .contentShape(Rectangle())
         }
@@ -282,9 +319,9 @@ private extension PlaceDraftIssue {
 
 private struct EditorFieldLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 12) {
-            configuration.icon.foregroundStyle(Color(uiColor: .tertiaryLabel)).frame(width: 24).accessibilityHidden(true)
-            configuration.title
+        HStack(spacing: 8) {
+            configuration.icon.foregroundStyle(Color(uiColor: .secondaryLabel)).frame(width: 20).accessibilityHidden(true)
+            configuration.title.foregroundStyle(Color(uiColor: .secondaryLabel))
         }
     }
 }

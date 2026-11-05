@@ -35,6 +35,15 @@ val ArkeTypography = Typography(
     labelLarge = TextStyle(fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
 )
 
+/**
+ * Azul candidato do ADR-006 e sua tinta de texto no escuro (mesma matiz, luminosidade maior).
+ * O azul puro dá ≈3,3:1 sobre o cartão escuro; a tinta dá ≈6,9:1. No claro o próprio azul passa (≈5,1:1).
+ */
+object ArkeColors {
+    val brand = Color(0xFF4C728A)
+    val inkDark = Color(0xFF88AABE)
+}
+
 @androidx.compose.runtime.Composable
 fun arkeSheetColor() = if (androidx.compose.foundation.isSystemInDarkTheme())
     androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh
@@ -59,15 +68,7 @@ fun ArkeFloatingSheet(
         onDismissRequest = onDismiss, sheetState = sheetState, modifier = Modifier.testTag("$tagPrefix.dismiss.card"),
         containerColor = arkeSheetColor(), contentColor = MaterialTheme.colorScheme.onSurface, tonalElevation = 0.dp,
         shape = RoundedCornerShape(36.dp),
-        dragHandle = {
-            val dismissLabel = stringResource(dev.arke.app.R.string.sheet_dismiss)
-            TextButton(onClick = onDismiss, enabled = enabled, contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("$tagPrefix.dismiss").semantics { contentDescription = dismissLabel },
-            ) {
-                BottomSheetDefaults.DragHandle()
-
-            }
-        },
+        dragHandle = null,
     ) {
         Column(modifier.fillMaxWidth(), content = content)
     }

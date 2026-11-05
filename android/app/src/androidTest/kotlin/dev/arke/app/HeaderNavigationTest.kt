@@ -16,7 +16,7 @@ class HeaderNavigationTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     private fun reviewPlaceAndWaitForKeyboard() {
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        compose.onNodeWithTag("place.review").scrollIntoView().performClick()
         // IME/layout work is outside Compose's test clock. Wait before the next physical tap.
         compose.waitUntil(10_000) {
             var keyboardVisible = true
@@ -42,14 +42,14 @@ class HeaderNavigationTest {
     @Test fun editorWholeFieldFocusAndScrollableReview() {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("home.addPlace").fetchSemanticsNodes().any { !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled) } }
         compose.onNodeWithTag("home.addPlace").performClick()
-        compose.onNodeWithTag("place.name").performScrollTo().performTouchInput {
+        compose.onNodeWithTag("place.name").scrollIntoView().performTouchInput {
             click(Offset(width * 0.8f, height * 0.8f))
         }
         compose.onNodeWithTag("place.name").assertIsFocused().performTextInput("Lugar com toque amplo")
-        compose.onNodeWithTag("place.address").performScrollTo().performTextInput("Referência para teste")
-        compose.onNodeWithTag("place.review").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithTag("place.address").scrollIntoView().performTextInput("Referência para teste")
+        compose.onNodeWithTag("place.review").scrollIntoView().assertIsDisplayed().performClick()
         compose.onNodeWithText("Lugar com toque amplo").assertExists()
-        compose.onNodeWithTag("place.cancel").performClick()
+        compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
         compose.onNodeWithTag("place.discard").performClick()
     }
 
@@ -72,22 +72,21 @@ class HeaderNavigationTest {
     @Test fun addPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("home.addPlace").fetchSemanticsNodes().any { !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled) } }
         compose.onNodeWithTag("home.addPlace").performClick()
-        org.junit.Assert.assertTrue(
-            compose.onNodeWithTag("place.cancel").fetchSemanticsNode().boundsInRoot.center.x <
-                compose.onNodeWithTag("place.title").fetchSemanticsNode().boundsInRoot.center.x,
-        )
-        compose.onNodeWithTag("place.info").performClick()
-        compose.onNodeWithTag("place.infoText").assertIsDisplayed()
-        compose.onNodeWithTag("place.infoDismiss").performClick()
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        compose.onNodeWithTag("place.info").assertDoesNotExist()
+        compose.onNodeWithTag("place.infoText").scrollIntoView().assertIsDisplayed()
+        compose.onNodeWithTag("place.review").scrollIntoView().performClick()
         compose.onNodeWithText("Informe o nome do lugar.").assertExists()
-        compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho de teste")
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        compose.onNodeWithTag("place.name").scrollIntoView().performTextReplacement("Rascunho de teste")
+        compose.onNodeWithTag("place.review").scrollIntoView().performClick()
         compose.onNodeWithText("Informe um endereço ou referência.").assertExists()
-        compose.onNodeWithTag("place.dismiss").performClick()
+        // Arrastar o sheet para baixo com rascunho abre a confirmação em vez de fechar.
+        compose.onNodeWithTag("place.dismiss.card").performTouchInput {
+            swipe(Offset(centerX, 20f), Offset(centerX, height - 20f), 300)
+        }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Continuar editando").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Continuar editando").performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho de teste")
-        compose.onNodeWithTag("place.cancel").performClick()
+        compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
         compose.onNodeWithTag("place.discard").performClick()
         compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
     }
@@ -95,59 +94,57 @@ class HeaderNavigationTest {
     @Test fun saveReviewReloadAndConfirmedDelete() {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("home.addPlace").fetchSemanticsNodes().any { !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled) } }
         compose.onNodeWithTag("home.addPlace").performClick()
-        compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Museu de teste")
-        compose.onNodeWithTag("place.address").performScrollTo().performTextReplacement("Rua de teste, 100")
+        compose.onNodeWithTag("place.name").scrollIntoView().performTextReplacement("Museu de teste")
+        compose.onNodeWithTag("place.address").scrollIntoView().performTextReplacement("Rua de teste, 100")
         reviewPlaceAndWaitForKeyboard()
         compose.onNode(hasText("Museu de teste") and hasAnyAncestor(hasTestTag("place.fields"))).assertExists()
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        openReviewAndWaitForSave()
         compose.onNodeWithTag("place.save").performClick()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.savedNotice").fetchSemanticsNodes().isNotEmpty() }
         compose.activityRule.scenario.onActivity { activity -> androidx.lifecycle.ViewModelProvider(activity)[PlaceIdeasViewModel::class.java].load() }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu de teste").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithContentDescription("Ver detalhes de Museu de teste").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Ver detalhes de Museu de teste").scrollIntoView().performClick()
         compose.onNodeWithTag("detail.name").assertTextEquals("Museu de teste")
         compose.onNodeWithTag("detail.address").assertTextEquals("Rua de teste, 100")
         compose.onNodeWithTag("detail.previous").assertDoesNotExist()
         compose.onNodeWithTag("detail.next").assertDoesNotExist()
         compose.onNodeWithTag("detail.done").assertTextEquals("Concluído").performClick()
-        val edit = compose.onNodeWithContentDescription("Editar Museu de teste")
-        edit.performScrollTo().performClick()
+        openEditViaDetails("Museu de teste")
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
-        compose.onNodeWithTag("place.cancel").performClick()
+        compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
         compose.onNodeWithText("Descartar rascunho?").assertDoesNotExist()
-        edit.performScrollTo().performClick()
-        compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Rascunho temporário")
+        openEditViaDetails("Museu de teste")
+        compose.onNodeWithTag("place.name").scrollIntoView().performTextReplacement("Rascunho temporário")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporário")
-        compose.onNodeWithTag("place.cancel").performClick()
+        compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
         compose.onNodeWithText("Continuar editando").performClick()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporário")
-        compose.onNodeWithTag("place.cancel").performClick()
+        compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
         compose.onNodeWithTag("place.discard").performClick()
         compose.onNodeWithTag("home.ideaName").assertTextEquals("Museu de teste")
-        edit.performScrollTo().performClick()
-        compose.onNodeWithTag("place.name").performScrollTo().performTextReplacement("Museu atualizado")
-        compose.onNodeWithTag("place.address").performScrollTo().performTextReplacement("Nova entrada, 200")
+        openEditViaDetails("Museu de teste")
+        compose.onNodeWithTag("place.name").scrollIntoView().performTextReplacement("Museu atualizado")
+        compose.onNodeWithTag("place.address").scrollIntoView().performTextReplacement("Nova entrada, 200")
         reviewPlaceAndWaitForKeyboard()
         compose.onNode(hasText("Museu atualizado") and hasAnyAncestor(hasTestTag("place.fields"))).assertExists()
         returnToPlaceFields()
         compose.onNodeWithTag("place.name").assertTextContains("Museu atualizado")
-        compose.onNodeWithTag("place.review").performScrollTo().performClick()
+        openReviewAndWaitForSave()
         compose.onNodeWithTag("place.save").assertTextEquals("Salvar alterações").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("place.title").fetchSemanticsNodes().isEmpty() }
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithContentDescription("Ver detalhes de Museu atualizado").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Ver detalhes de Museu atualizado").scrollIntoView().performClick()
         compose.onNodeWithTag("detail.address").assertTextEquals("Nova entrada, 200")
-        compose.onNodeWithTag("detail.done").performClick()
-        val delete = compose.onNodeWithContentDescription("Excluir lugar: Museu atualizado")
-        delete.performScrollTo().performClick()
+        compose.onNodeWithTag("detail.delete").scrollIntoView().performClick()
         compose.onNodeWithText("Cancelar").performClick()
         compose.onNodeWithTag("home.ideaName").assertTextEquals("Museu atualizado")
-        delete.performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Ver detalhes de Museu atualizado").scrollIntoView().performClick()
+        compose.onNodeWithTag("detail.delete").scrollIntoView().performClick()
         compose.onNodeWithTag("place.confirmDelete").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("place.savedNotice").assertDoesNotExist()
@@ -168,11 +165,11 @@ class HeaderNavigationTest {
     @Test fun floatingDetailsDismissWithSwipe() {
         compose.activityRule.scenario.onActivity { it.intent.putExtra("capturePlaceDetails", true) }
         compose.activityRule.scenario.recreate()
-        val handle = compose.onNodeWithTag("detail.dismiss")
+        val handle = compose.onNodeWithTag("detail.dismiss.card")
         handle.assertIsDisplayed()
-        val distance = compose.activity.resources.displayMetrics.heightPixels - 100f - handle.fetchSemanticsNode().boundsInRoot.center.y
-        handle.performTouchInput { swipe(center, center + Offset(0f, distance), 350) }
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.title").fetchSemanticsNodes().isEmpty() }
+        val distance = compose.activity.resources.displayMetrics.heightPixels - 100f - handle.fetchSemanticsNode().boundsInRoot.top
+        handle.performTouchInput { swipe(Offset(centerX, 20f), Offset(centerX, 20f + distance), 350) }
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.name").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("home.contextTitle").assertTextEquals("Planejamento")
         compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
     }
@@ -180,7 +177,7 @@ class HeaderNavigationTest {
     @Test fun floatingDetailsDismissWithSystemBack() {
         compose.activityRule.scenario.onActivity { it.intent.putExtra("capturePlaceDetails", true) }
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithTag("detail.title").assertIsDisplayed()
+        compose.onNodeWithTag("detail.name").assertIsDisplayed()
         val automation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
         automation.waitForIdle(200, 5_000)
         // The API 35 CI image can show a launcher ANR over the app. Recover only
@@ -207,7 +204,7 @@ class HeaderNavigationTest {
         android.os.ParcelFileDescriptor.AutoCloseInputStream(beforeCapture).use { it.readBytes() }
         org.junit.Assert.assertTrue(automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
         try {
-            compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.title").fetchSemanticsNodes().isEmpty() }
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("detail.name").fetchSemanticsNodes().isEmpty() }
         } catch (failure: androidx.compose.ui.test.ComposeTimeoutException) {
             val after = automation.rootInActiveWindow?.let { "${it.packageName}/${it.className}" }
             val command = automation.executeShellCommand("screencap -p /sdcard/arke-back-failure.png")
@@ -234,7 +231,8 @@ class HeaderNavigationTest {
         org.junit.Assert.assertTrue(range.maxValue() > 0f)
         body.performTouchInput { swipeUp() }
         org.junit.Assert.assertTrue(range.value() > 0f)
-        compose.onNodeWithTag("detail.dismiss").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("detail.next").assertDoesNotExist()
+        compose.onNodeWithTag("detail.done").assertIsDisplayed()
     }
 
     @Test fun detailsHaveFiniteNavigationAndSurviveRecreation() {
@@ -244,30 +242,20 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.position").assertDoesNotExist()
         compose.onNodeWithTag("detail.name").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Lugar 1 de 2"))
         val card = compose.onNodeWithTag("detail.dismiss.card").fetchSemanticsNode().boundsInRoot
-        val handle = compose.onNodeWithTag("detail.dismiss").fetchSemanticsNode().boundsInRoot
         org.junit.Assert.assertTrue(card.left >= 0f)
         org.junit.Assert.assertTrue(card.right <= compose.activity.resources.displayMetrics.widthPixels)
         org.junit.Assert.assertTrue(card.bottom <= compose.activity.resources.displayMetrics.heightPixels)
-        org.junit.Assert.assertTrue(handle.top >= card.top)
-        compose.onNodeWithTag("detail.infoText").assertDoesNotExist()
-        compose.onNodeWithTag("detail.info").performClick()
-        compose.onNodeWithTag("detail.infoText").assertIsDisplayed()
-        compose.onNodeWithTag("detail.infoDismiss").performClick()
-        compose.onNodeWithTag("detail.infoText").assertDoesNotExist()
+        compose.onNodeWithTag("detail.info").assertDoesNotExist()
+        compose.onNodeWithTag("detail.infoText").assertExists()
         compose.onNodeWithTag("detail.close").assertDoesNotExist()
         compose.onNodeWithTag("detail.position").assertDoesNotExist()
         compose.onNodeWithTag("detail.name").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Lugar 1 de 2"))
         compose.onNodeWithTag("detail.previous").assertDoesNotExist()
-        val header = compose.onNodeWithTag("detail.title").fetchSemanticsNode().boundsInRoot
-        org.junit.Assert.assertEquals(card.center.x, header.center.x, 1f)
-        org.junit.Assert.assertEquals(compose.onNodeWithTag("detail.name").fetchSemanticsNode().boundsInRoot.left,
-            compose.onNodeWithTag("detail.address").fetchSemanticsNode().boundsInRoot.left, 1f)
+        // O título (nome) alinha à margem do conteúdo; o endereço fica dentro do cartão, com ícone.
+        org.junit.Assert.assertTrue(compose.onNodeWithTag("detail.name").fetchSemanticsNode().boundsInRoot.left <=
+            compose.onNodeWithTag("detail.address").fetchSemanticsNode().boundsInRoot.left)
         org.junit.Assert.assertTrue(compose.onNodeWithTag("detail.next").fetchSemanticsNode().boundsInRoot.width > card.width * 0.8f)
-        val firstCloseY = compose.onNodeWithTag("detail.dismiss").fetchSemanticsNode().boundsInRoot.top
         compose.onNodeWithTag("detail.next").performClick()
-        compose.waitUntil(5_000) {
-            compose.onNodeWithTag("detail.dismiss").fetchSemanticsNode().boundsInRoot.top > firstCloseY + 20f
-        }
         compose.onNodeWithTag("detail.name").assertTextEquals("Museu dos caminhos")
         compose.onNodeWithTag("detail.name").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Lugar 2 de 2"))
         compose.onNodeWithTag("detail.next").assertDoesNotExist()
@@ -287,4 +275,26 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("home.panelMenu").assertContentDescriptionEquals("Ajustar painel. Atual: Equilibrado")
     }
 
+
+    /** O conteúdo só rola quando excede a altura; com tudo visível não há ação de rolagem. */
+    private fun androidx.compose.ui.test.SemanticsNodeInteraction.scrollIntoView() = apply {
+        runCatching { performScrollTo() }
+    }
+
+    /** O teclado reabre ao voltar para os campos e move o botão; repete o toque até a revisão abrir. */
+    private fun openReviewAndWaitForSave() {
+        repeat(3) {
+            if (compose.onAllNodesWithTag("place.save").fetchSemanticsNodes().isEmpty()) {
+                compose.onNodeWithTag("place.review").performClick()
+                runCatching { compose.waitUntil(3_000) { compose.onAllNodesWithTag("place.save").fetchSemanticsNodes().isNotEmpty() } }
+            }
+        }
+        compose.onNodeWithTag("place.save").assertExists()
+    }
+
+    /** Edição agora parte dos detalhes do lugar (protótipo): abre os detalhes e toca em Editar. */
+    private fun openEditViaDetails(name: String) {
+        compose.onNodeWithContentDescription("Ver detalhes de $name").scrollIntoView().performClick()
+        compose.onNodeWithTag("detail.edit").scrollIntoView().performClick()
+    }
 }

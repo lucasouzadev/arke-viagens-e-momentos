@@ -13,6 +13,14 @@ enum ArkeUI {
     static let fieldRadius: CGFloat = 12
     static let cardRadius: CGFloat = 20
     static let blue = Color(red: 76 / 255, green: 114 / 255, blue: 138 / 255)
+    /// Tinta de texto e ações: mesma matiz do azul candidato, com luminosidade ajustada por tema.
+    /// Claro: o próprio azul (≈5,1:1 sobre branco). Escuro: versão mais clara (≈6,9:1 sobre o cartão),
+    /// já que o azul puro dá ≈3,3:1 no escuro.
+    static let ink = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 136 / 255, green: 170 / 255, blue: 190 / 255, alpha: 1)
+            : UIColor(red: 76 / 255, green: 114 / 255, blue: 138 / 255, alpha: 1)
+    })
 }
 
 enum ArkeTextRole {
@@ -67,8 +75,8 @@ struct ArkeFloatingSheet<Content: View>: View {
         }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(dismissIdentifier + ".card")
-            .presentationDragIndicator(.visible)
-            .presentationContentInteraction(.scrolls)
+            .presentationDragIndicator(.hidden)
+            .presentationContentInteraction(.resizes)
     }
 }
 
@@ -142,5 +150,68 @@ final class ArkeKeyboardViewportController<Content: View>: UIViewController {
             host.view.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
         ])
         host.didMove(toParent: self)
+    }
+}
+
+
+/// Vidro nos controles flutuantes (iOS 26); material translúcido antes disso.
+private struct ArkeGlassCapsule: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            content.background(.regularMaterial, in: Capsule())
+        }
+    }
+}
+extension View {
+    func arkeGlassCapsule() -> some View { modifier(ArkeGlassCapsule()) }
+}
+
+/// Informa quando o gesto de arrastar para baixo foi bloqueado (`interactiveDismissDisabled`),
+/// para abrir a confirmação "Descartar rascunho?". Mantém o delegate original do SwiftUI.
+struct ArkeDismissAttempt: UIViewControllerRepresentable {
+    let onAttempt: () -> Void
+
+    func makeUIViewController(context: Context) -> Probe { Probe() }
+    func updateUIViewController(_ probe: Probe, context: Context) {
+        probe.proxy.onAttempt = onAttempt
+        // O SwiftUI pode recolocar o próprio delegate ao atualizar (ex.: interactiveDismissDisabled mudou); reinstala.
+        DispatchQueue.main.async { probe.install() }
+    }
+
+    final class Probe: UIViewController {
+        let proxy = Proxy()
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            install()
+        }
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            install()
+        }
+        func install() {
+            var node: UIViewController? = self
+            while let current = node, current.presentationController == nil { node = current.parent }
+            guard let controller = node?.presentationController, controller.delegate !== proxy else { return }
+            proxy.original = controller.delegate
+            controller.delegate = proxy
+        }
+    }
+
+    final class Proxy: NSObject, UIAdaptivePresentationControllerDelegate {
+        weak var original: UIAdaptivePresentationControllerDelegate?
+        var onAttempt: () -> Void = {}
+
+        func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
+            onAttempt()
+            original?.presentationControllerDidAttemptToDismiss?(presentationController)
+        }
+        override func responds(to selector: Selector!) -> Bool {
+            super.responds(to: selector) || (original as AnyObject?)?.responds(to: selector) == true
+        }
+        override func forwardingTarget(for selector: Selector!) -> Any? {
+            (original as AnyObject?)?.responds(to: selector) == true ? original : super.forwardingTarget(for: selector)
+        }
     }
 }

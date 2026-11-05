@@ -1,5 +1,17 @@
 # Índice e maturidade da documentação
 
+[M5-UI-REDESIGN-04](engenharia/M5-UI-REDESIGN-04.md), [05](engenharia/M5-UI-REDESIGN-05.md) e [06](engenharia/M5-UI-REDESIGN-06.md): finanças/diário, Viagens/Compartilhar e Home; aplicados, CI aprovado, lacunas nos contratos.
+
+[M5-UI-REDESIGN-03B — sheet contínuo](engenharia/M5-UI-REDESIGN-03B.md): aplicado na branch, Android com CI aprovado, iOS pendente.
+
+[M5-UI-REDESIGN-03 — Marcar no mapa](engenharia/M5-UI-REDESIGN-03.md): aplicado na branch, CI aprovado; sem teste de UI do fluxo.
+
+[M5-UI-REDESIGN-02 — editor de lugar](engenharia/M5-UI-REDESIGN-02.md): aplicado na branch, CI aprovado.
+
+[M5-UI-REDESIGN — contrato de implementação](engenharia/M5-UI-REDESIGN-PLANO.md) e [DESIGN-007](design/DESIGN-007.md): direção aprovada a partir do protótipo; recortes 04–06 ainda sem código.
+
+[M5-UI-REDESIGN-01 — redesenho de UI/UX, recorte 1](engenharia/M5-UI-REDESIGN-01.md): contraste da tinta, seletor de contexto e mapa expandido; aplicado na branch, CI aprovado.
+
 [M5-QA-FIX-01 — correções de interação da beta](engenharia/M5-QA-FIX-01.md): implementação e validação, com [análise original](qualidade/QA-BETA-01.md).
 
 [M5-TESTFLIGHT-01 — primeira build beta](engenharia/M5-TESTFLIGHT-01.md) e [M5-DEVICE-01 — APK e teste em aparelho](engenharia/M5-DEVICE-01.md): recorte de distribuição de testes autorizado, sem publicação nas lojas.
