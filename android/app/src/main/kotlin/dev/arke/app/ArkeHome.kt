@@ -78,6 +78,7 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
     },
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false, journalCapture: String? = null) {
     val placeState by places.state.collectAsState()
@@ -341,7 +342,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
             }
         }
     }
-    mapDetailIdeaID?.let { id -> PlaceDetails(placeState.ideas, id) { mapDetailIdeaID = null } }
+    mapDetailIdeaID?.let { id -> PlaceDetails(placeState.ideas, id, onClose = { mapDetailIdeaID = null }) }
     pinToShare?.let { (name, pin) -> SharePinDialog(name, pin) { pinToShare = null } }
     if (showingTrips && pinToShare == null) {
         val plan = pinPlan
