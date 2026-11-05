@@ -18,4 +18,4 @@
 - Android: câmera D4 não testável no CI (`MAPS_CONFIGURED` falso).
 
 ## Testes
-Testes de UI de iOS e Android atualizados para editar/excluir via detalhes. Evidência: pendente de CI (ver STATUS).
+Testes de UI de iOS e Android atualizados para editar/excluir via detalhes. Evidência: CI aprovado (run 42109469115, commit bebd14d); capturas da Home inspecionadas nas duas plataformas.

@@ -1,5 +1,7 @@
 # Índice e maturidade da documentação
 
+[M5-UI-REDESIGN-04](engenharia/M5-UI-REDESIGN-04.md), [05](engenharia/M5-UI-REDESIGN-05.md) e [06](engenharia/M5-UI-REDESIGN-06.md): finanças/diário, Viagens/Compartilhar e Home; aplicados, CI aprovado, lacunas nos contratos.
+
 [M5-UI-REDESIGN-03B — sheet contínuo](engenharia/M5-UI-REDESIGN-03B.md): aplicado na branch, Android com CI aprovado, iOS pendente.
 
 [M5-UI-REDESIGN-03 — Marcar no mapa](engenharia/M5-UI-REDESIGN-03.md): aplicado na branch, CI aprovado; sem teste de UI do fluxo.

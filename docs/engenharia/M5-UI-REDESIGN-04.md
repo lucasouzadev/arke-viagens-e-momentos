@@ -17,4 +17,4 @@
 - Capturas e testes de UI específicos destes formulários.
 
 ## Evidência
-Pendente de CI (ver STATUS).
+CI aprovado (run 42109469115, commit bebd14d). Capturas inspecionadas: Home, Avaliações e Memórias (Android e iOS). Gastos, Cofrinho e sheets de formulário: não capturados.

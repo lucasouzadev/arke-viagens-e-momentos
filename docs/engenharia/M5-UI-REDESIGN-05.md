@@ -14,4 +14,4 @@
 - O histórico do Git ainda contém a URL e a chave publishable antigas; é chave pública, mas convém rotacionar quando D5 for decidido.
 
 ## Evidência
-Pendente de CI (ver STATUS).
+CI aprovado (run 42109469115, commit bebd14d). Lista de Viagens e estado de Compartilhar: não capturados.

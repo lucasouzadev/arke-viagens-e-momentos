@@ -182,6 +182,7 @@ Novos documentos devem nascer **de uma lacuna demonstrada**, não de contagem de
 | [M5-DETAILS-UI-03](engenharia/M5-DETAILS-UI-03.md) | Sheet de detalhes compacto e agrupado | Em revisão; CI e 32 PNGs verificados no PR #2 |
 | [M5-FLOATING-01](engenharia/M5-FLOATING-01.md) | Cartões flutuantes, recuo e cabeçalho simplificado | 32 testes e 32 PNGs verificados; em revisão no PR #2, limites no contrato |
 | [M5-EDIT-01](engenharia/M5-EDIT-01.md) | Navegação limpa e edição segura de ideias | 34 testes e 40 PNGs verificados; em revisão no PR #2, limites no contrato |
+| [M5-UI-REDESIGN-04](engenharia/M5-UI-REDESIGN-04.md) · [05](engenharia/M5-UI-REDESIGN-05.md) · [06](engenharia/M5-UI-REDESIGN-06.md) | Finanças/diário, Viagens/Compartilhar e Home (recortes 04–06) | Aplicados na branch `ui/m5-ui-redesign-04`; CI aprovado (run 42109469115); lacunas nos contratos |
 | [M5-UI-REDESIGN-03B](engenharia/M5-UI-REDESIGN-03B.md) | Sheet contínuo em todas as telas (recorte 03B) | Aplicado na branch `ui/m5-ui-redesign-03b`; Android com CI aprovado (run 42060849129); iOS sem resultado de CI |
 | [M5-UI-REDESIGN-03](engenharia/M5-UI-REDESIGN-03.md) | Marcar no mapa (recorte 03 do redesenho) | Aplicado na branch `ui/m5-ui-redesign-03`; CI aprovado (run 42028300048); sem teste de UI do fluxo (escrito na 03B, não executado) |
 | [M5-UI-REDESIGN-02](engenharia/M5-UI-REDESIGN-02.md) | Editor de lugar (recorte 02 do redesenho) | Aplicado na branch `ui/m5-ui-redesign-02`; CI aprovado (run 42015188832) |
