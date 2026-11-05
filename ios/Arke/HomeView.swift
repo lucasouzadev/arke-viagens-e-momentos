@@ -768,75 +768,160 @@ private struct TripJournalView: View {
     @State private var draft = ""
     @State private var error = false
 
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showingForm = false
+
     var body: some View {
         let activePlan = preview ? try? JSONDecoder().decode(LocalPinPlan.self, from: Data(
             #"{"pins":[],"trips":[{"id":"preview","title":"Milano"}]}"#.utf8)) : plan
         if let plan = activePlan, let trip = plan.trips.first(where: { $0.id == selectedTrip }) ?? plan.trips.first {
-            Picker("Viagem", selection: Binding(get: { trip.id }, set: {
-                selectedTrip = $0
-                draft = ""
-                placeID = nil
-                error = false
-            })) {
-                ForEach(plan.trips, id: \.id) { Text($0.title).tag($0.id) }
-            }
             let source = preview ? [
                 Entry(tripID: "preview", text: reviews ? "Chegamos cedo e encontramos a praça tranquila." : "A primeira manhã na praça do Duomo.", rating: reviews ? 4 : nil, placeID: nil)
             ] : ((try? JSONDecoder().decode([Entry].self, from: data)) ?? [])
-            let entries = source
-                .filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
-            if entries.isEmpty { Text(reviews ? "Nenhuma avaliação nesta viagem." : "Nenhuma memória nesta viagem.").foregroundStyle(.secondary) }
-            ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
-                let layout = detailed || reviews
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
-                    : AnyLayout(HStackLayout(alignment: .center, spacing: 10))
-                layout {
-                    if let rating = entry.rating {
-                        Label("\(rating) de 5", systemImage: "star.fill").arkeText(.contextTitle)
-                    } else if let image = journalCover(entry) {
-                        Image(uiImage: image).resizable().scaledToFit().frame(maxWidth: detailed ? .infinity : 64, maxHeight: detailed ? 190 : 44)
-                            .padding(10)
-                            .background {
-                                Color(uiColor: .systemBackground)
-                                    .mask { StampEdge().fill(style: FillStyle(eoFill: true)) }
-                            }
-                            .accessibilityHidden(true)
-                    } else {
-                        Label("Memória", systemImage: "photo.on.rectangle").arkeText(.contextTitle)
+            let entries = source.filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Menu {
+                        ForEach(plan.trips, id: \.id) { item in
+                            Button(item.title) { selectedTrip = item.id; draft = ""; placeID = nil; error = false }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "suitcase").font(.system(size: 15))
+                            Text(trip.title).arkeText(.label).lineLimit(1)
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                        }
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
                     }
-                    Text(entry.text).lineLimit(detailed ? nil : 2)
-                }.padding(.vertical, 6)
-            }
-            if detailed {
-                if reviews {
-                    Stepper("Nota: \(rating) de 5", value: $rating, in: 1...5)
-                } else {
-                    Picker("Capa do lugar", selection: $placeID) {
-                        Text("Sem capa").tag(nil as String?)
-                        ForEach(ideas.filter { idea in
-                            idea.cover != nil && plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
-                        }) { idea in Text(idea.name).tag(Optional(idea.id)) }
-                    }
+                    .accessibilityLabel("Viagem: " + trip.title)
+                    Spacer()
+                    if !reviews { Label("Privado", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary) }
                 }
-                TextField(reviews ? "Escreva sua avaliação" : "Escreva sua memória", text: $draft, axis: .vertical)
-                Button(reviews ? "Salvar avaliação" : "Salvar memória") {
-                    let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !text.isEmpty, text.count <= 1000 else { return }
-                    do {
-                        var all = data.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: data)
-                        all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID))
-                        data = try JSONEncoder().encode(all)
-                        draft = ""
-                        placeID = nil
-                        error = false
-                    } catch { self.error = true }
-                }.disabled(preview || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
-                if error { Text("Não foi possível salvar.").foregroundStyle(.red) }
+                if reviews {
+                    if entries.isEmpty {
+                        Text("Nenhuma avaliação nesta viagem.").arkeText(.body).foregroundStyle(.secondary)
+                    }
+                    ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
+                        VStack(alignment: .leading, spacing: 6) {
+                            stars(entry.rating ?? 0)
+                            Text(entry.text).arkeText(.body).lineLimit(detailed ? nil : 3)
+                        }
+                        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
+                        .accessibilityElement(children: .combine)
+                    }
+                } else {
+                    let shown = detailed ? entries.reversed().map { $0 } : Array(entries.suffix(2))
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                        ForEach(shown) { entry in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Group {
+                                    if let image = journalCover(entry) {
+                                        Image(uiImage: image).resizable().scaledToFill()
+                                    } else {
+                                        Image(systemName: "photo").font(.system(size: 22)).foregroundStyle(.secondary)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity).frame(height: 84).background(ArkeUI.sheetSurface(colorScheme))
+                                .clipShape(.rect(cornerRadius: 10)).accessibilityHidden(true)
+                                Text(entry.text).arkeText(.caption).lineLimit(2)
+                            }
+                            .padding(8).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        Button { showingForm = true } label: {
+                            VStack(spacing: 6) {
+                                Image(systemName: "plus").font(.system(size: 22))
+                                Text("Nova memória").arkeText(.caption)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 120)
+                            .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
+                            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5])).foregroundStyle(.tertiary) }
+                        }
+                        .buttonStyle(.plain).disabled(preview).accessibilityIdentifier("memories.add")
+                    }
+                    if entries.isEmpty { Text("Nenhuma memória nesta viagem.").arkeText(.body).foregroundStyle(.secondary) }
+                }
+                if reviews {
+                    Button { showingForm = true } label: {
+                        Label("Avaliar este lugar", systemImage: "star").arkeText(.button).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 48).background(ArkeUI.blue, in: Capsule())
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).disabled(preview).accessibilityIdentifier("reviews.add")
+                }
             }
+            .sheet(isPresented: $showingForm) { formSheet(trip: trip, plan: plan) }
         } else {
-            Text("Crie uma viagem local para começar.").foregroundStyle(.secondary)
+            Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
         }
     }
+
+    private func stars(_ rating: Int) -> some View {
+        HStack(spacing: 3) {
+            ForEach(1...5, id: \.self) { index in
+                Image(systemName: index <= rating ? "star.fill" : "star").foregroundStyle(index <= rating ? Color(uiColor: .systemOrange) : Color.secondary)
+            }
+            Text("\(rating) de 5").arkeText(.caption).foregroundStyle(.secondary).padding(.leading, 6)
+        }
+        .accessibilityElement(children: .ignore).accessibilityLabel("Nota \(rating) de 5")
+    }
+
+    private func formSheet(trip: LocalPinTrip, plan: LocalPinPlan) -> some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(reviews ? "Avaliar este lugar" : "Nova memória").font(.title.bold()).accessibilityAddTraits(.isHeader)
+                    if reviews {
+                        HStack(spacing: 8) {
+                            ForEach(1...5, id: \.self) { index in
+                                Button { rating = index } label: {
+                                    Image(systemName: index <= rating ? "star.fill" : "star").font(.system(size: 30))
+                                        .foregroundStyle(index <= rating ? Color(uiColor: .systemOrange) : Color.secondary)
+                                        .frame(width: 48, height: 48)
+                                }
+                                .buttonStyle(.plain).accessibilityLabel("\(index) de 5").accessibilityAddTraits(index == rating ? .isSelected : [])
+                            }
+                        }
+                    } else {
+                        Picker("Capa do lugar", selection: $placeID) {
+                            Text("Sem capa").tag(nil as String?)
+                            ForEach(ideas.filter { idea in
+                                idea.cover != nil && plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
+                            }) { idea in Text(idea.name).tag(Optional(idea.id)) }
+                        }
+                    }
+                    TextField(reviews ? "Escreva sua avaliação" : "Escreva sua memória", text: $draft, axis: .vertical)
+                        .lineLimit(4...8).padding(16).frame(minHeight: 120, alignment: .topLeading)
+                        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                    if error { Text("Não foi possível salvar.").arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+                    Button("Cancelar") { showingForm = false }.frame(maxWidth: .infinity, minHeight: 48).foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 100)
+            }
+            .scrollDismissesKeyboard(.interactively).scrollIndicators(.hidden)
+            Button {
+                let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !text.isEmpty, text.count <= 1000 else { return }
+                do {
+                    var all = data.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: data)
+                    all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID))
+                    data = try JSONEncoder().encode(all)
+                    draft = ""
+                    placeID = nil
+                    error = false
+                    showingForm = false
+                } catch { self.error = true }
+            } label: {
+                Text(reviews ? "Salvar avaliação" : "Salvar memória").arkeText(.button).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 56).background(ArkeUI.blue, in: Capsule())
+            }
+            .buttonStyle(.plain).disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
+            .padding(.horizontal, 20).padding(.bottom, 14)
+        }
+        .presentationDetents([.large]).presentationDragIndicator(.hidden)
+    }
+
     private func journalCover(_ entry: Entry) -> UIImage? {
         #if DEBUG
         if preview {
