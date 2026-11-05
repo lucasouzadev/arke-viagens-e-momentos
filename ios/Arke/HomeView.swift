@@ -343,9 +343,18 @@ struct HomeView: View {
     }
 
     private var cardHeader: some View {
-        ZStack(alignment: .leading) {
+        HStack(spacing: 8) {
             let options = TravelContext.allCases
             let index = options.firstIndex(of: state.context) ?? 0
+            Button { showingAddPlace = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .medium))
+                    .frame(width: 48, height: 48)
+                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
+            }
+            .disabled(!places.ready || places.busy)
+            .accessibilityLabel("Adicionar lugar")
+            .accessibilityIdentifier("home.addPlace")
             HStack(spacing: 4) {
                 contextPreview(index - 1)
                 Text(state.context.title)
@@ -368,16 +377,6 @@ struct HomeView: View {
                 @unknown default: break
                 }
             }
-            Button { showingAddPlace = true } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .medium))
-                    .frame(width: 48, height: 48)
-                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
-            }
-            .disabled(!places.ready || places.busy)
-            .accessibilityLabel("Adicionar lugar")
-            .accessibilityIdentifier("home.addPlace")
-
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)

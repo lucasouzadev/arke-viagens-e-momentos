@@ -490,13 +490,17 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
 private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Boolean, onSelect: (TravelContext) -> Unit) {
     val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
     val view = androidx.compose.ui.platform.LocalView.current
-    Box(Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         val options = TravelContext.entries
         val index = options.indexOf(context)
         var drag by remember { mutableFloatStateOf(0f) }
         val threshold = with(LocalDensity.current) { 24.dp.toPx() }
+        IconButton(onClick = onAdd, enabled = addEnabled, modifier = Modifier.size(48.dp).background(arkeInsetColor(), androidx.compose.foundation.shape.CircleShape).testTag("home.addPlace")) {
+            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = actionColor)
+        }
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 48.dp).draggable(
+            Modifier.weight(1f).heightIn(min = 48.dp).draggable(
                 orientation = Orientation.Horizontal,
                 state = rememberDraggableState { drag += it },
                 onDragStarted = { drag = 0f },
@@ -530,9 +534,6 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
                 textAlign = TextAlign.Center,
             )
             ContextPreview(options.getOrNull(index + 1))
-        }
-        IconButton(onClick = onAdd, enabled = addEnabled, modifier = Modifier.size(48.dp).background(arkeInsetColor(), androidx.compose.foundation.shape.CircleShape).testTag("home.addPlace")) {
-            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = actionColor)
         }
     }
 }
