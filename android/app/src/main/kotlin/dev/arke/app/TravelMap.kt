@@ -217,8 +217,8 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             enabled = !busy, onClick = onClose,
-                            modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("pin.cancel"),
-                        ) { Icon(painterResource(R.drawable.ic_close), "Cancelar") }
+                            modifier = Modifier.size(40.dp).background(arkeSheetColor(), CircleShape).testTag("pin.cancel"),
+                        ) { Icon(painterResource(R.drawable.ic_close), "Cancelar", Modifier.size(22.dp)) }
                         Text(
                             "Marcar no mapa", Modifier.weight(1f).semantics { heading() },
                             style = MaterialTheme.typography.titleMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -232,10 +232,10 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
                                         pinPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
                                     }
                                 },
-                                modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("pin.location"),
-                            ) { Icon(painterResource(R.drawable.ic_location), "Minha localização") }
+                                modifier = Modifier.size(40.dp).background(arkeSheetColor(), CircleShape).testTag("pin.location"),
+                            ) { Icon(painterResource(R.drawable.ic_location), "Minha localização", Modifier.size(22.dp)) }
                         } else {
-                            Spacer(Modifier.size(48.dp))
+                            Spacer(Modifier.size(40.dp))
                         }
                     }
                     if (BuildConfig.MAPS_CONFIGURED) {

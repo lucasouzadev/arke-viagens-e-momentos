@@ -180,7 +180,7 @@ struct HomeView: View {
                                 .accessibilityLabel("Buscar lugares")
                                 .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: true))
                                 Button { location.request() } label: {
-                                    Image(systemName: "location.fill").frame(width: 44, height: 44)
+                                    Image(systemName: "location.fill").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
                                 }
                                 .modifier(MapLocationButtonStyle())
                                 .accessibilityLabel("Minha localização")
@@ -1070,25 +1070,25 @@ private struct PinEditor: View {
         VStack(spacing: 10) {
             HStack {
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
+                    Image(systemName: "xmark").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
                 }
                 .modifier(MapLocationButtonStyle()).disabled(busy)
                 .accessibilityLabel("Cancelar").accessibilityIdentifier("pin.cancel")
                 Spacer()
                 Text("Marcar no mapa").arkeText(.contextTitle)
-                    .padding(.horizontal, 20).padding(.vertical, 10)
+                    .padding(.horizontal, 18).padding(.vertical, 7)
                     .background(.regularMaterial, in: Capsule())
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button { pinLocation.request() } label: {
-                    Image(systemName: "location.fill").frame(width: 44, height: 44)
+                    Image(systemName: "location.fill").font(.system(size: 18, weight: .semibold)).frame(width: 26, height: 26)
                 }
                 .modifier(MapLocationButtonStyle())
                 .accessibilityLabel("Minha localização").accessibilityIdentifier("pin.location")
             }
             Button { searchingAddress = true } label: {
                 Label("Buscar endereço", systemImage: "magnifyingglass")
-                    .font(.subheadline).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 12)
+                    .font(.subheadline).frame(maxWidth: .infinity, minHeight: 24, alignment: .leading).padding(.horizontal, 4)
             }
             .modifier(MapLocationButtonStyle(isPill: true))
             .accessibilityIdentifier("pin.search")
