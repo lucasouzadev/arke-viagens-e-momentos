@@ -75,7 +75,7 @@ struct ArkeFloatingSheet<Content: View>: View {
         }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(dismissIdentifier + ".card")
-            .presentationDragIndicator(.visible)
+            .presentationDragIndicator(.hidden)
             .presentationContentInteraction(.scrolls)
     }
 }
@@ -150,5 +150,64 @@ final class ArkeKeyboardViewportController<Content: View>: UIViewController {
             host.view.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
         ])
         host.didMove(toParent: self)
+    }
+}
+
+
+/// Vidro nos controles flutuantes (iOS 26); material translúcido antes disso.
+private struct ArkeGlassCapsule: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            content.background(.regularMaterial, in: Capsule())
+        }
+    }
+}
+extension View {
+    func arkeGlassCapsule() -> some View { modifier(ArkeGlassCapsule()) }
+}
+
+/// Informa quando o gesto de arrastar para baixo foi bloqueado (`interactiveDismissDisabled`),
+/// para abrir a confirmação "Descartar rascunho?". Mantém o delegate original do SwiftUI.
+struct ArkeDismissAttempt: UIViewControllerRepresentable {
+    let onAttempt: () -> Void
+
+    func makeUIViewController(context: Context) -> Probe { Probe() }
+    func updateUIViewController(_ probe: Probe, context: Context) { probe.proxy.onAttempt = onAttempt }
+
+    final class Probe: UIViewController {
+        let proxy = Proxy()
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            install()
+        }
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            install()
+        }
+        private func install() {
+            var node: UIViewController? = self
+            while let current = node, current.presentationController == nil { node = current.parent }
+            guard let controller = node?.presentationController, controller.delegate !== proxy else { return }
+            proxy.original = controller.delegate
+            controller.delegate = proxy
+        }
+    }
+
+    final class Proxy: NSObject, UIAdaptivePresentationControllerDelegate {
+        weak var original: UIAdaptivePresentationControllerDelegate?
+        var onAttempt: () -> Void = {}
+
+        func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
+            onAttempt()
+            original?.presentationControllerDidAttemptToDismiss?(presentationController)
+        }
+        override func responds(to selector: Selector!) -> Bool {
+            super.responds(to: selector) || (original as AnyObject?)?.responds(to: selector) == true
+        }
+        override func forwardingTarget(for selector: Selector!) -> Any? {
+            (original as AnyObject?)?.responds(to: selector) == true ? original : super.forwardingTarget(for: selector)
+        }
     }
 }

@@ -283,7 +283,7 @@ struct HomeView: View {
             }
             .modifier(MapSearchMotion(namespace: mapSearchTransition, isSource: false))
             .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+            .presentationDragIndicator(.hidden)
         }
         .task { pinPlan = try? await places.loadPinPlan() }
         .sheet(isPresented: $showingTrips) {
@@ -319,6 +319,7 @@ struct HomeView: View {
                 .navigationTitle("Viagens")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { showingTrips = false } } }
             }
+            .presentationDragIndicator(.hidden)
         }
         .sheet(item: $mapDetailIdea) { idea in
             PlaceDetails(ideas: places.ideas, initialID: idea.id) { mapDetailIdea = nil }

@@ -153,8 +153,7 @@ struct PlaceDetails: View {
     let ideas: [PlaceIdea]
     let onClose: () -> Void
     @State private var selectedID: String
-    @State private var showingInfo = false
-    @State private var contentHeight: CGFloat = 280
+    @State private var contentHeight: CGFloat = 300
 
     init(ideas: [PlaceIdea], initialID: String, onClose: @escaping () -> Void) {
         self.ideas = ideas
@@ -167,43 +166,16 @@ struct PlaceDetails: View {
 
     var body: some View {
         ArkeFloatingSheet(dismissIdentifier: "detail.dismiss") {
-            VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    Color.clear.frame(width: 48, height: 1).accessibilityHidden(true)
-                    Text("Seus lugares").arkeText(.contextTitle).accessibilityAddTraits(.isHeader)
-                        .multilineTextAlignment(.center).frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("detail.title")
-                    Button { showingInfo = true } label: {
-                        Image(systemName: "info.circle").font(.system(size: 22))
-                            .frame(width: 48, height: 48)
-                            .background(ArkeUI.insetSurface(colorScheme), in: Circle()).contentShape(Circle())
-                    }
-                    .accessibilityLabel("Informações sobre este lugar").accessibilityIdentifier("detail.info")
-                    .popover(isPresented: $showingInfo) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Sobre este lugar").arkeText(.contextTitle)
-                            Text("Esta ideia fica só neste aparelho, sem backup. Desinstalar o app pode apagá-la. Para vê-la no mapa, use Marcar no mapa.")
-                                .arkeText(.body).accessibilityIdentifier("detail.infoText")
-                            Button { showingInfo = false } label: {
-                                Text("Entendi").arkeText(.button).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                                    .contentShape(Rectangle())
-                            }.accessibilityIdentifier("detail.infoDismiss")
-                        }
-                        .foregroundStyle(ink).frame(width: 240, alignment: .leading).padding(20)
-                        .presentationCompactAdaptation(.popover)
-                    }
-                }.padding(.top, 16)
+            ZStack(alignment: .bottom) {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 16) {
                         if let index {
                             let idea = ideas[index]
-                            HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "bookmark.fill").font(.system(size: 22)).frame(width: 24, height: 28)
-                                    .accessibilityIdentifier("detail.nameIcon").accessibilityHidden(true)
-                                Text(idea.name).arkeText(.cardTitle).accessibilityAddTraits(.isHeader)
-                                    .accessibilityValue("Lugar \(index + 1) de \(ideas.count)")
-                                    .accessibilityIdentifier("detail.name")
-                            }.padding(.horizontal, 20)
+                            // Sheet contínuo: o nome é o título e rola com o conteúdo.
+                            Text(idea.name).font(.title.bold()).accessibilityAddTraits(.isHeader)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityValue("Lugar \(index + 1) de \(ideas.count)")
+                                .accessibilityIdentifier("detail.name")
                             VStack(alignment: .leading, spacing: 20) {
                                 contentRow(icon: "mappin", value: idea.address, label: "Endereço", identifier: "detail.address")
                                 if let url = PlaceDraft.webURL(idea.link) {
@@ -213,25 +185,29 @@ struct PlaceDetails: View {
                                     contentRow(icon: "text.alignleft", value: idea.note, label: "Nota", identifier: "detail.note")
                                 }
                             }
-                            .padding(20).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
+                            .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 24))
+                            Label("Fica só neste aparelho, sem backup. Para ver no mapa, use Marcar no mapa.", systemImage: "lock")
+                                .arkeText(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                                .accessibilityIdentifier("detail.infoText")
                         } else {
                             Text("Este lugar não está mais disponível.").arkeText(.body)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 16).padding(.bottom, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 96)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                         if abs(contentHeight - height) > 1 { contentHeight = height }
                     }
                 }
                 .id(selectedID).accessibilityIdentifier("detail.body")
-                .scrollIndicators(.hidden)
+                .modifier(ArkeScrollEdges())
                 .scrollBounceBehavior(.basedOnSize)
-                HStack(spacing: 16) {
+                HStack(spacing: 10) {
                     if let index, index > 0 {
                         Button { selectedID = ideas[index - 1].id } label: {
                             Image(systemName: "chevron.left").font(.system(size: 20))
-                                .frame(width: 48, height: 48)
-                                .background(ArkeUI.insetSurface(colorScheme), in: Circle())
+                                .frame(width: 56, height: 56).arkeGlassCapsule().contentShape(Circle())
                         }.accessibilityLabel("Lugar anterior").accessibilityIdentifier("detail.previous")
                     }
                     let isLast = index.map { $0 == ideas.count - 1 } ?? true
@@ -239,14 +215,15 @@ struct PlaceDetails: View {
                         if let index, !isLast { selectedID = ideas[index + 1].id } else { onClose() }
                     } label: {
                         Text(isLast ? "Concluído" : "Próximo").arkeText(.button).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .frame(maxWidth: .infinity, minHeight: 56)
                             .background(ArkeUI.blue, in: Capsule()).contentShape(Rectangle())
                     }.accessibilityIdentifier(isLast ? "detail.done" : "detail.next")
-                }.padding(.top, 16).padding(.bottom, 16)
+                }
+                .buttonStyle(.plain).foregroundStyle(ink).padding(.horizontal, 20).padding(.bottom, 14)
             }
-            .buttonStyle(.plain).foregroundStyle(ink).padding(.horizontal, 20)
+            .accessibilityAction(.escape) { onClose() }
         }
-        .presentationDetents([.height(max(300, contentHeight + 152))])
+        .presentationDetents([.height(max(300, contentHeight)), .large])
     }
 
     private func contentRow(icon: String, value: String, label: String, identifier: String) -> some View {

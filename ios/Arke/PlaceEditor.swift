@@ -14,7 +14,6 @@ struct PlaceEditor: View {
     @State private var reviewing = false
     @State private var submitted = false
     @State private var confirmingDiscard = false
-    @State private var showingInfo = false
     @State private var coverSelection: PhotosPickerItem?
     @State private var coverLoading = false
     @State private var coverError = false
@@ -39,40 +38,16 @@ struct PlaceEditor: View {
     var body: some View {
         ArkeFloatingSheet(dismissIdentifier: "place.dismiss") {
             ArkeKeyboardViewport {
-                NavigationStack {
-                    VStack(spacing: 0) {
-                        HStack(spacing: 0) {
-                            Button(action: cancel) {
-                                Image(systemName: "xmark").font(.system(size: 20)).foregroundStyle(ink)
-                                    .frame(width: 48, height: 48)
-                                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
-                                    .contentShape(Rectangle())
-                            }
-                            .frame(width: 76, alignment: .leading).disabled(saving).accessibilityLabel("Cancelar").accessibilityIdentifier("place.cancel")
-                            Text(reviewing ? "Revisar lugar" : (original == nil ? "Adicionar lugar" : "Editar lugar"))
-                                .arkeText(.contextTitle).foregroundStyle(ink)
-                                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
-                                .accessibilityIdentifier("place.title")
-                            Button { field = nil; showingInfo = true } label: {
-                                Image(systemName: "info.circle").font(.system(size: 22))
-                                    .frame(width: 48, height: 48)
-                                    .background(ArkeUI.insetSurface(colorScheme), in: Circle())
-                            }.frame(width: 76, alignment: .trailing)
-                            .accessibilityLabel("Informações sobre salvar lugares").accessibilityIdentifier("place.info")
-                            .popover(isPresented: $showingInfo) {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Sobre sua ideia").arkeText(.contextTitle)
-                                    Text("Nome e endereço são obrigatórios. A ideia fica só neste aparelho, sem backup; desinstalar o app pode apagá-la. Para ver no mapa, use Marcar no mapa depois de salvar.").arkeText(.body)
-                                        .accessibilityIdentifier("place.infoText")
-                                    Button("Entendi") { showingInfo = false }.frame(minHeight: 48).accessibilityIdentifier("place.infoDismiss")
-                                }.foregroundStyle(ink).frame(width: 240).padding(20).presentationCompactAdaptation(.popover)
-                            }
-                        }
-                        .buttonStyle(.plain).padding(.top, 12)
-                        ScrollViewReader { proxy in
+                ZStack(alignment: .bottom) {
+                    ScrollViewReader { proxy in
                         ScrollView {
                             VStack(alignment: .leading, spacing: 8) {
+                                // Sheet contínuo: o título é o primeiro item e rola com o conteúdo.
+                                Text(reviewing ? "Revisar lugar" : (original == nil ? "Adicionar lugar" : "Editar lugar"))
+                                    .font(.title.bold()).foregroundStyle(ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .padding(.bottom, 8)
+                                    .accessibilityAddTraits(.isHeader).accessibilityIdentifier("place.title")
                                 if !reviewing || draft.cover != nil { coverField }
                                 if reviewing {
                                     VStack(alignment: .leading, spacing: 0) {
@@ -106,50 +81,56 @@ struct PlaceEditor: View {
                                 if let saveError {
                                     Text(saveError).arkeText(.caption).padding(.horizontal, 4).accessibilityIdentifier("place.saveError")
                                 }
+                                Label(original == nil ? "Fica salvo só neste aparelho, sem backup." : "Alterações ficam salvas só neste aparelho, sem backup.", systemImage: "lock")
+                                    .arkeText(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.top, 6)
+                                    .accessibilityIdentifier("place.infoText")
+                                // Cancelar sem gesto: fim do conteúdo, como alternativa ao arrastar para baixo.
+                                Button(action: cancel) {
+                                    Text("Cancelar").arkeText(.button).foregroundStyle(ink)
+                                        .frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
+                                }
+                                .disabled(saving).accessibilityIdentifier("place.cancel")
                             }
                             .foregroundStyle(ink).frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 16).padding(.bottom, 24)
+                            .padding(.horizontal, 20).padding(.top, 28)
+                            // Respiro para a última linha passar por baixo dos botões flutuantes.
+                            .padding(.bottom, reviewing ? 156 : 96)
                         }
                         .modifier(ArkeScrollEdges())
                         .scrollDismissesKeyboard(.interactively)
                         .accessibilityIdentifier("place.fields").scrollIndicators(.hidden)
-                        .safeAreaInset(edge: .bottom, spacing: 0) {
-                            VStack(spacing: 12) {
-                                if reviewing {
-                                    Button { reviewing = false } label: {
-                                        Text("Editar informações").arkeText(.button).foregroundStyle(ink)
-                                            .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
-                                            .background(ArkeUI.insetSurface(colorScheme), in: Capsule()).contentShape(Rectangle())
-                                    }
-                                    .disabled(saving).accessibilityIdentifier("place.edit")
-                                    primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
-                                } else {
-                                    primary("Revisar lugar", identifier: "place.review") {
-                                        submitted = true
-                                        if draft.issue == nil && !coverLoading { field = nil; reviewing = true }
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain).foregroundStyle(ink).padding(.vertical, 8)
-                            // Iluminação por borda (iOS 26) faz o desvanecimento; só versões anteriores precisam de fundo.
-                            .background { if #unavailable(iOS 26) { ArkeUI.sheetSurface(colorScheme) } }
-                        }
                         .onChange(of: field) { _, focused in
-                            // Centraliza o campo ativo na área visível, nunca sob o cabeçalho.
+                            // Centraliza o campo ativo na área visível.
                             if let focused { proxy.scrollTo(focused, anchor: .center) }
                         }
+                    }
+                    VStack(spacing: 10) {
+                        if reviewing {
+                            Button { reviewing = false } label: {
+                                Text("Editar informações").arkeText(.button).foregroundStyle(ink)
+                                    .frame(maxWidth: .infinity, minHeight: 56)
+                                    .arkeGlassCapsule().contentShape(Capsule())
+                            }
+                            .disabled(saving).accessibilityIdentifier("place.edit")
+                            primary(saving ? "Salvando…" : (original == nil ? "Salvar neste aparelho" : "Salvar alterações"), identifier: "place.save") { onSave(draft.normalized) }
+                        } else {
+                            primary("Revisar lugar", identifier: "place.review") {
+                                submitted = true
+                                if draft.issue == nil && !coverLoading { field = nil; reviewing = true }
+                            }
                         }
-
                     }
-                    .padding(.horizontal, ArkeUI.margin)
-                    .toolbar(.hidden, for: .navigationBar)
-                    .alert("Descartar rascunho?", isPresented: $confirmingDiscard) {
-                        Button("Continuar editando", role: .cancel) {}
-                        Button("Descartar", role: .destructive) { onCancel() }
-                    } message: {
-                        Text("As informações deste rascunho ainda não foram salvas.")
-                    }
+                    .buttonStyle(.plain).foregroundStyle(ink)
+                    .padding(.horizontal, 20).padding(.bottom, 14)
                 }
+                .alert("Descartar rascunho?", isPresented: $confirmingDiscard) {
+                    Button("Continuar editando", role: .cancel) {}
+                    Button("Descartar", role: .destructive) { onCancel() }
+                } message: {
+                    Text("As informações deste rascunho ainda não foram salvas.")
+                }
+                .accessibilityAction(.escape) { cancel() }
+                .background { ArkeDismissAttempt { if !saving { field = nil; confirmingDiscard = true } } }
                 .tint(actionInk)
             }
         }
@@ -310,7 +291,7 @@ struct PlaceEditor: View {
     private func primary(_ title: String, identifier: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).arkeText(.button).foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
+                .frame(maxWidth: .infinity, minHeight: 56)
                 .background(ArkeUI.blue, in: Capsule())
                 .contentShape(Rectangle())
         }
