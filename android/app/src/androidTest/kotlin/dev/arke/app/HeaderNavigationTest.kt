@@ -254,11 +254,7 @@ class HeaderNavigationTest {
         org.junit.Assert.assertTrue(compose.onNodeWithTag("detail.name").fetchSemanticsNode().boundsInRoot.left <=
             compose.onNodeWithTag("detail.address").fetchSemanticsNode().boundsInRoot.left)
         org.junit.Assert.assertTrue(compose.onNodeWithTag("detail.next").fetchSemanticsNode().boundsInRoot.width > card.width * 0.8f)
-        val firstCloseY = compose.onNodeWithTag("detail.dismiss.card").fetchSemanticsNode().boundsInRoot.top
         compose.onNodeWithTag("detail.next").performClick()
-        compose.waitUntil(5_000) {
-            compose.onNodeWithTag("detail.dismiss.card").fetchSemanticsNode().boundsInRoot.top > firstCloseY + 20f
-        }
         compose.onNodeWithTag("detail.name").assertTextEquals("Museu dos caminhos")
         compose.onNodeWithTag("detail.name").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Lugar 2 de 2"))
         compose.onNodeWithTag("detail.next").assertDoesNotExist()

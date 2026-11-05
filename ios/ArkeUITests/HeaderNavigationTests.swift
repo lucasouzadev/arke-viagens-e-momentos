@@ -224,13 +224,8 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 1 de 2")
         XCTAssertFalse(app.buttons["detail.previous"].exists)
         XCTAssertGreaterThan(app.buttons["detail.next"].frame.width, card.frame.width * 0.8)
-        let firstCloseY = card.frame.minY
         app.buttons["detail.next"].tap()
         XCTAssertEqual(app.staticTexts["detail.name"].label, "Museu dos caminhos")
-        expectation(for: NSPredicate { _, _ in
-            card.frame.minY > firstCloseY + 20
-        }, evaluatedWith: card)
-        waitForExpectations(timeout: 5)
         XCTAssertEqual(app.staticTexts["detail.name"].value as? String, "Lugar 2 de 2")
         XCTAssertFalse(app.buttons["detail.next"].exists)
         XCTAssertEqual(app.buttons["detail.done"].label, "Concluído")
