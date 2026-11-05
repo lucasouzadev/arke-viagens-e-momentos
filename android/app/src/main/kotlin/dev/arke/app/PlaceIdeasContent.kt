@@ -92,75 +92,73 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
         val idea = state.ideas[index]
         val previous = state.ideas.getOrNull(index - 1)
         val next = state.ideas.getOrNull(index + 1)
-        if (state.ideas.size > 1) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                if (previous != null) TextButton(onClick = { focusedID = previous.id }, modifier = Modifier.weight(1f)) {
-                    Text("‹ ${previous.name}", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                }
-                Spacer(Modifier.width(8.dp))
-                if (next != null) TextButton(onClick = { focusedID = next.id }, modifier = Modifier.weight(1f)) {
-                    Text("${next.name} ›", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        key(idea.id) {
+            val shape = RoundedCornerShape(26.dp)
+            val cover = remember(idea.cover) { decodePlaceCover(idea.cover) }
+            val ink = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
+            // Cartão do lugar como no protótipo: selo, nome, endereço, posição, nota, Detalhes e Marcar no mapa.
+            Box(Modifier.fillMaxWidth().clip(shape).background(arkeInsetColor()).pointerInput(previous?.id, next?.id) {
+                var distance = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { distance = 0f },
+                    onDragEnd = {
+                        val target = if (distance < -28.dp.toPx()) next else if (distance > 28.dp.toPx()) previous else null
+                        if (target != null) focusedID = target.id
+                    },
+                    onHorizontalDrag = { _, delta -> distance += delta },
+                )
+            }) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                        Box(Modifier.size(76.dp).clip(RoundedCornerShape(12.dp)).background(arkeSheetColor()), contentAlignment = Alignment.Center) {
+                            if (cover != null) Image(cover.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                            else Icon(painterResource(R.drawable.ic_photo), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(idea.name, style = MaterialTheme.typography.titleMedium, maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.testTag("home.ideaName"))
+                            Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text("Lugar ${index + 1} de ${state.ideas.size}", style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(top = 2.dp))
+                        }
+                    }
+                    if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 2, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val openLabel = stringResource(R.string.view_place_details_label, idea.name)
+                        TextButton(onClick = { selectedID = idea.id },
+                            colors = ButtonDefaults.textButtonColors(contentColor = ink),
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).background(arkeSheetColor(), CircleShape)
+                                .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) { Text("Detalhes") }
+                        TextButton(onClick = { onPin(idea) }, colors = ButtonDefaults.textButtonColors(contentColor = ink),
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("place.pin.${idea.id}")) {
+                            Icon(painterResource(R.drawable.ic_pin), null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Marcar no mapa")
+                        }
+                    }
                 }
             }
         }
-        run {
-            key(idea.id) {
-                Spacer(Modifier.height(16.dp))
-                val shape = RoundedCornerShape(24.dp)
-                val surface = arkeInsetColor()
-                val cover = remember(idea.cover) { decodePlaceCover(idea.cover) }
-                Box(Modifier.fillMaxWidth().clip(shape).pointerInput(previous?.id, next?.id) {
-                    var distance = 0f
-                    detectHorizontalDragGestures(
-                        onDragStart = { distance = 0f },
-                        onDragEnd = {
-                            val target = if (distance < -28.dp.toPx()) next else if (distance > 28.dp.toPx()) previous else null
-                            if (target != null) focusedID = target.id
-                        },
-                        onHorizontalDrag = { _, delta -> distance += delta },
-                    )
-                }) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(idea.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).testTag("home.ideaName"))
-                        IconButton(onClick = { pendingUpdate = null; pendingRequest = null; editing = idea }, enabled = state.ready && !state.busy,
-                            modifier = Modifier.size(48.dp).testTag("place.update.${idea.id}")) {
-                            Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.edit_place_label, idea.name))
-                        }
-                    }
-                    Text(idea.address, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (idea.note.isNotEmpty()) Text(idea.note, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                    if (cover != null) {
-                        val paper = MaterialTheme.colorScheme.surface
-                        Image(
-                            cover.asImageBitmap(), contentDescription = null,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(if (detent == PanelDetent.DETAILS) 210.dp else 148.dp)
-                                .arkeStamp(paper).padding(10.dp),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                    TextButton(onClick = { onPin(idea) }) { Text("Marcar no mapa") }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        val openLabel = stringResource(R.string.view_place_details_label, idea.name)
-                        TextButton(onClick = { selectedID = idea.id },
-                            colors = ButtonDefaults.textButtonColors(contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary),
-                            contentPadding = PaddingValues(0.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                            .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) {
-                            Text("Abrir ↗", Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
-                        }
-                        val deleteLabel = stringResource(R.string.delete_place) + ": " + idea.name
-                        IconButton(
-                            onClick = { deleting = idea }, enabled = !state.busy,
-                            modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("place.delete.${idea.id}").semantics { contentDescription = deleteLabel },
-                        ) { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) }
-                    }
-                    }
-                }
+        // Navegação finita entre lugares: anterior, contador e próximo.
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            IconButton(onClick = { previous?.let { focusedID = it.id } }, enabled = previous != null, modifier = Modifier.size(48.dp).testTag("home.placePrevious")) {
+                Icon(painterResource(R.drawable.ic_back), "Lugar anterior")
+            }
+            Text("${index + 1} de ${state.ideas.size}", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("home.placeCounter"))
+            IconButton(onClick = { next?.let { focusedID = it.id } }, enabled = next != null, modifier = Modifier.size(48.dp).testTag("home.placeNext")) {
+                Icon(painterResource(R.drawable.ic_back), "Próximo lugar", Modifier.graphicsLayer { rotationZ = 180f })
             }
         }
     }
     Spacer(Modifier.height(24.dp))
-    selectedID?.let { id -> PlaceDetails(state.ideas, id, onClose = { selectedID = null }) }
+    selectedID?.let { id ->
+        PlaceDetails(state.ideas, id, onClose = { selectedID = null },
+            onEdit = { target -> selectedID = null; pendingUpdate = null; pendingRequest = null; editing = target },
+            onPin = { target -> selectedID = null; onPin(target) },
+            onDelete = { target -> selectedID = null; deleting = target })
+    }
     editing?.let { original ->
         PlaceEditor(initialIdea = original, saving = state.busy, saveError = if (pendingUpdate != null) state.error else null,
             onSave = { draft ->
@@ -193,7 +191,8 @@ private val PendingDraftSaver = Saver<PlaceDraft?, List<String>>(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit) {
+fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit,
+                 onEdit: ((PlaceIdea) -> Unit)? = null, onPin: ((PlaceIdea) -> Unit)? = null, onDelete: ((PlaceIdea) -> Unit)? = null) {
     var selectedID by rememberSaveable(initialID) { mutableStateOf(initialID) }
     val index = ideas.indexOfFirst { it.id == selectedID }
     val sheetColor = arkeSheetColor()
@@ -223,6 +222,23 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit)
                                 TextButton(onClick = { runCatching { uriHandler.openUri(link) } }) { Text("Abrir link") }
                             }
                             if (idea.note.isNotEmpty()) DetailContentRow(idea.note, R.drawable.ic_note, stringResource(R.string.place_note), "detail.note")
+                        }
+                        if (onEdit != null && onPin != null && onDelete != null) {
+                            // Ações do lugar (protótipo): Editar, No mapa e Excluir.
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { onEdit(idea) }, colors = ButtonDefaults.textButtonColors(contentColor = ink),
+                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).background(insetColor, CircleShape).testTag("detail.edit")) {
+                                    Icon(painterResource(R.drawable.ic_edit), null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Editar")
+                                }
+                                TextButton(onClick = { onPin(idea) }, colors = ButtonDefaults.textButtonColors(contentColor = ink),
+                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).background(insetColor, CircleShape).testTag("detail.pin")) {
+                                    Icon(painterResource(R.drawable.ic_pin), null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("No mapa")
+                                }
+                                TextButton(onClick = { onDelete(idea) }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).background(insetColor, CircleShape).testTag("detail.delete")) {
+                                    Icon(painterResource(R.drawable.ic_delete), null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Excluir")
+                                }
+                            }
                         }
                         Text(stringResource(R.string.place_detail_notice), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp).testTag("detail.infoText"))

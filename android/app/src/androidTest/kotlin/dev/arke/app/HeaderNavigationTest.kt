@@ -112,12 +112,11 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("detail.previous").assertDoesNotExist()
         compose.onNodeWithTag("detail.next").assertDoesNotExist()
         compose.onNodeWithTag("detail.done").assertTextEquals("Concluído").performClick()
-        val edit = compose.onNodeWithContentDescription("Editar Museu de teste")
-        edit.scrollIntoView().performClick()
+        openEditViaDetails("Museu de teste")
         compose.onNodeWithTag("place.name").assertTextContains("Museu de teste")
         compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
         compose.onNodeWithText("Descartar rascunho?").assertDoesNotExist()
-        edit.scrollIntoView().performClick()
+        openEditViaDetails("Museu de teste")
         compose.onNodeWithTag("place.name").scrollIntoView().performTextReplacement("Rascunho temporário")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("place.name").assertTextContains("Rascunho temporário")
@@ -127,7 +126,7 @@ class HeaderNavigationTest {
         compose.onNodeWithTag("place.cancel").scrollIntoView().performClick()
         compose.onNodeWithTag("place.discard").performClick()
         compose.onNodeWithTag("home.ideaName").assertTextEquals("Museu de teste")
-        edit.scrollIntoView().performClick()
+        openEditViaDetails("Museu de teste")
         compose.onNodeWithTag("place.name").scrollIntoView().performTextReplacement("Museu atualizado")
         compose.onNodeWithTag("place.address").scrollIntoView().performTextReplacement("Nova entrada, 200")
         reviewPlaceAndWaitForKeyboard()
@@ -141,12 +140,11 @@ class HeaderNavigationTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Ver detalhes de Museu atualizado").scrollIntoView().performClick()
         compose.onNodeWithTag("detail.address").assertTextEquals("Nova entrada, 200")
-        compose.onNodeWithTag("detail.done").performClick()
-        val delete = compose.onNodeWithContentDescription("Excluir lugar: Museu atualizado")
-        delete.scrollIntoView().performClick()
+        compose.onNodeWithTag("detail.delete").scrollIntoView().performClick()
         compose.onNodeWithText("Cancelar").performClick()
         compose.onNodeWithTag("home.ideaName").assertTextEquals("Museu atualizado")
-        delete.scrollIntoView().performClick()
+        compose.onNodeWithContentDescription("Ver detalhes de Museu atualizado").scrollIntoView().performClick()
+        compose.onNodeWithTag("detail.delete").scrollIntoView().performClick()
         compose.onNodeWithTag("place.confirmDelete").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Museu atualizado").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("place.savedNotice").assertDoesNotExist()
@@ -292,5 +290,11 @@ class HeaderNavigationTest {
             }
         }
         compose.onNodeWithTag("place.save").assertExists()
+    }
+
+    /** Edição agora parte dos detalhes do lugar (protótipo): abre os detalhes e toca em Editar. */
+    private fun openEditViaDetails(name: String) {
+        compose.onNodeWithContentDescription("Ver detalhes de $name").scrollIntoView().performClick()
+        compose.onNodeWithTag("detail.edit").scrollIntoView().performClick()
     }
 }

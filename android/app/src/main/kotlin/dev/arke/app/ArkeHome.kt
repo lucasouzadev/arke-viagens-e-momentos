@@ -222,8 +222,6 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
             Modifier.safeDrawingPadding().imePadding().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
-            Text(stringResource(R.string.tagline), style = MaterialTheme.typography.headlineMedium)
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
                 val density = LocalDensity.current
                 val keyboardVisible = WindowInsets.ime.getBottom(density) > 0
@@ -294,7 +292,19 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                             Column(Modifier.fillMaxSize().testTag("home.contentBody").verticalScroll(scroll)
                                 .padding(top = with(density) { headerHeight.toDp() })) {
                                 if (state.context == TravelContext.PLANNING) {
-                                    TextButton(onClick = { showingTrips = true }) { Text("Viagens") }
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween) {
+                                        TextButton(onClick = { showingTrips = true },
+                                            modifier = Modifier.heightIn(min = 48.dp).testTag("home.trips"),
+                                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
+                                            Icon(painterResource(R.drawable.ic_suitcase), null, Modifier.size(18.dp))
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Viagens")
+                                        }
+                                        if (placeState.ready) Text(
+                                            if (placeState.ideas.size == 1) "1 lugar" else "${placeState.ideas.size} lugares",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
                                 if (savedNotice) Text(stringResource(R.string.saved_place_notice), modifier = Modifier.testTag("place.savedNotice"), style = MaterialTheme.typography.bodySmall)
                                 if (placeState.error != null && !showingAddPlace) {
@@ -383,7 +393,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         val focusedIdea = placeState.ideas.firstOrNull { it.id == focusedIdeaID }
                         if (mapHeight + mapExtension >= 150.dp && state.context == TravelContext.PLANNING && focusedIdea != null) {
                             Surface(
-                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 18.dp, end = 72.dp),
+                                modifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 18.dp, end = 72.dp),
                                 shape = RoundedCornerShape(24.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             ) {
@@ -398,10 +408,10 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         FilledTonalIconButton(
                             onClick = { mapExpanded = !mapExpanded },
                             enabled = !keyboardVisible,
-                            modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp).testTag("home.expandMap"),
+                            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(40.dp).testTag("home.expandMap"),
                         ) {
                             val toggleLabel = if (mapExpanded) "Recolher mapa" else "Expandir mapa"
-                            Text(if (mapExpanded) "↙" else "↗", Modifier.clearAndSetSemantics { contentDescription = toggleLabel })
+                            Icon(painterResource(R.drawable.ic_expand), toggleLabel, Modifier.size(22.dp))
                         }
                     }
                 }
@@ -502,9 +512,6 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
         val index = options.indexOf(context)
         var drag by remember { mutableFloatStateOf(0f) }
         val threshold = with(LocalDensity.current) { 24.dp.toPx() }
-        IconButton(onClick = onAdd, enabled = addEnabled, modifier = Modifier.size(48.dp).background(arkeInsetColor(), androidx.compose.foundation.shape.CircleShape).testTag("home.addPlace")) {
-            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = actionColor)
-        }
         Row(
             Modifier.weight(1f).heightIn(min = 48.dp).draggable(
                 orientation = Orientation.Horizontal,
@@ -523,9 +530,12 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
         ) {
             ContextNeighbor(options.getOrNull(index - 1), forward = false, onSelect = onSelect)
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(context.icon()), null, Modifier.size(18.dp), tint = actionColor)
+            Spacer(Modifier.width(8.dp))
             Text(
                 stringResource(context.title()),
-                modifier = Modifier.fillMaxWidth().testTag("home.contextTitle").semantics {
+                modifier = Modifier.testTag("home.contextTitle").semantics {
                     heading()
                     customActions = listOfNotNull(
                         options.getOrNull(index - 1)?.let { previous ->
@@ -540,9 +550,14 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
+            }
             ContextDots(index, options.size)
             }
             ContextNeighbor(options.getOrNull(index + 1), forward = true, onSelect = onSelect)
+        }
+        IconButton(onClick = onAdd, enabled = addEnabled,
+            modifier = Modifier.size(44.dp).background(ArkeColors.brand, androidx.compose.foundation.shape.CircleShape).testTag("home.addPlace")) {
+            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = androidx.compose.ui.graphics.Color.White)
         }
     }
 }
@@ -559,9 +574,8 @@ private fun ContextNeighbor(option: TravelContext?, forward: Boolean, onSelect: 
         onClick = { onSelect(option) },
         modifier = Modifier.size(44.dp, 48.dp).testTag(if (forward) "home.contextNext" else "home.contextPrevious"),
     ) {
-        Icon(painterResource(R.drawable.ic_back), contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.graphicsLayer { rotationZ = if (forward) 180f else 0f })
+        Icon(painterResource(option.icon()), contentDescription = label,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -830,4 +844,14 @@ private fun FinanceChoice(label: String, selection: String, choices: List<Pair<S
     PanelDetent.EXPLORE -> R.string.explore
     PanelDetent.BALANCED -> R.string.balanced
     PanelDetent.DETAILS -> R.string.details
+}
+
+
+/** Ícone por contexto (D6). */
+private fun TravelContext.icon(): Int = when (this) {
+    TravelContext.PLANNING -> R.drawable.ic_pin
+    TravelContext.EXPENSES -> R.drawable.ic_receipt
+    TravelContext.SAVINGS -> R.drawable.ic_target
+    TravelContext.REVIEWS -> R.drawable.ic_star
+    TravelContext.MEMORIES -> R.drawable.ic_photo
 }

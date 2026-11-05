@@ -54,8 +54,22 @@ fun TravelMap(modifier: Modifier = Modifier, pins: List<Pair<LocalMapPin, String
         return
     }
 
+    // D4: sem Pins nem localização o mapa abre no Brasil; com Pins salvos, enquadra todos. Nunca pede permissão sozinho.
     val camera = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(0.0, 0.0), 1.5f)
+        position = CameraPosition.fromLatLngZoom(LatLng(-14.2, -51.9), 3.4f)
+    }
+    var framedPins by remember { mutableStateOf(false) }
+    LaunchedEffect(pins.size) {
+        if (!framedPins && pins.isNotEmpty()) {
+            framedPins = true
+            val points = pins.map { LatLng(it.first.latitude, it.first.longitude) }
+            if (points.size == 1) {
+                camera.position = CameraPosition.fromLatLngZoom(points.first(), 12f)
+            } else {
+                val bounds = com.google.android.gms.maps.model.LatLngBounds.builder().apply { points.forEach { include(it) } }.build()
+                runCatching { camera.move(CameraUpdateFactory.newLatLngBounds(bounds, 96)) }
+            }
+        }
     }
     LaunchedEffect(revealPin) {
         revealPin?.let { camera.animate(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 14f)) }
