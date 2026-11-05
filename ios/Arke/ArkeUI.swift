@@ -76,7 +76,7 @@ struct ArkeFloatingSheet<Content: View>: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(dismissIdentifier + ".card")
             .presentationDragIndicator(.hidden)
-            .presentationContentInteraction(.scrolls)
+            .presentationContentInteraction(.resizes)
     }
 }
 
