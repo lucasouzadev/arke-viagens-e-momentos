@@ -174,7 +174,11 @@ struct ArkeDismissAttempt: UIViewControllerRepresentable {
     let onAttempt: () -> Void
 
     func makeUIViewController(context: Context) -> Probe { Probe() }
-    func updateUIViewController(_ probe: Probe, context: Context) { probe.proxy.onAttempt = onAttempt }
+    func updateUIViewController(_ probe: Probe, context: Context) {
+        probe.proxy.onAttempt = onAttempt
+        // O SwiftUI pode recolocar o próprio delegate ao atualizar (ex.: interactiveDismissDisabled mudou); reinstala.
+        DispatchQueue.main.async { probe.install() }
+    }
 
     final class Probe: UIViewController {
         let proxy = Proxy()
@@ -186,7 +190,7 @@ struct ArkeDismissAttempt: UIViewControllerRepresentable {
             super.viewDidAppear(animated)
             install()
         }
-        private func install() {
+        func install() {
             var node: UIViewController? = self
             while let current = node, current.presentationController == nil { node = current.parent }
             guard let controller = node?.presentationController, controller.delegate !== proxy else { return }
