@@ -576,6 +576,7 @@ private struct MapPlaceSearch: View {
     @State private var query: String
     @State private var results: [MKMapItem] = []
     @State private var message: String?
+    @State private var searching = false
 
     init(initialQuery: String = "", onSelect: @escaping (MKMapItem) -> Void) {
         _query = State(initialValue: initialQuery)
@@ -585,6 +586,10 @@ private struct MapPlaceSearch: View {
     var body: some View {
         NavigationStack {
             List {
+                if searching {
+                    HStack(spacing: 12) { ProgressView(); Text("Buscando…").foregroundStyle(.secondary) }
+                        .accessibilityElement(children: .combine).accessibilityIdentifier("search.loading")
+                }
                 if let message { Text(message).foregroundStyle(.secondary) }
                 ForEach(results.indices, id: \.self) { index in
                     let item = results[index]
@@ -606,7 +611,8 @@ private struct MapPlaceSearch: View {
             results = []
             message = nil
             let phrase = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard phrase.count >= 2 else { return }
+            guard phrase.count >= 2 else { searching = false; return }
+            searching = true
             do {
                 try await Task.sleep(for: .milliseconds(350))
                 let request = MKLocalSearch.Request()
@@ -614,9 +620,10 @@ private struct MapPlaceSearch: View {
                 let response = try await MKLocalSearch(request: request).start()
                 try Task.checkCancellation()
                 results = response.mapItems
-                if results.isEmpty { message = "Nenhum lugar encontrado." }
+                searching = false
+                if results.isEmpty { message = "Nenhum lugar encontrado. Confira o nome ou mova o mapa para marcar o ponto." }
             } catch {
-                if !Task.isCancelled { message = "Não foi possível buscar. Tente novamente." }
+                if !Task.isCancelled { message = "Não foi possível buscar. Tente novamente."; searching = false }
             }
         }
     }
@@ -970,11 +977,13 @@ private struct SharePinForm: View {
         return data
     }
 }
+/// Marcar no mapa: o mapa é o conteúdo; o painel inferior concentra a decisão (lugar, ponto, viagem opcional e confirmação).
 private struct PinEditor: View {
     let idea: PlaceIdea
     let places: PlaceIdeasStore
     let onSaved: (LocalPinPlan) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var camera: MapCameraPosition = .automatic
     @StateObject private var pinLocation = ForegroundLocation()
     @State private var searchingAddress = false
@@ -987,69 +996,163 @@ private struct PinEditor: View {
     @State private var busy = false
     @State private var error: String?
 
+    private var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var canConfirm: Bool { point != nil && plan != nil && !busy && !(creating && trimmedTitle.isEmpty) }
+
+    /// Explica por que a confirmação está indisponível; nunca deixa o botão apagado sem motivo.
+    private var hint: String? {
+        if plan == nil { return error == nil ? "Abrindo seus Pins…" : nil }
+        if point == nil { return "Mova o mapa ou busque um endereço para marcar o ponto." }
+        if creating && trimmedTitle.isEmpty { return "Dê um nome à nova viagem para continuar." }
+        return nil
+    }
+
+    private var pointDescription: String {
+        guard let point else { return "Nenhum ponto marcado ainda" }
+        return String(format: "Ponto marcado: %.4f, %.4f", point.latitude, point.longitude)
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(idea.name) {
-                    Text(idea.address)
-                    HStack {
-                        Button { searchingAddress = true } label: { Label("Buscar endereço", systemImage: "magnifyingglass") }
-                        Button { pinLocation.request() } label: { Label("Minha localização", systemImage: "location") }
-                    }.buttonStyle(.borderless)
-                    Text("Mova o mapa para posicionar a marca no centro.")
-                    Map(position: $camera)
-                        .onMapCameraChange(frequency: .continuous) { update in
-                            if camera.positionedByUser { point = update.region.center }
-                        }
-                        .overlay { Image(systemName: "mappin").font(.title).allowsHitTesting(false) }
-                        .frame(height: 230)
+        ZStack {
+            Map(position: $camera)
+                .onMapCameraChange(frequency: .continuous) { update in
+                    if camera.positionedByUser { point = update.region.center }
                 }
-                Section("Viagem") {
-                    Picker("Vínculo", selection: $tripID) {
-                        Text("Sem viagem").tag(nil as String?)
-                        ForEach(plan?.trips ?? [], id: \.id) { trip in
-                            Text(trip.title).tag(Optional(trip.id))
-                        }
-                    }.disabled(creating)
-                    Toggle("Criar viagem", isOn: $creating)
-                    if creating { TextField("Nome da viagem", text: $title) }
-                }
-                if let error { Text(error).foregroundStyle(.red) }
-                Button("Confirmar ponto e salvar Pin") { save() }
-                    .disabled(point == nil || plan == nil || busy || (creating && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+                .ignoresSafeArea()
+                .accessibilityLabel("Mapa. Mova para posicionar a marca no centro.")
+            // O ponto salvo é o centro do mapa: o pontinho marca o ponto exato e o pino fica logo acima dele.
+            ZStack {
+                Circle().fill(.white).frame(width: 8, height: 8)
+                    .overlay(Circle().stroke(ArkeUI.blue, lineWidth: 2))
+                Image(systemName: "mappin").font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(ArkeUI.blue).shadow(radius: 2, y: 1).offset(y: -22)
             }
-            .navigationTitle("Marcar no mapa")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() }.disabled(busy) } }
-            .interactiveDismissDisabled(busy)
-            .sheet(isPresented: $searchingAddress) {
-                MapPlaceSearch(initialQuery: idea.address) { item in
-                    centerMap(on: item.placemark.coordinate)
-                    searchingAddress = false
-                }
-            }
-            .onReceive(pinLocation.$coordinate) { if let coordinate = $0 { centerMap(on: coordinate) } }
-            .task {
-                do {
-                    let loaded = try await places.loadPinPlan()
-                    if let pin = loaded.pins.first(where: { $0.ideaID == idea.id }) {
-                        let center = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
-                        point = center
-                        tripID = pin.tripID
-                        camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
-                    }
-                    plan = loaded
-                    if point == nil || !loaded.pins.contains(where: { $0.ideaID == idea.id }) {
-                        let request = MKLocalSearch.Request()
-                        request.naturalLanguageQuery = idea.address
-                        if let results = try? await MKLocalSearch(request: request).start(),
-                           results.mapItems.count == 1, let match = results.mapItems.first,
-                           !Task.isCancelled {
-                            centerMap(on: match.placemark.coordinate)
-                        }
-                    }
-                } catch { self.error = "Não foi possível abrir os Pins." }
+            .allowsHitTesting(false).accessibilityHidden(true)
+        }
+        .overlay(alignment: .top) { topControls }
+        .overlay(alignment: .bottom) { panel }
+        .interactiveDismissDisabled(busy)
+        .sheet(isPresented: $searchingAddress) {
+            MapPlaceSearch(initialQuery: idea.address) { item in
+                centerMap(on: item.placemark.coordinate)
+                searchingAddress = false
             }
         }
+        .alert("Minha localização", isPresented: Binding(get: { pinLocation.message != nil }, set: { if !$0 { pinLocation.message = nil } })) {
+            Button("Entendi", role: .cancel) { pinLocation.message = nil }
+        } message: { Text(pinLocation.message ?? "") }
+        .onReceive(pinLocation.$coordinate) { if let coordinate = $0 { centerMap(on: coordinate) } }
+        .task {
+            do {
+                let loaded = try await places.loadPinPlan()
+                if let pin = loaded.pins.first(where: { $0.ideaID == idea.id }) {
+                    let center = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
+                    point = center
+                    tripID = pin.tripID
+                    camera = .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
+                }
+                plan = loaded
+                if point == nil || !loaded.pins.contains(where: { $0.ideaID == idea.id }) {
+                    let request = MKLocalSearch.Request()
+                    request.naturalLanguageQuery = idea.address
+                    if let results = try? await MKLocalSearch(request: request).start(),
+                       results.mapItems.count == 1, let match = results.mapItems.first,
+                       !Task.isCancelled {
+                        centerMap(on: match.placemark.coordinate)
+                    }
+                }
+            } catch { self.error = "Não foi possível abrir os Pins." }
+        }
+    }
+
+    private var topControls: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
+                }
+                .modifier(MapLocationButtonStyle()).disabled(busy)
+                .accessibilityLabel("Cancelar").accessibilityIdentifier("pin.cancel")
+                Spacer()
+                Text("Marcar no mapa").arkeText(.contextTitle)
+                    .padding(.horizontal, 20).padding(.vertical, 10)
+                    .background(.regularMaterial, in: Capsule())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button { pinLocation.request() } label: {
+                    Image(systemName: "location.fill").frame(width: 44, height: 44)
+                }
+                .modifier(MapLocationButtonStyle())
+                .accessibilityLabel("Minha localização").accessibilityIdentifier("pin.location")
+            }
+            Button { searchingAddress = true } label: {
+                Label("Buscar endereço", systemImage: "magnifyingglass")
+                    .font(.subheadline).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 12)
+            }
+            .modifier(MapLocationButtonStyle(isPill: true))
+            .accessibilityIdentifier("pin.search")
+        }
+        .padding(.horizontal, 16).padding(.top, 8)
+    }
+
+    private var panel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(idea.name).arkeText(.cardTitle).lineLimit(1)
+                Text(idea.address).arkeText(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Label(pointDescription, systemImage: "mappin.and.ellipse")
+                .arkeText(.caption).foregroundStyle(point == nil ? .secondary : .primary)
+                .accessibilityIdentifier("pin.point")
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Vincular a uma viagem (opcional)").arkeText(.label).foregroundStyle(.secondary)
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        chip("Sem viagem", selected: !creating && tripID == nil) { creating = false; tripID = nil }
+                        ForEach(plan?.trips ?? [], id: \.id) { trip in
+                            chip(trip.title, selected: !creating && tripID == trip.id) { creating = false; tripID = trip.id }
+                        }
+                        chip("Nova viagem", icon: "plus", selected: creating) { creating = true; tripID = nil }
+                    }
+                }
+                .scrollIndicators(.hidden)
+                if creating {
+                    TextField("Nome da viagem", text: $title)
+                        .padding(.horizontal, 16).frame(minHeight: 48)
+                        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 16))
+                        .accessibilityIdentifier("pin.tripTitle")
+                }
+            }
+            if let error { Text(error).arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+            if let hint { Text(hint).arkeText(.caption).foregroundStyle(.secondary).accessibilityIdentifier("pin.hint") }
+            Button { save() } label: {
+                Text(busy ? "Salvando…" : "Confirmar ponto").arkeText(.button)
+                    .foregroundStyle(canConfirm ? Color.white : Color.secondary)
+                    .frame(maxWidth: .infinity, minHeight: ArkeUI.controlHeight)
+                    .background(canConfirm ? AnyShapeStyle(ArkeUI.blue) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)), in: Capsule())
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).disabled(!canConfirm)
+            .accessibilityIdentifier("pin.confirm")
+        }
+        .padding(16)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 32))
+        .padding(.horizontal, 12).padding(.bottom, 8)
+    }
+
+    private func chip(_ title: String, icon: String? = nil, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if let icon { Image(systemName: icon).font(.system(size: 13, weight: .bold)) }
+                else if selected { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)) }
+                Text(title).arkeText(.label).lineLimit(1)
+            }
+            .padding(.horizontal, 14).frame(minHeight: 44)
+            .foregroundStyle(selected ? Color.white : Color(uiColor: .label))
+            .background(selected ? AnyShapeStyle(ArkeUI.blue) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)), in: Capsule())
+        }
+        .buttonStyle(.plain).disabled(busy)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func centerMap(on coordinate: CLLocationCoordinate2D) {

@@ -1,5 +1,7 @@
 # STATUS — Estado verificável do Arke
 
+**M5-UI-REDESIGN-03 (Marcar no mapa) — aplicado na branch `ui/m5-ui-redesign-03`, CI ainda NÃO executado.** [Contrato](engenharia/M5-UI-REDESIGN-03.md). Mapa em tela cheia, ponto exato sob a marca, painel fixo com viagem em chips e confirmação com dica; nas duas plataformas. Nenhum teste de UI passa por esta tela.
+
 **CI do redesenho:** recorte 01 aprovado em Android e iOS (run 42003942009). Recorte 02 aprovado na repetição (run 42008889411); a primeira execução teve um teste de UI iOS intermitente que passou de 3 min.
 
 **M5-UI-REDESIGN-02 (editor de lugar) — aplicado na branch `ui/m5-ui-redesign-02`, CI aprovado; ajuste do texto da foto de capa no iOS ainda sem CI.** [Contrato](engenharia/M5-UI-REDESIGN-02.md). Decisões D1–D6 aprovadas pelo responsável. Campos em cartões próprios com placeholder e “Obrigatório/Opcional”, foco centralizado, fades em meia altura, foto de capa como botão e revisão compacta, nas duas plataformas. Branch empilhada sobre a 01; o CI nativo do recorte 01 foi disparado, resultado a registrar.

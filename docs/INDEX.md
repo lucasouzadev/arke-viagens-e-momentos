@@ -1,5 +1,7 @@
 # Índice e maturidade da documentação
 
+[M5-UI-REDESIGN-03 — Marcar no mapa](engenharia/M5-UI-REDESIGN-03.md): aplicado na branch, CI pendente.
+
 [M5-UI-REDESIGN-02 — editor de lugar](engenharia/M5-UI-REDESIGN-02.md): aplicado na branch, sem build nem teste.
 
 [M5-UI-REDESIGN — contrato de implementação](engenharia/M5-UI-REDESIGN-PLANO.md) e [DESIGN-007](design/DESIGN-007.md): direção aprovada a partir do protótipo; recortes 02–06 ainda sem código.

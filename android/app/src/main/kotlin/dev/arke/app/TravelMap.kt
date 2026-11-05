@@ -27,7 +27,15 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import dev.arke.core.PlaceIdea
 import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.MapProperties
@@ -174,85 +182,161 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
             error = "Não foi possível abrir os Pins."
         }
     }
-    AlertDialog(
+    val canConfirm = point != null && plan != null && !busy && (!creating || title.isNotBlank())
+    // Explica por que a confirmação está indisponível; o botão nunca fica apagado sem motivo.
+    val hint = when {
+        plan == null && error == null -> "Abrindo seus Pins…"
+        !BuildConfig.MAPS_CONFIGURED -> "O mapa está indisponível nesta versão. A ideia continua salva no aparelho."
+        point == null -> "Toque no mapa ou busque um endereço para marcar o ponto."
+        creating && title.isBlank() -> "Dê um nome à nova viagem para continuar."
+        else -> null
+    }
+    Dialog(
         onDismissRequest = { if (!busy) onClose() },
-        properties = DialogProperties(dismissOnBackPress = !busy, dismissOnClickOutside = !busy),
-        title = { Text("Marcar no mapa") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(idea.name, style = MaterialTheme.typography.titleMedium)
-                Text(idea.address)
+        properties = DialogProperties(
+            dismissOnBackPress = !busy, dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false, decorFitsSystemWindows = false,
+        ),
+    ) {
+        // Marcar no mapa: o mapa é o conteúdo; o painel inferior concentra a decisão.
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+            Box(Modifier.fillMaxSize()) {
                 if (BuildConfig.MAPS_CONFIGURED) {
-                    OutlinedTextField(query, { query = it }, label = { Text("Buscar endereço") }, singleLine = true)
-                    TextButton(enabled = query.isNotBlank() && !searching, onClick = {
-                        searching = true
-                        error = null
-                        scope.launch {
-                            try {
-                                matches = findAddresses(query)
-                                if (matches.isEmpty()) error = "Endereço não encontrado. Você pode tocar no mapa."
-                                matches.singleOrNull()?.let(::selectAddress)
-                            } catch (_: java.io.IOException) {
-                                error = "Não foi possível buscar o endereço."
-                            } finally { searching = false }
-                        }
-                    }) { Text("Buscar") }
-                    matches.forEach { address ->
-                        TextButton(onClick = { selectAddress(address) }) {
-                            Text(address.getAddressLine(0) ?: address.featureName ?: "Usar este ponto")
-                        }
-                    }
-                    TextButton(onClick = {
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                            locatePin()
-                        } else {
-                            pinPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                        }
-                    }) { Text("Minha localização") }
-                    Text("Toque no mapa para posicionar a marca.")
-                    GoogleMap(Modifier.fillMaxWidth().height(220.dp), cameraPositionState = camera,
-                        onMapClick = { point = it }) {
+                    GoogleMap(Modifier.fillMaxSize(), cameraPositionState = camera, onMapClick = { point = it }) {
                         point?.let { coordinate ->
                             val marker = remember(coordinate) { MarkerState(position = coordinate) }
                             Marker(state = marker, title = idea.name)
                         }
                     }
-                } else {
-                    Text("O mapa está indisponível. A ideia continua salva no aparelho.")
                 }
-                Text("Viagem")
-                TextButton(onClick = { creating = false; tripID = null }) {
-                    Text(if (!creating && tripID == null) "Sem viagem ✓" else "Sem viagem")
-                }
-                plan?.trips.orEmpty().forEach { trip ->
-                    TextButton(onClick = { creating = false; tripID = trip.id }) {
-                        Text(if (!creating && tripID == trip.id) trip.title + " ✓" else trip.title)
+                Column(
+                    Modifier.align(Alignment.TopCenter).fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            enabled = !busy, onClick = onClose,
+                            modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("pin.cancel"),
+                        ) { Icon(painterResource(R.drawable.ic_close), "Cancelar") }
+                        Text(
+                            "Marcar no mapa", Modifier.weight(1f).semantics { heading() },
+                            style = MaterialTheme.typography.titleMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                        if (BuildConfig.MAPS_CONFIGURED) {
+                            IconButton(
+                                onClick = {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                                        locatePin()
+                                    } else {
+                                        pinPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                                    }
+                                },
+                                modifier = Modifier.size(48.dp).background(arkeSheetColor(), CircleShape).testTag("pin.location"),
+                            ) { Icon(painterResource(R.drawable.ic_location), "Minha localização") }
+                        } else {
+                            Spacer(Modifier.size(48.dp))
+                        }
+                    }
+                    if (BuildConfig.MAPS_CONFIGURED) {
+                        Column(
+                            Modifier.fillMaxWidth().background(arkeSheetColor(), RoundedCornerShape(20.dp)).padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(query, { query = it }, Modifier.weight(1f).testTag("pin.search"),
+                                    label = { Text("Buscar endereço") }, singleLine = true)
+                                TextButton(enabled = query.isNotBlank() && !searching, onClick = {
+                                    searching = true
+                                    error = null
+                                    scope.launch {
+                                        try {
+                                            matches = findAddresses(query)
+                                            if (matches.isEmpty()) error = "Endereço não encontrado. Toque no mapa para marcar o ponto."
+                                            matches.singleOrNull()?.let(::selectAddress)
+                                        } catch (_: java.io.IOException) {
+                                            error = "Não foi possível buscar o endereço."
+                                        } finally { searching = false }
+                                    }
+                                }, modifier = Modifier.heightIn(min = 48.dp)) { Text(if (searching) "Buscando…" else "Buscar") }
+                            }
+                            matches.forEach { address ->
+                                TextButton(onClick = { selectAddress(address) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                                    Text(address.getAddressLine(0) ?: address.featureName ?: "Usar este ponto")
+                                }
+                            }
+                        }
                     }
                 }
-                TextButton(onClick = { creating = true }) { Text("Criar viagem") }
-                if (creating) OutlinedTextField(title, { title = it }, label = { Text("Nome da viagem") }, singleLine = true)
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Column(
+                    Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(12.dp)
+                        .background(arkeSheetColor(), RoundedCornerShape(28.dp))
+                        .padding(16.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Column {
+                        Text(idea.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text(idea.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    }
+                    Text(
+                        point?.let { "Ponto marcado: %.4f, %.4f".format(java.util.Locale.US, it.latitude, it.longitude) } ?: "Nenhum ponto marcado ainda",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.testTag("pin.point"),
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Vincular a uma viagem (opcional)", style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PinChip("Sem viagem", !creating && tripID == null, !busy) { creating = false; tripID = null }
+                            plan?.trips.orEmpty().forEach { trip ->
+                                PinChip(trip.title, !creating && tripID == trip.id, !busy) { creating = false; tripID = trip.id }
+                            }
+                            PinChip("+ Nova viagem", creating, !busy) { creating = true; tripID = null }
+                        }
+                        if (creating) OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth().testTag("pin.tripTitle"),
+                            label = { Text("Nome da viagem") }, singleLine = true)
+                    }
+                    error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    hint?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("pin.hint")) }
+                    Button(
+                        enabled = canConfirm,
+                        onClick = {
+                            val coordinate = point ?: return@Button
+                            val choice = if (creating) LocalPinTripChoice.Create(newTripID, title)
+                                else tripID?.let { LocalPinTripChoice.Existing(it) } ?: LocalPinTripChoice.None
+                            busy = true
+                            error = null
+                            scope.launch {
+                                try { onSaved(places.savePin(idea.id, coordinate.latitude, coordinate.longitude, choice)) }
+                                catch (failure: Exception) {
+                                    if (failure is kotlinx.coroutines.CancellationException) throw failure
+                                    error = "Não foi possível salvar o Pin. Tente novamente."
+                                } finally { busy = false }
+                            }
+                        },
+                        shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = Color.White),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("pin.confirm"),
+                    ) { Text(if (busy) "Salvando…" else "Confirmar ponto") }
+                }
             }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = point != null && plan != null && !busy && (!creating || title.isNotBlank()),
-                onClick = {
-                    val coordinate = point ?: return@TextButton
-                    val choice = if (creating) LocalPinTripChoice.Create(newTripID, title)
-                        else tripID?.let { LocalPinTripChoice.Existing(it) } ?: LocalPinTripChoice.None
-                    busy = true
-                    error = null
-                    scope.launch {
-                        try { onSaved(places.savePin(idea.id, coordinate.latitude, coordinate.longitude, choice)) }
-                        catch (failure: Exception) {
-                            if (failure is kotlinx.coroutines.CancellationException) throw failure
-                            error = "Não foi possível salvar o Pin. Tente novamente."
-                        } finally { busy = false }
-                    }
-                },
-            ) { Text("Confirmar ponto e salvar Pin") }
-        },
-        dismissButton = { TextButton(enabled = !busy, onClick = onClose) { Text("Cancelar") } },
-    )
+        }
+    }
+}
+
+@Composable
+private fun PinChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp))
+            .background(if (selected) ArkeColors.brand else MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            if (selected) "✓ $label" else label, maxLines = 1,
+            color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
 }
