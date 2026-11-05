@@ -49,120 +49,21 @@ import dev.arke.core.HomeState
 import dev.arke.core.PanelDetent
 import dev.arke.core.TravelContext
 
+/** Compartilhar exige conta (D5 pendente, GROUP-001). Sem credencial, URL de servidor ou login no código: nada é enviado. */
 @Composable
-private fun SharePinDialog(name: String, pin: LocalMapPin, onClose: () -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var token by remember { mutableStateOf<String?>(null) }
-    var trips by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var destination by remember { mutableStateOf<String?>(null) }
-    var title by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var published by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-
-    fun perform(action: suspend () -> Unit) {
-        if (busy) return
-        busy = true
-        message = null
-        scope.launch {
-            try { action() }
-            catch (failure: Exception) {
-                if (failure is kotlinx.coroutines.CancellationException) throw failure
-                message = "Não foi possível concluir. Confira a conexão e suas permissões."
-            } finally { busy = false }
-        }
-    }
-
-    val session = token
+private fun SharePinDialog(name: String, @Suppress("UNUSED_PARAMETER") pin: LocalMapPin, onClose: () -> Unit) {
     AlertDialog(
-        onDismissRequest = { if (!busy) onClose() },
-        title = { Text("Compartilhar Pin") },
+        onDismissRequest = onClose,
+        title = { Text("Compartilhar exige uma conta Arke") },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text("Compartilhará o nome e as coordenadas de $name com os membros da viagem escolhida.")
-                if (session == null) {
-                    OutlinedTextField(email, { email = it }, label = { Text("E-mail") }, singleLine = true, enabled = !busy)
-                    OutlinedTextField(password, { password = it }, label = { Text("Senha") }, singleLine = true, enabled = !busy,
-                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
-                } else if (!published) {
-                    trips.forEach { (id, tripTitle) ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(selected = destination == id, onClick = { destination = id }, enabled = !busy)
-                            Text(tripTitle)
-                        }
-                    }
-                    OutlinedTextField(title, { title = it }, label = { Text("Nome da nova viagem compartilhada") }, singleLine = true, enabled = !busy)
-                    TextButton(enabled = title.isNotBlank() && !busy, onClick = {
-                        perform {
-                            val created = org.json.JSONArray(arkeCollaborationRequest("/rest/v1/shared_trips", session,
-                                org.json.JSONObject().put("title", title), representation = true)).getJSONObject(0)
-                            val id = created.getString("id")
-                            trips = trips + (id to created.getString("title"))
-                            destination = id
-                            title = ""
-                        }
-                    }) { Text("Criar viagem compartilhada") }
-                }
-                message?.let { Text(it) }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("O compartilhamento de viagens ainda não está disponível nesta versão. $name continua salvo só neste aparelho e nada é enviado.",
+                    modifier = Modifier.testTag("share.unavailable"))
+                Text("O Cofrinho continua só seu.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = {
-            if (!published) TextButton(
-                enabled = !busy && (if (session == null) email.isNotBlank() && password.isNotEmpty() else destination != null),
-                onClick = {
-                    perform {
-                        if (session == null) {
-                            val response = try {
-                                arkeCollaborationRequest("/auth/v1/token?grant_type=password", body =
-                                    org.json.JSONObject().put("email", email).put("password", password))
-                            } finally { password = "" }
-                            val access = org.json.JSONObject(response).getString("access_token")
-                            val rows = org.json.JSONArray(arkeCollaborationRequest("/rest/v1/shared_trips?select=id,title&order=title", access))
-                            trips = (0 until rows.length()).map { index ->
-                                rows.getJSONObject(index).let { it.getString("id") to it.getString("title") }
-                            }
-                            token = access
-                        } else {
-                            arkeCollaborationRequest("/rest/v1/shared_trip_pins", session, org.json.JSONObject()
-                                .put("trip_id", requireNotNull(destination)).put("title", name)
-                                .put("latitude", pin.latitude).put("longitude", pin.longitude))
-                            published = true
-                            message = "Pin compartilhado."
-                        }
-                    }
-                },
-            ) { Text(if (session == null) "Entrar" else "Confirmar compartilhamento") }
-        },
-        dismissButton = { TextButton(onClick = onClose, enabled = !busy) { Text("Fechar") } },
+        confirmButton = { TextButton(onClick = onClose) { Text("Fechar") } },
     )
-}
-
-private suspend fun arkeCollaborationRequest(
-    path: String,
-    token: String? = null,
-    body: org.json.JSONObject? = null,
-    representation: Boolean = false,
-): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-    val connection = java.net.URL("https://nbfvflfjegiufbtyjuch.supabase.co" + path)
-        .openConnection() as java.net.HttpURLConnection
-    try {
-        connection.instanceFollowRedirects = false
-        connection.connectTimeout = 15_000
-        connection.readTimeout = 15_000
-        connection.setRequestProperty("apikey", "sb_publishable_KN5XnD4anPn4_vANwr_-Fg_4_UZIsGB")
-        token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
-        if (representation) connection.setRequestProperty("Prefer", "return=representation")
-        if (body != null) {
-            connection.requestMethod = "POST"
-            connection.doOutput = true
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-        }
-        check(connection.responseCode in 200..299)
-        connection.inputStream.bufferedReader().use { it.readText() }
-    } finally { connection.disconnect() }
 }
 
 private val HomeStateSaver = Saver<HomeState, List<String>>(

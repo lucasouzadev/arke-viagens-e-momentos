@@ -281,14 +281,34 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingTrips) {
             NavigationStack(path: $tripPath) {
-                List {
-                    if let plan = pinPlan {
-                        if plan.trips.isEmpty { Text("Suas viagens aparecem aqui quando você vincula um Pin.") }
-                        ForEach(plan.trips, id: \.id) { trip in
-                            NavigationLink(trip.title, value: trip.id)
-                        }
-                    } else { Text("Não foi possível abrir as viagens.") }
+                // Sheet contínuo: o título rola com o conteúdo; fechar é arrastar para baixo.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Viagens").font(.title.bold()).padding(.bottom, 6).accessibilityAddTraits(.isHeader)
+                        if let plan = pinPlan {
+                            if plan.trips.isEmpty {
+                                Text("Suas viagens aparecem aqui quando você vincula um Pin.").foregroundStyle(.secondary)
+                            }
+                            ForEach(plan.trips, id: \.id) { trip in
+                                let count = plan.pins.filter { $0.tripID == trip.id }.count
+                                NavigationLink(value: trip.id) {
+                                    tripRow(icon: "suitcase", title: trip.title,
+                                            detail: count == 1 ? "1 lugar" : "\(count) lugares", chevron: true)
+                                }.buttonStyle(.plain)
+                            }
+                            Text("Fora de viagens").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                                .padding(.top, 10).padding(.leading, 4)
+                            let loose = places.ideas.filter { idea in
+                                !plan.pins.contains { $0.ideaID == idea.id && $0.tripID != nil }
+                            }.count
+                            tripRow(icon: "mappin", title: "Ideias soltas",
+                                    detail: loose == 1 ? "1 lugar sem viagem" : "\(loose) lugares sem viagem", chevron: false)
+                        } else { Text("Não foi possível abrir as viagens.") }
+                    }
+                    .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 32)
                 }
+                .scrollIndicators(.hidden)
+                .toolbar(.hidden, for: .navigationBar)
 
                 .navigationDestination(for: String.self) { id in
                     if let plan = pinPlan, let trip = plan.trips.first(where: { $0.id == id }) {
@@ -309,8 +329,6 @@ struct HomeView: View {
                         }.navigationTitle(trip.title)
                     }
                 }
-                .navigationTitle("Viagens")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { showingTrips = false } } }
             }
             .presentationDragIndicator(.hidden)
         }
@@ -377,6 +395,22 @@ struct HomeView: View {
             }
             .padding(.horizontal, 12).padding(.top, 12)
         }
+    }
+
+    private func tripRow(icon: String, title: String, detail: String, chevron: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(ArkeUI.ink)
+                .frame(width: 48, height: 48).background(ArkeUI.sheetSurface(colorScheme), in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).arkeText(.contextTitle).lineLimit(1)
+                Text(detail).arkeText(.body).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            if chevron { Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(.tertiary) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading)
+        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 26))
+        .contentShape(Rectangle())
     }
 
     /// D4: com Pins salvos, a câmera inicial enquadra todos; nunca pede permissão de localização sozinha.
@@ -945,97 +979,22 @@ private struct LocalFinanceView: View {
         } catch { self.error = "Não foi possível salvar os registros." }
     }
 }
+/// Compartilhar exige conta (D5 pendente, GROUP-001). Sem credencial, URL de servidor ou formulário de login no código:
+/// nada é enviado e o lugar continua só neste aparelho.
 private struct SharePinForm: View {
-    struct Trip: Decodable, Identifiable { let id: UUID; let title: String }
-    struct Session: Decodable { let access_token: String }
     let name: String
     let pin: LocalMapPin
-    @State private var email = ""
-    @State private var password = ""
-    @State private var token: String?
-    @State private var trips: [Trip] = []
-    @State private var destination: UUID?
-    @State private var newTitle = ""
-    @State private var busy = false
-    @State private var message: String?
-    @State private var published = false
 
     var body: some View {
-        Form {
-            Text("Compartilhará o nome e as coordenadas de \(name) com os membros da viagem escolhida.")
-            if let token {
-                Picker("Viagem compartilhada", selection: $destination) {
-                    Text("Escolha uma viagem").tag(nil as UUID?)
-                    ForEach(trips) { Text($0.title).tag(Optional($0.id)) }
-                }
-                Button("Confirmar compartilhamento") {
-                    guard let destination else { return }
-                    perform {
-                        _ = try await request("/rest/v1/shared_trip_pins", token: token, body: [
-                            "trip_id": destination.uuidString, "title": name,
-                            "latitude": pin.latitude, "longitude": pin.longitude
-                        ])
-                        published = true
-                        message = "Pin compartilhado."
-                    }
-                }.disabled(destination == nil || published)
-                if !published {
-                    TextField("Nome da nova viagem compartilhada", text: $newTitle)
-                    Button("Criar viagem compartilhada") {
-                        perform {
-                            let data = try await request("/rest/v1/shared_trips", token: token, body: ["title": newTitle], representation: true)
-                            let created = try JSONDecoder().decode([Trip].self, from: data)
-                            trips.append(contentsOf: created)
-                            destination = created.first?.id
-                            newTitle = ""
-                        }
-                    }.disabled(newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            } else {
-                TextField("E-mail", text: $email).keyboardType(.emailAddress).textInputAutocapitalization(.never)
-                SecureField("Senha", text: $password)
-                Button("Entrar") {
-                    perform {
-                        defer { password = "" }
-                        let auth = try await request("/auth/v1/token?grant_type=password", body: ["email": email, "password": password])
-                        let session = try JSONDecoder().decode(Session.self, from: auth)
-                        let data = try await request("/rest/v1/shared_trips?select=id,title&order=title", token: session.access_token)
-                        trips = try JSONDecoder().decode([Trip].self, from: data)
-                        token = session.access_token
-                    }
-                }.disabled(email.isEmpty || password.isEmpty)
-            }
-            if let message { Text(message) }
-        }.disabled(busy)
-            .interactiveDismissDisabled(busy)
-            .navigationTitle("Compartilhar Pin")
-    }
-
-    private func perform(_ action: @escaping () async throws -> Void) {
-        busy = true
-        message = nil
-        Task {
-            defer { busy = false }
-            do { try await action() }
-            catch { message = "Não foi possível concluir. Confira a conexão e suas permissões." }
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Compartilhar exige uma conta Arke").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+            Text("O compartilhamento de viagens ainda não está disponível nesta versão. \(name) continua salvo só neste aparelho e nada é enviado.")
+                .accessibilityIdentifier("share.unavailable")
+            Label("O Cofrinho continua só seu.", systemImage: "lock").foregroundStyle(.secondary)
+            Spacer()
         }
-    }
-
-    private func request(_ path: String, token: String? = nil, body: [String: Any]? = nil, representation: Bool = false) async throws -> Data {
-        var request = URLRequest(url: URL(string: "https://nbfvflfjegiufbtyjuch.supabase.co" + path)!)
-        request.setValue("sb_publishable_KN5XnD4anPn4_vANwr_-Fg_4_UZIsGB", forHTTPHeaderField: "apikey")
-        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        if representation { request.setValue("return=representation", forHTTPHeaderField: "Prefer") }
-        if let body {
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
-        return data
+        .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+        .navigationTitle("Compartilhar Pin")
     }
 }
 /// Marcar no mapa: o mapa é o conteúdo; o painel inferior concentra a decisão (lugar, ponto, viagem opcional e confirmação).
