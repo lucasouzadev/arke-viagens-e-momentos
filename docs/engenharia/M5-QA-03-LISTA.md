@@ -39,6 +39,28 @@
 | P2-4 | Memórias: topo das células do grid cortado sob o cabeçalho ao rolar (5:27–5:30). | Inset superior da rolagem. |
 | P2-5 | Rótulos repetidos ("Meta/Meta"), barras de navegação nativas em Viagens/Compartilhar fora do padrão contínuo. | Auditoria de cópia e de cabeçalhos de sheet (DESIGN-006/007). |
 
+## Rodada 2 do QA (6/11, capturas "Editar registro" e Home vazia + vídeo de referência)
+
+| # | Prio | Pedido | Observação / proposta |
+| --- | --- | --- | --- |
+| Q2-1 | P1 | Sheets compactos: tirar o espaço vazio de formulários curtos (ex.: "Editar registro" com ~50% de área morta e "Cancelar" solto no meio). | Altura pelo conteúdo (detent ajustado à medida real; Android `wrapContentHeight`), botão primário colado ao conteúdo, "Cancelar" no topo esquerdo (DESIGN-006), não no meio. Sheet só cresce para formulários longos ou teclado. |
+| Q2-2 | P1 | Seletor "Prevista/Realizada" e "Meta/Valor reservado" apagado e sem opção pré-selecionada. | Segmentado com estado selecionado em azul de marca (texto branco), não-selecionado em texto primário; padrão "Prevista" em gasto novo e "Meta" em cofrinho sem meta; edição pré-seleciona o valor salvo. Contraste ≥ 3:1 entre estados. |
+| Q2-3 | P0 (estrutura) | Cabeçalho do cartão vira **barra de navegação** compacta: sem o ícone do contexto selecionado (só título + anterior/próximo), seletor de Viagens e todas as ações ("+") na barra; o resto do cartão é só conteúdo, sem corte nem sobreposição. | Resolve junto com P0-1 ("+" contextual) e P2-4 (corte sob o cabeçalho). Proposta de layout: `[‹ ícone] Título • • • [› ícone]` + linha fina com `[Viagens ▾]` à esquerda e `[+]` à direita, ou tudo em uma linha em telas largas. Requer prova de layout em 320 pt e fonte grande. |
+| Q2-4 | P1 | Botões "+" e ações dos sheets em Liquid Glass com morph (iOS 26). | iOS: `glassEffect` + `GlassEffectContainer` + `glassEffectID`/`matchedGeometry` para o "+" se transformar no sheet/ação. Android não tem Liquid Glass (ADR-001: interface flat nativa) → equivalente Material 3 com transição de container (shared element). Paridade de hierarquia, não de material. |
+| Q2-5 | P1 | Definir e aplicar design dos botões de rodapé das opções no cartão inferior ("Ver detalhes", "Ver meus lugares"). | Especificar no DESIGN-007: um estilo único de ação secundária de rodapé (pílula de vidro/tonal, altura 44, largura conforme conteúdo ou dividida em par), aplicado a todos os contextos. |
+| Q2-6 | P1 | Motion do mapa e expansão conforme vídeo de referência. | Ver "Especificação de motion" abaixo. Substitui P2-2 para o mapa. |
+| Q2-7 | P1 | Home vazia: "Guarde seu próximo lugar com +" deixa o cartão com grande área vazia. | Estado vazio desenhado (ilustração/ação direta), resolvido junto com Q2-3. |
+
+### Especificação de motion (referência: vídeo de 6/11, 60 fps)
+Medido quadro a quadro:
+- **Expandir (≈300–350 ms):** o cartão do mapa fica ancorado na base e cresce para cima até ocupar a tela; o conteúdo acima esmaece (opacidade 1→0) e sobe/encolhe levemente enquanto é coberto; **cantos continuam arredondados** (raio do aparelho) durante e após a expansão; a barra de ação larga sob o mapa ("See on map") **se transforma em pílula compacta** dentro do mapa, no rodapé central; o botão de expandir troca o ícone (setas para fora → para dentro) no mesmo lugar.
+- **Recolher (≈350–400 ms):** inverso, com mola suave (assentamento lento nos últimos ~100 ms, sem quique visível); conteúdo de cima reaparece com fade + leve subida.
+- **Implementação:** iOS `withAnimation(.spring(response: 0.4, dampingFraction: 0.86))` + `matchedGeometryEffect`/`glassEffectID` para pílula e botão; Android `animateContentSize`/`SharedTransitionLayout` com `spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow)`. Gesto de arrastar do painel interpola o mesmo progresso (interrompível). Reduzir Movimento: crossfade sem mudança de escala.
+- **Aceite:** gravação 60 fps lado a lado (referência × iOS × Android); sem quadro com canto quadrado, alça ou cartão vazio.
+
+### Revisão por agente dedicado de UI/UX
+Um agente de design (`.claude/agents/mobile-ui-ux-designer.md`) recebe as capturas atuais, o protótipo e as especificações e devolve propostas de melhoria em `docs/design/REVISAO-UIUX-01.md`. As propostas são **entrada para decisão**, não aprovação: viram itens desta lista somente após decisão de Juice.
+
 ## O que eu deixei passar (e por quê)
 1. **Testes verificavam presença, não identidade:** "tocou e *algum* sheet abriu" passa mesmo quando abre o sheet errado. Nova regra: todo teste de ação confere o título do sheet.
 2. **Sem teste de desempenho/travamento** nem dados realistas (várias capas); CI usa estado vazio.
