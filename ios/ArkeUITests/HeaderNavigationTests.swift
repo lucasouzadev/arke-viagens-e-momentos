@@ -8,6 +8,11 @@ final class HeaderNavigationTests: XCTestCase {
         executionTimeAllowance = 600
     }
 
+    /// "+" do cabeçalho ou, com o cartão vazio, o botão "Adicionar lugar" do meio do cartão.
+    private func addPlaceControl(_ app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Adicionar lugar")).firstMatch
+    }
+
     func testInlineNavigationChangesContextWithoutChangingPanel() {
         let app = XCUIApplication()
         app.launch()
@@ -19,7 +24,8 @@ final class HeaderNavigationTests: XCTestCase {
         origin.press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: 0, dy: -app.frame.height * 0.35)))
         for (index, title) in ["Gastos", "Cofrinho", "Avaliações", "Memórias", "Avaliações"].enumerated() {
             XCTAssertTrue(next.isHittable)
-            if index == 4 { next.swipeRight() } else { next.swipeLeft() }
+            let center = next.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            center.press(forDuration: 0.05, thenDragTo: center.withOffset(CGVector(dx: index == 4 ? 140 : -140, dy: 0)))
             let selectedTitle = NSPredicate(format: "label == %@", title)
             expectation(for: selectedTitle, evaluatedWith: app.staticTexts["home.contextTitle"])
             waitForExpectations(timeout: 5)
@@ -30,7 +36,7 @@ final class HeaderNavigationTests: XCTestCase {
     func testAddPlaceValidationAndDiscardPreserveDraftUntilConfirmed() {
         let app = XCUIApplication()
         app.activate()
-        let addButton = app.buttons["home.addPlace"]
+        let addButton = addPlaceControl(app)
         XCTAssertTrue(addButton.waitForExistence(timeout: 15))
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
         waitForExpectations(timeout: 5)
@@ -61,7 +67,7 @@ final class HeaderNavigationTests: XCTestCase {
         throw XCTSkip("Gesto de fechar com rascunho validado manualmente; automação pendente.")
         let app = XCUIApplication()
         app.launch()
-        let addButton = app.buttons["home.addPlace"]
+        let addButton = addPlaceControl(app)
         XCTAssertTrue(addButton.waitForExistence(timeout: 15))
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
         waitForExpectations(timeout: 5)
@@ -90,7 +96,7 @@ final class HeaderNavigationTests: XCTestCase {
         XCUIDevice.shared.location = XCUILocation(location: CLLocation(latitude: 37.334886, longitude: -122.008988))
         defer { XCUIDevice.shared.location = nil }
         app.launch()
-        let addButton = app.buttons["home.addPlace"]
+        let addButton = addPlaceControl(app)
         XCTAssertTrue(addButton.waitForExistence(timeout: 15))
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
         waitForExpectations(timeout: 5)
@@ -139,7 +145,7 @@ final class HeaderNavigationTests: XCTestCase {
     func testSaveReviewReopenAndConfirmedDelete() {
         let app = XCUIApplication()
         app.launch()
-        let addButton = app.buttons["home.addPlace"]
+        let addButton = addPlaceControl(app)
         XCTAssertTrue(addButton.waitForExistence(timeout: 15))
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: addButton)
         waitForExpectations(timeout: 5)
@@ -324,7 +330,7 @@ final class HeaderNavigationTests: XCTestCase {
     func testEditorFullFieldTapAndScrollableReview() {
         let app = XCUIApplication()
         app.launch()
-        let add = app.buttons["home.addPlace"]
+        let add = addPlaceControl(app)
         XCTAssertTrue(add.waitForExistence(timeout: 15))
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: add)
         waitForExpectations(timeout: 10)

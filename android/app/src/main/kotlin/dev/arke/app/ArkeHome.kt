@@ -266,7 +266,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                         }
                                     },
                                     addEnabled = placeState.ready && !placeState.busy,
-                                    showAdd = if (state.context == TravelContext.PLANNING) !(placeState.ready && placeState.ideas.isEmpty) else !contextEmpty,
+                                    showAdd = if (state.context == TravelContext.PLANNING) !(placeState.ready && placeState.ideas.isEmpty()) else !contextEmpty,
                                     trips = trips, activeTripID = activeTripID,
                                     placeCount = if (placeState.ready) placeState.ideas.size else null,
                                     onTripSelect = { activeTripID = it }, onManageTrips = { showingTrips = true },

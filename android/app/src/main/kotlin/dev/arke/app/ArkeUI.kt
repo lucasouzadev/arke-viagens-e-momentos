@@ -186,7 +186,8 @@ fun ArkeFooterButton(title: String, modifier: Modifier = Modifier, icon: Int? = 
 
 /** Estado vazio de cartão: ícone, título, texto e uma ação (a mesma do "+"). */
 @Composable
-fun ArkeEmptyState(icon: Int, title: String, message: String, actionTitle: String? = null, tag: String? = null, onAction: () -> Unit = {}) {
+fun ArkeEmptyState(icon: Int, title: String, message: String, actionTitle: String? = null, tag: String? = null,
+                   actionTag: String? = null, onAction: () -> Unit = {}) {
     Column(Modifier.fillMaxWidth().padding(vertical = 20.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.size(56.dp).clip(androidx.compose.foundation.shape.CircleShape).background(arkeFieldColor()), contentAlignment = Alignment.Center) {
@@ -194,7 +195,8 @@ fun ArkeEmptyState(icon: Int, title: String, message: String, actionTitle: Strin
         }
         Text(title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         Text(message, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        if (actionTitle != null) ArkeFooterButton(actionTitle, Modifier.padding(top = 4.dp), R.drawable.ic_add, onAction)
+        if (actionTitle != null) ArkeFooterButton(actionTitle,
+            Modifier.padding(top = 4.dp).then(if (actionTag != null) Modifier.testTag(actionTag) else Modifier), R.drawable.ic_add, onAction)
     }
 }
 

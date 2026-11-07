@@ -73,7 +73,7 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
     DisposableEffect(Unit) { onDispose { onDetailsVisibilityChanged(false) } }
     if (state.ideas.isEmpty()) {
         ArkeEmptyState(R.drawable.ic_pin, "Seu primeiro lugar", "Guarde ideias antes mesmo de ter uma viagem.",
-            actionTitle = "Adicionar lugar", tag = "home.emptyPlaces", onAction = onAdd)
+            actionTitle = "Adicionar lugar", tag = "home.emptyPlaces", actionTag = "home.addPlace", onAction = onAdd)
     } else if (detent == PanelDetent.EXPLORE) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             state.ideas.forEach { idea ->
