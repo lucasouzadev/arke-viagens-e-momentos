@@ -154,8 +154,11 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     if (dragHeight == null) position.animateTo(restingPx)
                 }
                 val mapHeight = with(density) { (dragHeight ?: position.value).toDp() }
+                // Tokens de motion (REVISAO-UIUX-01 §6): mola única; expandir mais firme que recolher.
                 val mapExtension by animateDpAsState(
                     if (mapExpanded) (availableHeight - mapHeight).coerceAtLeast(0.dp) else 0.dp,
+                    animationSpec = if (mapExpanded) androidx.compose.animation.core.spring(0.88f, 420f)
+                        else androidx.compose.animation.core.spring(0.90f, 320f),
                     label = "mapExpansion",
                 )
                 // Mapa expandido (D-4): o cartão afunda e some, com cantos preservados; sem alça nem faixa vazia.
@@ -296,6 +299,27 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 )
+                            }
+                        }
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = mapExpanded, modifier = Modifier.align(Alignment.BottomCenter),
+                            enter = androidx.compose.animation.slideInVertically { it } + androidx.compose.animation.fadeIn(),
+                            exit = androidx.compose.animation.slideOutVertically { it } + androidx.compose.animation.fadeOut(),
+                        ) {
+                            val focused = placeState.ideas.firstOrNull { it.id == focusedIdeaID }
+                            Surface(Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp).fillMaxWidth().heightIn(min = 52.dp),
+                                shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 3.dp) {
+                                Row(Modifier.padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(focused?.name ?: "Mapa", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                        Text(stringResource(state.context.title()), fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                    }
+                                    IconButton(onClick = { mapExpanded = false }, modifier = Modifier.size(48.dp).testTag("home.collapseMap")) {
+                                        Icon(painterResource(R.drawable.ic_expand), "Recolher mapa", Modifier.size(22.dp))
+                                    }
+                                }
                             }
                         }
                         FilledTonalIconButton(

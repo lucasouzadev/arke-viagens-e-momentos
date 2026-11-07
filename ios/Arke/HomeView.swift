@@ -60,7 +60,7 @@ struct HomeView: View {
             GeometryReader { geometry in
                 let restingHeight = panelHeight ?? mapHeight(in: geometry.size.height)
                 let expandedHeight = geometry.size.height
-                let compactMap = !mapExpanded && restingHeight < 150
+                let compactMap = !mapExpanded && restingHeight < 200
                 VStack(spacing: 8) {
                     Color.clear.frame(height: restingHeight).accessibilityHidden(true)
 
@@ -158,6 +158,9 @@ struct HomeView: View {
                         .frame(height: mapExpanded ? expandedHeight : restingHeight)
                         .overlay(alignment: .top) {
                             mapControls(compact: compactMap)
+                        }
+                        .overlay(alignment: .bottom) {
+                            if mapExpanded { mapSummaryPill.transition(.move(edge: .bottom).combined(with: .opacity)) }
                         }
                         .overlay(alignment: .bottomLeading) {
                             if !compactMap, state.context == .planning,
@@ -318,6 +321,29 @@ struct HomeView: View {
             }, onCancel: { showingAddPlace = false })
         }
 
+    }
+
+    /// Pílula de resumo do mapa expandido: lugar em foco (ou contexto) e recolher; a barra do cartão "vira" esta pílula.
+    private var mapSummaryPill: some View {
+        let focused = places.ideas.first(where: { $0.id == focusedIdeaID })
+        return HStack(spacing: 10) {
+            Image(systemName: "mappin.circle.fill").font(.system(size: 22)).foregroundStyle(ArkeUI.ink)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(focused?.name ?? "Mapa").font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                Text(state.context.title).font(.system(size: 13)).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            Button { setMapExpanded(false) } label: {
+                Image(systemName: "arrow.down.right.and.arrow.up.left").font(.system(size: 16, weight: .semibold))
+                    .frame(width: 44, height: 44).contentShape(Circle())
+            }
+            .accessibilityLabel("Recolher mapa").accessibilityIdentifier("home.collapseMap")
+        }
+        .foregroundStyle(Color(uiColor: .label))
+        .padding(.leading, 16).padding(.trailing, 4).frame(minHeight: 52)
+        .arkeGlassCapsule()
+        .padding(.horizontal, 12).padding(.bottom, 12)
+        .accessibilityElement(children: .contain)
     }
 
     /// Controles sobre o mapa: busca em pílula à esquerda; localização e expandir empilhados à direita.
@@ -567,7 +593,10 @@ struct HomeView: View {
     }
 
     private func setMapExpanded(_ expanded: Bool) {
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) { mapExpanded = expanded }
+        // Tokens de motion (REVISAO-UIUX-01 §6): mola única, interrompível; sem mola com Reduzir Movimento.
+        let animation: Animation = reduceMotion ? .easeInOut(duration: 0.15)
+            : .spring(response: expanded ? 0.38 : 0.44, dampingFraction: expanded ? 0.88 : 0.90)
+        withAnimation(animation) { mapExpanded = expanded }
     }
 
     private var controlStyle: AnyShapeStyle {
