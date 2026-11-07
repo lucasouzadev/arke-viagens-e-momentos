@@ -2,7 +2,11 @@ import XCTest
 import CoreLocation
 
 final class HeaderNavigationTests: XCTestCase {
-    override func setUpWithError() throws { continueAfterFailure = false }
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        // O fluxo de salvar/reabrir/excluir leva ~3 min em runners lentos; o limite padrão cortava no último passo.
+        executionTimeAllowance = 600
+    }
 
     func testInlineNavigationChangesContextWithoutChangingPanel() {
         let app = XCUIApplication()
@@ -466,7 +470,7 @@ final class HeaderNavigationTests: XCTestCase {
             waitForExpectations(timeout: 5)
             let started = Date()
             plus.tap()
-            let title = app.staticTexts["sheet.title"].firstMatch
+            let title = app.descendants(matching: .any).matching(identifier: "sheet.title").firstMatch
             XCTAssertTrue(title.waitForExistence(timeout: 3), "Sheet \(item.title) não abriu em 3 s")
             XCTAssertEqual(title.label, item.title)
             XCTAssertNotEqual(title.label, "Adicionar lugar", "Abriu Adicionar lugar no contexto \(item.label)")

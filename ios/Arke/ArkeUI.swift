@@ -361,6 +361,7 @@ struct ArkeFormSheet<Content: View>: View {
         .presentationDetents([.height(60 + contentHeight + 76 + 20), .large])
         .presentationDragIndicator(.hidden)
         .presentationContentInteraction(.resizes)
+        .accessibilityElement(children: .contain)
         .accessibilityAction(.escape) { onCancel() }
     }
 }
