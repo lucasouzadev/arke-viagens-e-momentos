@@ -137,6 +137,7 @@ fun <T> ArkeSegmented(options: List<Pair<T, String>>, selected: T, tagPrefix: St
  * Sheet de formulário compacto: altura pelo conteúdo (sem área morta), fundo opaco, X no topo esquerdo
  * (descrição "Cancelar") e primária colada ao conteúdo.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArkeFormSheet(
     title: String, tagPrefix: String, primaryTitle: String, primaryTag: String,

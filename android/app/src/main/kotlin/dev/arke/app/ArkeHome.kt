@@ -597,11 +597,12 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
     var showingForm by remember(trip.id, reviews) { mutableStateOf(false) }
     var draft by remember(trip.id, reviews) { mutableStateOf("") }
     var rating by remember(trip.id, reviews) { mutableIntStateOf(0) }
+
+    var placeID by remember(trip.id, reviews) { mutableStateOf("") }
+    var failed by remember(trip.id, reviews) { mutableStateOf(false) }
     LaunchedEffect(openForm) {
         if (openForm) { onFormOpened(); draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true }
     }
-    var placeID by remember(trip.id, reviews) { mutableStateOf("") }
-    var failed by remember(trip.id, reviews) { mutableStateOf(false) }
     val records = remember(raw) {
         runCatching {
             val array = org.json.JSONArray(raw)
