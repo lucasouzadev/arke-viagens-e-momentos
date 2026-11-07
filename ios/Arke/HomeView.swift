@@ -1,6 +1,7 @@
 import SwiftUI
 import MapKit
 import CoreLocation
+import PhotosUI
 
 struct HomeView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -809,6 +810,7 @@ private struct TripJournalView: View {
         let text: String
         let rating: Int?
         let placeID: String?
+        var photos: [String]? = nil
     }
 
     let plan: LocalPinPlan?
@@ -821,6 +823,9 @@ private struct TripJournalView: View {
     @AppStorage("arke.trip-journal.v1") private var data = Data()
     @State private var placeID: String?
     @State private var rating = 0
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var photoData: [Data] = []
+    @State private var photoError = false
     @State private var draft = ""
     @State private var error = false
 
@@ -855,7 +860,8 @@ private struct TripJournalView: View {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                         ForEach(shown) { entry in
                             VStack(alignment: .leading, spacing: 6) {
-                                ArkeStamp(image: journalCover(entry)).frame(maxWidth: .infinity).frame(height: 104)
+                                ArkeMemoryCover(photo: entry.photos?.first, fallback: journalCover(entry), extra: max(0, (entry.photos?.count ?? 0) - 1))
+                                    .frame(maxWidth: .infinity).frame(height: 104)
                                 Text(entry.text).arkeText(.caption).lineLimit(2)
                             }
                             .padding(8).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 18))
@@ -870,7 +876,7 @@ private struct TripJournalView: View {
             .onChange(of: openForm, initial: true) { _, requested in
                 guard requested else { return }
                 openForm = false
-                draft = ""; placeID = nil; rating = 0; error = false; showingForm = true
+                draft = ""; placeID = nil; rating = 0; error = false; photoData = []; photoItems = []; photoError = false; showingForm = true
             }
             .sheet(isPresented: $showingForm) { formSheet(trip: trip, plan: plan) }
         } else {
@@ -900,11 +906,14 @@ private struct TripJournalView: View {
                 guard valid else { return }
                 do {
                     var all = data.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: data)
-                    all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID))
+                    let names = reviews ? [] : try ArkeMemoryPhotos.save(photoData)
+                    all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID,
+                                     photos: names.isEmpty ? nil : names))
                     data = try JSONEncoder().encode(all)
                     draft = ""
                     placeID = nil
                     rating = 0
+                    photoData = []
                     error = false
                     showingForm = false
                 } catch { self.error = true }
@@ -925,6 +934,55 @@ private struct TripJournalView: View {
                     }
                 }
             } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Fotos").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(photoData.count) de \(ArkeMemoryPhotos.limit)").font(.system(size: 13)).foregroundStyle(.secondary)
+                    }
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 10) {
+                            ForEach(photoData.indices, id: \.self) { index in
+                                ArkeStamp(image: UIImage(data: photoData[index])).frame(width: 76, height: 76)
+                                    .overlay(alignment: .topTrailing) {
+                                        Button { photoData.remove(at: index) } label: {
+                                            Image(systemName: "xmark.circle.fill").font(.system(size: 22))
+                                                .foregroundStyle(.white, .black.opacity(0.65))
+                                                .frame(width: 44, height: 44, alignment: .topTrailing)
+                                        }
+                                        .accessibilityLabel("Remover foto \(index + 1)")
+                                    }
+                            }
+                            if photoData.count < ArkeMemoryPhotos.limit {
+                                PhotosPicker(selection: $photoItems, maxSelectionCount: ArkeMemoryPhotos.limit - photoData.count, matching: .images) {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: "photo.badge.plus").font(.system(size: 22))
+                                        Text("Adicionar").font(.system(size: 12, weight: .semibold))
+                                    }
+                                    .foregroundStyle(ArkeUI.ink).frame(width: 76, height: 76)
+                                    .background(ArkeUI.fieldSurface(colorScheme), in: RoundedRectangle(cornerRadius: 14))
+                                }
+                                .accessibilityLabel("Adicionar fotos").accessibilityIdentifier("memories.addPhotos")
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .scrollIndicators(.hidden)
+                    if photoError { Text("Algumas fotos não puderam ser abertas.").arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+                }
+                .onChange(of: photoItems) { _, items in
+                    guard !items.isEmpty else { return }
+                    Task {
+                        for item in items {
+                            guard photoData.count < ArkeMemoryPhotos.limit else { break }
+                            if let raw = try? await item.loadTransferable(type: Data.self),
+                               let jpeg = await Task.detached(operation: { ArkeMemoryPhotos.compress(raw) }).value {
+                                photoData.append(jpeg)
+                            } else { photoError = true }
+                        }
+                        photoItems = []
+                    }
+                }
                 ArkeField("Lugar da capa", optional: true) {
                     Menu {
                         Button("Nenhum") { placeID = nil }

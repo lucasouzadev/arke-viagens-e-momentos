@@ -1,5 +1,6 @@
 package dev.arke.app
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
@@ -626,8 +627,20 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
 
     var placeID by remember(trip.id, reviews) { mutableStateOf("") }
     var failed by remember(trip.id, reviews) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val photos = remember(trip.id, reviews) { mutableStateListOf<ByteArray>() }
+    var photoError by remember(trip.id, reviews) { mutableStateOf(false) }
+    val photoPicker = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia(MemoryPhotos.LIMIT)) { uris ->
+        scope.launch {
+            for (uri in uris.take(MemoryPhotos.LIMIT - photos.size)) {
+                val jpeg = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { MemoryPhotos.compress(context.contentResolver, uri) }
+                if (jpeg != null && photos.size < MemoryPhotos.LIMIT) photos.add(jpeg) else photoError = true
+            }
+        }
+    }
     LaunchedEffect(openForm) {
-        if (openForm) { onFormOpened(); draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true }
+        if (openForm) { onFormOpened(); draft = ""; placeID = ""; rating = 0; failed = false; photos.clear(); photoError = false; showingForm = true }
     }
     val records = remember(raw) {
         runCatching {
@@ -662,7 +675,9 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
                     rowCells.forEach { entry ->
                         Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(arkeInsetColor()).padding(8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(104.dp))
+                            JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(104.dp),
+                                photo = entry.optJSONArray("photos")?.optString(0)?.takeIf { it.isNotEmpty() },
+                                extra = ((entry.optJSONArray("photos")?.length() ?: 0) - 1).coerceAtLeast(0))
                             Text(entry.getString("text"), maxLines = 2, style = MaterialTheme.typography.bodySmall,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
@@ -683,10 +698,14 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
             onCancel = { showingForm = false },
             onPrimary = {
                 val entry = org.json.JSONObject().put("trip", trip.id).put("text", text)
-                if (reviews) entry.put("rating", rating) else entry.put("place", placeID)
+                if (reviews) entry.put("rating", rating) else {
+                    entry.put("place", placeID)
+                    val names = MemoryPhotos.save(context, photos.toList())
+                    if (names.isNotEmpty()) entry.put("photos", org.json.JSONArray(names))
+                }
                 val updated = org.json.JSONArray(records + entry).toString()
                 if (prefs.edit().putString("records", updated).commit()) {
-                    raw = updated; draft = ""; placeID = ""; rating = 0; failed = false; showingForm = false
+                    raw = updated; draft = ""; placeID = ""; rating = 0; failed = false; photos.clear(); showingForm = false
                 } else failed = true
             }) {
             if (reviews) {
@@ -706,6 +725,34 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
             } else {
                 val covers = ideas.filter { idea ->
                     idea.cover.isNotEmpty() && activePlan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Fotos", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${photos.size} de ${MemoryPhotos.LIMIT}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        photos.forEachIndexed { index, bytes ->
+                            val bitmap = remember(bytes) { android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
+                            Box(Modifier.size(76.dp)) {
+                                ArkeStamp(bitmap, Modifier.fillMaxSize())
+                                IconButton(onClick = { photos.removeAt(index) }, modifier = Modifier.align(Alignment.TopEnd).size(48.dp)
+                                    .semantics { contentDescription = "Remover foto ${index + 1}" }) {
+                                    Text("✕", color = Color.White, modifier = Modifier.background(Color.Black.copy(alpha = 0.65f), CircleShape).padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                            }
+                        }
+                        if (photos.size < MemoryPhotos.LIMIT) {
+                            Column(Modifier.size(76.dp).clip(RoundedCornerShape(14.dp)).background(arkeFieldColor())
+                                .clickable { photoError = false; photoPicker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                                .testTag("memories.addPhotos"),
+                                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                Icon(painterResource(R.drawable.ic_photo), null)
+                                Text("Adicionar", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+                    if (photoError) Text("Algumas fotos não puderam ser abertas.", color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
                 }
                 ArkeField("Lugar da capa", optional = true) {
                     FinanceChoice("Lugar", covers.firstOrNull { it.id == placeID }?.name ?: "Nenhum",
@@ -729,14 +776,23 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
 }
 
 @Composable
-private fun JournalMemoryCover(ideas: List<PlaceIdea>, placeID: String, preview: Boolean, modifier: Modifier) {
+private fun JournalMemoryCover(ideas: List<PlaceIdea>, placeID: String, preview: Boolean, modifier: Modifier,
+                               photo: String? = null, extra: Int = 0) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val cover = ideas.firstOrNull { it.id == placeID }?.cover
-    val image = remember(cover, preview) {
+    val fallback = remember(cover, preview) {
         if (preview) android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_arke)
         else cover?.let { decodePlaceCover(it) }
     }
-    ArkeStamp(image, modifier)
+    val own by produceState<android.graphics.Bitmap?>(null, photo) {
+        value = if (photo == null) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { MemoryPhotos.thumbnail(context, photo) }
+    }
+    Box(modifier) {
+        ArkeStamp(own ?: fallback, Modifier.fillMaxSize())
+        if (extra > 0) Text("+$extra", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp).background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                .padding(horizontal = 8.dp, vertical = 3.dp).semantics { contentDescription = "Mais $extra fotos" })
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -212,3 +212,46 @@ fun ArkeSwipeToDelete(onDelete: () -> Unit, content: @Composable () -> Unit) {
         }
     }) { Box(Modifier.background(arkeInsetColor())) { content() } }
 }
+
+/**
+ * Fotos das memórias (até 5): JPEG reduzido guardado em arquivo no aparelho (noBackupFilesDir), nunca dentro do JSON;
+ * miniaturas decodificadas fora da thread principal.
+ */
+internal object MemoryPhotos {
+    const val LIMIT = 5
+
+    private fun dir(context: android.content.Context) = java.io.File(context.noBackupFilesDir, "memories").apply { mkdirs() }
+
+    fun compress(resolver: android.content.ContentResolver, uri: android.net.Uri): ByteArray? = runCatching {
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        resolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, bounds) }
+        val largest = maxOf(bounds.outWidth, bounds.outHeight)
+        if (largest <= 0) return null
+        val options = android.graphics.BitmapFactory.Options()
+        while (largest / options.inSampleSize.coerceAtLeast(1) > 960) options.inSampleSize = options.inSampleSize.coerceAtLeast(1) * 2
+        val bitmap = resolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, options) } ?: return null
+        val output = java.io.ByteArrayOutputStream()
+        for (quality in listOf(74, 55, 40)) {
+            output.reset()
+            if (bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, quality, output) && output.size() <= 512_000) return output.toByteArray()
+        }
+        null
+    }.getOrNull()
+
+    fun save(context: android.content.Context, photos: List<ByteArray>): List<String> = photos.take(LIMIT).map { bytes ->
+        val name = java.util.UUID.randomUUID().toString() + ".jpg"
+        java.io.File(dir(context), name).outputStream().use { it.write(bytes) }
+        name
+    }
+
+    fun thumbnail(context: android.content.Context, name: String, maxPixel: Int = 360): android.graphics.Bitmap? = runCatching {
+        val file = java.io.File(dir(context), name)
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeFile(file.path, bounds)
+        val options = android.graphics.BitmapFactory.Options()
+        while (maxOf(bounds.outWidth, bounds.outHeight) / options.inSampleSize.coerceAtLeast(1) > maxPixel * 2) {
+            options.inSampleSize = options.inSampleSize.coerceAtLeast(1) * 2
+        }
+        android.graphics.BitmapFactory.decodeFile(file.path, options)
+    }.getOrNull()
+}

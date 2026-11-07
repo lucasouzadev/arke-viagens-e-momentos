@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import ImageIO
 
 enum ArkeUI {
     static func sheetSurface(_ scheme: ColorScheme) -> Color {
@@ -503,4 +504,75 @@ struct ArkeSwipeToDelete: ViewModifier {
 }
 extension View {
     func arkeSwipeToDelete(_ onDelete: @escaping () -> Void) -> some View { modifier(ArkeSwipeToDelete(onDelete: onDelete)) }
+}
+
+
+/// Fotos das memórias (até 5): JPEG reduzido guardado em arquivo no aparelho (Application Support, fora do backup),
+/// nunca dentro do JSON; miniaturas decodificadas fora da thread principal.
+enum ArkeMemoryPhotos {
+    static let limit = 5
+
+    private static var directory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("ArkeMemories", isDirectory: true)
+    }
+
+    static func compress(_ data: Data, maxPixel: Int = 960) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+              ] as CFDictionary),
+              let jpeg = UIImage(cgImage: image).jpegData(compressionQuality: 0.74), jpeg.count <= 512_000 else { return nil }
+        return jpeg
+    }
+
+    static func save(_ photos: [Data]) throws -> [String] {
+        guard !photos.isEmpty else { return [] }
+        var folder = directory
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        var values = URLResourceValues(); values.isExcludedFromBackup = true
+        try? folder.setResourceValues(values)
+        var names: [String] = []
+        for jpeg in photos.prefix(limit) {
+            let name = UUID().uuidString + ".jpg"
+            try jpeg.write(to: folder.appendingPathComponent(name), options: [.atomic, .completeFileProtectionUnlessOpen])
+            names.append(name)
+        }
+        return names
+    }
+
+    static func thumbnail(named name: String, maxPixel: Int = 360) async -> UIImage? {
+        let url = directory.appendingPathComponent(name)
+        return await Task.detached(priority: .userInitiated) {
+            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                  let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+                  ] as CFDictionary) else { return nil }
+            return UIImage(cgImage: image)
+        }.value
+    }
+}
+
+/// Capa de memória: primeira foto da memória (ou a capa do lugar) em selo, com "+N" quando há mais fotos.
+struct ArkeMemoryCover: View {
+    let photo: String?
+    let fallback: UIImage?
+    var extra = 0
+    @State private var loaded: UIImage?
+    var body: some View {
+        ArkeStamp(image: loaded ?? fallback)
+            .overlay(alignment: .bottomTrailing) {
+                if extra > 0 {
+                    Text("+\(extra)").font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(.black.opacity(0.6), in: Capsule()).padding(10)
+                        .accessibilityLabel("Mais \(extra) fotos")
+                }
+            }
+            .task(id: photo) { if let photo { loaded = await ArkeMemoryPhotos.thumbnail(named: photo) } else { loaded = nil } }
+    }
 }
