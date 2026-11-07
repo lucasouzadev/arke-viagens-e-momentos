@@ -23,6 +23,8 @@ struct HomeView: View {
     @State private var showingMapSearch = false
     @State private var searchPin: MKMapItem?
     @State private var showingAddPlace = false
+    @State private var activeTripID = ""
+    @State private var openForm = false
     @State private var showingDetailPreview = false
     @State private var showingEditPreview = false
     @State private var showingSavedDetails = false
@@ -57,7 +59,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             GeometryReader { geometry in
                 let restingHeight = panelHeight ?? mapHeight(in: geometry.size.height)
-                let expandedHeight = min(geometry.size.height, max(restingHeight, geometry.size.height - 52))
+                let expandedHeight = geometry.size.height
                 let compactMap = !mapExpanded && restingHeight < 150
                 VStack(spacing: 8) {
                     Color.clear.frame(height: restingHeight).accessibilityHidden(true)
@@ -72,27 +74,6 @@ struct HomeView: View {
                     VStack(spacing: 12) {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
-                            if state.context == .planning {
-                                HStack {
-                                    Button { tripPath = []; showingTrips = true } label: {
-                                        HStack(spacing: 6) {
-                                            Image(systemName: "suitcase").font(.system(size: 15))
-                                            Text("Viagens").arkeText(.label)
-                                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
-                                        }
-                                        .padding(.horizontal, 14).frame(minHeight: 44)
-                                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
-                                        .contentShape(Capsule())
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityIdentifier("home.trips")
-                                    Spacer()
-                                    if places.ready {
-                                        Text(places.ideas.count == 1 ? "1 lugar" : "\(places.ideas.count) lugares")
-                                            .arkeText(.body).foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
                                 if savedNotice { Text("Lugar salvo neste aparelho.").arkeText(.caption).accessibilityIdentifier("place.savedNotice") }
                                 if let error = places.error, !showingAddPlace {
                                     Text(error).foregroundStyle(Color(uiColor: .systemRed))
@@ -113,7 +94,8 @@ struct HomeView: View {
                                                 .frame(minHeight: 44)
                                             } else {
                                                 LocalFinanceView(trips: pinPlan?.trips ?? [], savings: state.context == .savings,
-                                                                 detailed: state.detent == .details)
+                                                                 detailed: state.detent == .details,
+                                                                 selectedTrip: $activeTripID, openForm: $openForm)
                                                     .id(state.context.rawValue)
                                             }
                                         } else {
@@ -123,14 +105,14 @@ struct HomeView: View {
                                                 }.frame(minHeight: 44)
                                             } else {
                                                 TripJournalView(plan: pinPlan, ideas: places.ideas, reviews: state.context == .reviews,
-                                                                detailed: state.detent == .details, preview: journalCapture != nil)
+                                                                detailed: state.detent == .details, preview: journalCapture != nil,
+                                                                selectedTrip: $activeTripID, openForm: $openForm)
                                                     .tint(Color(uiColor: .label)).id(state.context.rawValue)
                                                 if state.detent == .balanced {
                                                     Button("Ver detalhes") { settlePanel(.details) }
                                                 }
                                             }
                                         }
-                                        Button("Ver meus lugares") { contextValue = TravelContext.planning.rawValue }
                                     }
                                 } else if places.busy { ProgressView("Abrindo seus lugares…") }
                             }
@@ -140,12 +122,6 @@ struct HomeView: View {
                         .safeAreaInset(edge: .top, spacing: 0) {
                             VStack(alignment: .leading, spacing: 6) {
                                 cardHeader
-                                if state.context == .planning, state.detent != .explore,
-                                   let idea = places.ideas.first(where: { $0.id == focusedIdeaID }) {
-                                    Text(idea.name).arkeText(.caption).foregroundStyle(.secondary)
-                                        .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                                        .accessibilityLabel("Lugar selecionado: " + idea.name)
-                                }
                             }
                             .padding(.bottom, 12)
                             // Fundo sólido igual ao do cartão: o material cinza aparecia como uma faixa estranha sobre o cartão branco.
@@ -159,9 +135,9 @@ struct HomeView: View {
                     .padding(.top, 16)
                     .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
                     .clipShape(.rect(cornerRadius: 20))
-                    // Com o mapa expandido, só a borda do cartão fica à mostra: sem texto sob a alça.
-                    .overlay { if mapExpanded { Color(uiColor: .secondarySystemGroupedBackground) } }
-                    .offset(y: mapExpanded ? 12 : 0)
+                    // Mapa expandido (D-4): o cartão afunda e some, com cantos preservados; sem alça nem faixa vazia.
+                    .opacity(mapExpanded ? 0 : 1)
+                    .offset(y: mapExpanded ? 24 : 0)
                     .allowsHitTesting(!mapExpanded)
                     .accessibilityHidden(mapExpanded)
                 }
@@ -178,12 +154,6 @@ struct HomeView: View {
                         .mapStyle(.standard)
                         .accessibilityLabel("Mapa Apple. Explore o mundo ou use Minha localização.")
                         .frame(height: mapExpanded ? expandedHeight : restingHeight)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 30)
-                                .strokeBorder(.white.opacity(0.25), lineWidth: 9)
-                                .blur(radius: 7)
-                                .allowsHitTesting(false)
-                        }
                         .overlay(alignment: .top) {
                             mapControls(compact: compactMap)
                         }
@@ -202,21 +172,6 @@ struct HomeView: View {
                         .onReceive(location.$coordinate) { coordinate in
                             if let coordinate { camera = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04))) }
                         }
-                }
-                .overlay(alignment: .bottom) {
-                    if mapExpanded {
-                        Capsule().fill(.secondary).frame(width: 36, height: 4)
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .contentShape(Rectangle())
-                            .gesture(DragGesture(minimumDistance: 10).onEnded { value in
-                                // Mesma direção da alça normal: arrastar para cima devolve espaço ao cartão.
-                                if value.translation.height < -16 { setMapExpanded(false) }
-                            })
-                            .onTapGesture { setMapExpanded(false) }
-                            .accessibilityLabel("Recolher mapa")
-                            .accessibilityAddTraits(.isButton)
-                            .accessibilityAction { setMapExpanded(false) }
-                    }
                 }
                 .clipped()
             }
@@ -424,28 +379,24 @@ struct HomeView: View {
         camera = .region(MKCoordinateRegion(center: center, span: span))
     }
 
+    /// Barra de navegação do cartão: título entre chevrons + "+" contextual; abaixo, viagem e metadado.
     private var cardHeader: some View {
-        HStack(spacing: 8) {
-            let options = TravelContext.allCases
-            let index = options.firstIndex(of: state.context) ?? 0
-            HStack(spacing: 0) {
+        VStack(spacing: 8) {
+            HStack(spacing: 4) {
+                let options = TravelContext.allCases
+                let index = options.firstIndex(of: state.context) ?? 0
                 contextNeighbor(index - 1, forward: false)
-                VStack(spacing: 6) {
-                    HStack(spacing: 8) {
-                        Image(systemName: state.context.symbol).font(.system(size: 17, weight: .medium))
-                            .foregroundStyle(ArkeUI.ink).accessibilityHidden(true)
-                        Text(state.context.title)
-                            .arkeText(.contextTitle)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityIdentifier("home.contextTitle")
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 28)
+                VStack(spacing: 4) {
+                    Text(state.context.title)
+                        .arkeText(.contextTitle)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("home.contextTitle")
                     contextDots(index: index, count: options.count)
                 }
-                .frame(maxWidth: .infinity, minHeight: 48)
+                .frame(maxWidth: .infinity, minHeight: 44)
                 .contentShape(Rectangle())
                 .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
                     guard abs(value.translation.width) > abs(value.translation.height) else { return }
@@ -459,21 +410,87 @@ struct HomeView: View {
                     }
                 }
                 contextNeighbor(index + 1, forward: true)
+                Button { addForCurrentContext() } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(ArkeUI.blue, in: Circle())
+                        .contentShape(Circle())
+                }
+                .padding(.leading, 4)
+                .disabled(!places.ready || places.busy)
+                .accessibilityLabel(addLabel)
+                .accessibilityIdentifier("home.addPlace")
             }
-            Button { showingAddPlace = true } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(ArkeUI.blue, in: Circle())
-                    .contentShape(Circle())
-            }
-            .disabled(!places.ready || places.busy)
-            .accessibilityLabel("Adicionar lugar")
-            .accessibilityIdentifier("home.addPlace")
+            if state.detent != .explore || state.context == .planning { tripRow }
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
         .sensoryFeedback(.selection, trigger: contextValue)
+    }
+
+    private var addLabel: String {
+        switch state.context {
+        case .planning: "Adicionar lugar"
+        case .expenses: "Adicionar gasto"
+        case .savings: "Adicionar reserva ou meta"
+        case .reviews: "Avaliar um lugar"
+        case .memories: "Nova memória"
+        }
+    }
+
+    /// O "+" abre o formulário do contexto em que a pessoa está.
+    private func addForCurrentContext() {
+        if state.context == .planning { showingAddPlace = true; return }
+        guard !(pinPlan?.trips.isEmpty ?? true) else { return }
+        if state.detent == .explore { settlePanel(.balanced) }
+        openForm = true
+    }
+
+    private var tripRow: some View {
+        HStack(spacing: 8) {
+            tripChip
+            Spacer(minLength: 8)
+            switch state.context {
+            case .planning:
+                if places.ready {
+                    Text(places.ideas.count == 1 ? "1 lugar" : "\(places.ideas.count) lugares")
+                        .arkeText(.caption).foregroundStyle(.secondary)
+                }
+            case .savings: Label("Só você vê", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary)
+            case .memories: Label("Privado", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary)
+            default: EmptyView()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var tripChip: some View {
+        let trips = pinPlan?.trips ?? []
+        let active = trips.first(where: { $0.id == activeTripID }) ?? trips.first
+        if state.context == .planning || trips.isEmpty {
+            Button { tripPath = []; showingTrips = true } label: { chipLabel("Viagens") }
+                .accessibilityIdentifier("home.trips")
+        } else {
+            Menu {
+                ForEach(trips, id: \.id) { item in Button(item.title) { activeTripID = item.id } }
+                Divider()
+                Button("Gerenciar viagens…") { tripPath = []; showingTrips = true }
+            } label: { chipLabel(active?.title ?? "Viagens") }
+                .accessibilityLabel("Viagem: " + (active?.title ?? ""))
+                .accessibilityIdentifier("home.trips")
+        }
+    }
+
+    private func chipLabel(_ title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "suitcase").font(.system(size: 15))
+            Text(title).arkeText(.label).lineLimit(1)
+            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+        }
+        .padding(.horizontal, 14).frame(minHeight: 44)
+        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+        .contentShape(Capsule())
     }
 
     private func selectContext(_ index: Int) {
@@ -487,16 +504,16 @@ struct HomeView: View {
         let options = TravelContext.allCases
         if options.indices.contains(index) {
             Button { selectContext(index) } label: {
-                Image(systemName: options[index].symbol)
-                    .font(.system(size: 18, weight: .medium))
-                    .frame(width: 44, height: 48)
+                Image(systemName: forward ? "chevron.right" : "chevron.left")
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .foregroundStyle(.secondary)
             .accessibilityLabel((forward ? "Próximo contexto: " : "Contexto anterior: ") + options[index].title)
             .accessibilityIdentifier(forward ? "home.contextNext" : "home.contextPrevious")
         } else {
-            Color.clear.frame(width: 44, height: 48).accessibilityHidden(true)
+            Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
         }
     }
 
@@ -761,10 +778,11 @@ private struct TripJournalView: View {
     let reviews: Bool
     let detailed: Bool
     var preview = false
+    @Binding var selectedTrip: String
+    @Binding var openForm: Bool
     @AppStorage("arke.trip-journal.v1") private var data = Data()
-    @State private var selectedTrip = ""
     @State private var placeID: String?
-    @State private var rating = 5
+    @State private var rating = 0
     @State private var draft = ""
     @State private var error = false
 
@@ -780,24 +798,6 @@ private struct TripJournalView: View {
             ] : ((try? JSONDecoder().decode([Entry].self, from: data)) ?? [])
             let entries = source.filter { $0.tripID == trip.id && ($0.rating != nil) == reviews }
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Menu {
-                        ForEach(plan.trips, id: \.id) { item in
-                            Button(item.title) { selectedTrip = item.id; draft = ""; placeID = nil; error = false }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "suitcase").font(.system(size: 15))
-                            Text(trip.title).arkeText(.label).lineLimit(1)
-                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
-                        }
-                        .padding(.horizontal, 14).frame(minHeight: 44)
-                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
-                    }
-                    .accessibilityLabel("Viagem: " + trip.title)
-                    Spacer()
-                    if !reviews { Label("Privado", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary) }
-                }
                 if reviews {
                     if entries.isEmpty {
                         Text("Nenhuma avaliação nesta viagem.").arkeText(.body).foregroundStyle(.secondary)
@@ -829,27 +829,14 @@ private struct TripJournalView: View {
                             }
                             .padding(8).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 18))
                         }
-                        Button { showingForm = true } label: {
-                            VStack(spacing: 6) {
-                                Image(systemName: "plus").font(.system(size: 22))
-                                Text("Nova memória").arkeText(.caption)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 120)
-                            .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
-                            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5])).foregroundStyle(.tertiary) }
-                        }
-                        .buttonStyle(.plain).disabled(preview).accessibilityIdentifier("memories.add")
                     }
                     if entries.isEmpty { Text("Nenhuma memória nesta viagem.").arkeText(.body).foregroundStyle(.secondary) }
                 }
-                if reviews {
-                    Button { showingForm = true } label: {
-                        Label("Avaliar este lugar", systemImage: "star").arkeText(.button).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 48).background(ArkeUI.blue, in: Capsule())
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain).disabled(preview).accessibilityIdentifier("reviews.add")
-                }
+            }
+            .onChange(of: openForm, initial: true) { _, requested in
+                guard requested else { return }
+                openForm = false
+                draft = ""; placeID = nil; rating = 0; error = false; showingForm = true
             }
             .sheet(isPresented: $showingForm) { formSheet(trip: trip, plan: plan) }
         } else {
@@ -868,58 +855,65 @@ private struct TripJournalView: View {
     }
 
     private func formSheet(trip: LocalPinTrip, plan: LocalPinPlan) -> some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(reviews ? "Avaliar este lugar" : "Nova memória").font(.title.bold()).accessibilityAddTraits(.isHeader)
-                    if reviews {
-                        HStack(spacing: 8) {
-                            ForEach(1...5, id: \.self) { index in
-                                Button { rating = index } label: {
-                                    Image(systemName: index <= rating ? "star.fill" : "star").font(.system(size: 30))
-                                        .foregroundStyle(index <= rating ? Color(uiColor: .systemOrange) : Color.secondary)
-                                        .frame(width: 48, height: 48)
-                                }
-                                .buttonStyle(.plain).accessibilityLabel("\(index) de 5").accessibilityAddTraits(index == rating ? .isSelected : [])
-                            }
-                        }
-                    } else {
-                        Picker("Capa do lugar", selection: $placeID) {
-                            Text("Sem capa").tag(nil as String?)
-                            ForEach(ideas.filter { idea in
-                                idea.cover != nil && plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
-                            }) { idea in Text(idea.name).tag(Optional(idea.id)) }
-                        }
-                    }
-                    TextField(reviews ? "Escreva sua avaliação" : "Escreva sua memória", text: $draft, axis: .vertical)
-                        .lineLimit(4...8).padding(16).frame(minHeight: 120, alignment: .topLeading)
-                        .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
-                    if error { Text("Não foi possível salvar.").arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
-                    Button("Cancelar") { showingForm = false }.frame(maxWidth: .infinity, minHeight: 48).foregroundStyle(.primary)
-                }
-                .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 100)
-            }
-            .scrollDismissesKeyboard(.interactively).scrollIndicators(.hidden)
-            Button {
-                let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !text.isEmpty, text.count <= 1000 else { return }
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let valid = !text.isEmpty && text.count <= 1000 && (!reviews || rating > 0)
+        return ArkeFormSheet(title: reviews ? "Avaliar um lugar" : "Nova memória",
+                      primaryTitle: reviews ? "Salvar avaliação" : "Salvar memória",
+                      primaryEnabled: valid,
+                      primaryIdentifier: reviews ? "reviews.save" : "memories.save",
+                      onCancel: { showingForm = false },
+                      onPrimary: {
+                guard valid else { return }
                 do {
                     var all = data.isEmpty ? [] : try JSONDecoder().decode([Entry].self, from: data)
                     all.append(Entry(tripID: trip.id, text: text, rating: reviews ? rating : nil, placeID: reviews ? nil : placeID))
                     data = try JSONEncoder().encode(all)
                     draft = ""
                     placeID = nil
+                    rating = 0
                     error = false
                     showingForm = false
                 } catch { self.error = true }
-            } label: {
-                Text(reviews ? "Salvar avaliação" : "Salvar memória").arkeText(.button).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 56).background(ArkeUI.blue, in: Capsule())
+            }) {
+            if reviews {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(rating == 0 ? "Toque para dar uma nota" : "Nota \(rating) de 5")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        ForEach(1...5, id: \.self) { index in
+                            Button { rating = index } label: {
+                                Image(systemName: index <= rating ? "star.fill" : "star").font(.system(size: 30))
+                                    .foregroundStyle(index <= rating ? Color(uiColor: .systemOrange) : Color.secondary)
+                                    .frame(width: 48, height: 48)
+                            }
+                            .buttonStyle(.plain).accessibilityLabel("Nota \(index) de 5").accessibilityAddTraits(index == rating ? .isSelected : [])
+                        }
+                    }
+                }
+            } else {
+                ArkeField("Lugar da capa", optional: true) {
+                    Menu {
+                        Button("Nenhum") { placeID = nil }
+                        ForEach(ideas.filter { idea in
+                            idea.cover != nil && plan.pins.contains { $0.ideaID == idea.id && $0.tripID == trip.id }
+                        }) { idea in Button(idea.name) { placeID = idea.id } }
+                    } label: {
+                        HStack {
+                            Text(ideas.first(where: { $0.id == placeID })?.name ?? "Nenhum")
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity).foregroundStyle(Color(uiColor: .label))
+                    }
+                    .accessibilityLabel("Lugar da capa")
+                }
             }
-            .buttonStyle(.plain).disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 1000)
-            .padding(.horizontal, 20).padding(.bottom, 14)
+            ArkeField(reviews ? "Sua avaliação" : "Sua memória") {
+                TextField(reviews ? "O que você achou?" : "O que você quer lembrar?", text: $draft, axis: .vertical)
+                    .lineLimit(4...8).frame(minHeight: 96, alignment: .topLeading)
+            }
+            if error { Text("Não foi possível salvar.").arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
         }
-        .presentationDetents([.large]).presentationDragIndicator(.hidden)
     }
 
     private func journalCover(_ entry: Entry) -> UIImage? {
@@ -951,8 +945,9 @@ private struct LocalFinanceView: View {
     let trips: [LocalPinTrip]
     let savings: Bool
     let detailed: Bool
+    @Binding var selectedTrip: String
+    @Binding var openForm: Bool
     @AppStorage("arke.local-finance.v1") private var stored = Data()
-    @State private var selectedTrip = ""
     @State private var name = ""
     @State private var amount = ""
     @State private var currency = "BRL"
@@ -976,26 +971,6 @@ private struct LocalFinanceView: View {
             let entries = records.filter { $0.trip == trip && (savings ? ["goal", "saving"].contains($0.kind) : ["planned", "incurred"].contains($0.kind)) }
             let goal = entries.first { $0.kind == "goal" }
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Menu {
-                        ForEach(trips, id: \.id) { item in
-                            Button(item.title) { selectedTrip = item.id; clearDraft() }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "suitcase").font(.system(size: 15))
-                            Text(trips.first(where: { $0.id == trip })?.title ?? "Viagem").arkeText(.label).lineLimit(1)
-                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
-                        }
-                        .padding(.horizontal, 14).frame(minHeight: 44)
-                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
-                    }
-                    .accessibilityLabel("Viagem: " + (trips.first(where: { $0.id == trip })?.title ?? ""))
-                    Spacer()
-                    if savings {
-                        Label("Só você vê", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary)
-                    }
-                }
                 if savings { savingsSummary(entries: entries, goal: goal) } else { totals(entries: entries) }
                 if entries.isEmpty {
                     Text(savings ? "Defina uma meta para começar. É só um registro: o Arke não guarda dinheiro."
@@ -1011,17 +986,15 @@ private struct LocalFinanceView: View {
                     }
                     .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
                 }
-                Button { clearDraft(); startForm(goal: goal); showingForm = true } label: {
-                    Label(savings ? (goal == nil ? "Definir meta" : "Registrar valor") : "Adicionar gasto", systemImage: "plus")
-                        .arkeText(.button).foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 48).background(ArkeUI.blue, in: Capsule())
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain).accessibilityIdentifier(savings ? "savings.add" : "expenses.add")
                 if savings {
                     Label("Registro informativo: o Arke não processa pagamentos nem guarda dinheiro.", systemImage: "info.circle")
                         .arkeText(.caption).foregroundStyle(.secondary)
                 }
+            }
+            .onChange(of: openForm, initial: true) { _, requested in
+                guard requested else { return }
+                openForm = false
+                clearDraft(); startForm(goal: goal); showingForm = true
             }
             .sheet(isPresented: $showingForm, onDismiss: { clearDraft() }) { formSheet(trip: trip, goal: goal) }
         } else {
@@ -1105,67 +1078,63 @@ private struct LocalFinanceView: View {
         }
     }
 
+    private func formTitle(goal: Entry?) -> String {
+        if editing != nil { return savings ? "Editar registro" : "Editar gasto" }
+        return savings ? (goal == nil ? "Definir meta" : "Adicionar reserva") : "Adicionar gasto"
+    }
+
+    private func isLocked(_ code: String, goal: Entry?) -> Bool {
+        savings && goal != nil && editing == nil && code != goal?.currency
+    }
+
     private func formSheet(trip: String, goal: Entry?) -> some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(editing == nil ? (savings ? (goal == nil ? "Definir meta" : "Registrar valor") : "Adicionar gasto") : "Editar registro")
-                        .font(.title.bold()).accessibilityAddTraits(.isHeader)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Valor").arkeText(.label).foregroundStyle(.secondary)
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(currencySymbol(currency)).font(.title2).foregroundStyle(.secondary)
-                            TextField("0,00", text: $amount).font(.system(size: 36, weight: .bold)).keyboardType(.decimalPad)
-                                .focused($financeFieldFocused).accessibilityIdentifier("finance.amount")
-                        }
-                    }
-                    .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(currencies, id: \.self) { code in
-                                let locked = savings && (kind == "saving" || goal != nil) && editing == nil && goal != nil && code != goal?.currency
-                                Button { currency = code } label: {
-                                    Text(code).arkeText(.label).padding(.horizontal, 16).frame(minWidth: 64, minHeight: 44)
-                                        .foregroundStyle(currency == code ? Color.white : Color(uiColor: .label))
-                                        .background(currency == code ? AnyShapeStyle(ArkeUI.blue) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)), in: Capsule())
-                                }
-                                .buttonStyle(.plain).disabled(locked).opacity(locked ? 0.4 : 1)
-                                .accessibilityAddTraits(currency == code ? .isSelected : [])
+        ArkeFormSheet(title: formTitle(goal: goal),
+                      primaryTitle: editing == nil ? "Salvar registro" : "Salvar alterações",
+                      primaryIdentifier: "finance.save",
+                      onCancel: { showingForm = false },
+                      onPrimary: { save(trip: trip, goal: goal) }) {
+            ArkeField("Valor") {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Menu {
+                        ForEach(currencies, id: \.self) { code in
+                            Button { currency = code } label: {
+                                if currency == code { Label("\(currencySymbol(code)) · \(code)", systemImage: "checkmark") }
+                                else { Text("\(currencySymbol(code)) · \(code)") }
                             }
+                            .disabled(isLocked(code, goal: goal))
                         }
-                    }.scrollIndicators(.hidden)
-                    if !savings {
-                        TextField("Descrição", text: $name).padding(16).frame(minHeight: 56)
-                            .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 20))
-                    }
-                    Picker("Tipo", selection: $kind) {
-                        if savings {
-                            Text("Meta").tag("goal")
-                            if goal != nil { Text("Valor reservado").tag("saving") }
-                        } else {
-                            Text("Prevista").tag("planned")
-                            Text("Realizada").tag("incurred")
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(currencySymbol(currency)).font(.title2).foregroundStyle(.secondary)
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
                         }
+                        .frame(minHeight: 44).contentShape(Rectangle())
                     }
-                    .pickerStyle(.segmented).disabled(editing != nil && savings)
-                    if let error { Text(error).arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
-                    Label("Registro informativo: o Arke não processa pagamentos.", systemImage: "info.circle")
-                        .arkeText(.caption).foregroundStyle(.secondary)
-                    Button("Cancelar") { showingForm = false }
-                        .frame(maxWidth: .infinity, minHeight: 48).foregroundStyle(.primary)
+                    .accessibilityLabel("Moeda: \(currency)").accessibilityIdentifier("finance.currency")
+                    TextField("0,00", text: $amount).font(.largeTitle.weight(.bold)).monospacedDigit()
+                        .keyboardType(.decimalPad)
+                        .focused($financeFieldFocused).accessibilityIdentifier("finance.amount")
                 }
-                .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 100)
             }
-            .scrollDismissesKeyboard(.interactively).scrollIndicators(.hidden)
-            Button { save(trip: trip, goal: goal) } label: {
-                Text(editing == nil ? "Salvar registro" : "Salvar alterações").arkeText(.button).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 56).background(ArkeUI.blue, in: Capsule())
+            if !savings {
+                ArkeField("Descrição") { TextField("Ex.: jantar", text: $name) }
             }
-            .buttonStyle(.plain).padding(.horizontal, 20).padding(.bottom, 14)
-            .accessibilityIdentifier("finance.save")
+            if savings && goal == nil && editing == nil {
+                EmptyView()
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Tipo").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    ArkeSegmented(options: savings
+                                  ? [(value: "goal", title: "Meta"), (value: "saving", title: "Valor reservado")]
+                                  : [(value: "planned", title: "Prevista"), (value: "incurred", title: "Realizada")],
+                                  selection: $kind, identifier: "finance.kind")
+                        .disabled(editing != nil && savings)
+                }
+            }
+            if let error { Text(error).arkeText(.caption).foregroundStyle(Color(uiColor: .systemRed)) }
+            Label("Registro informativo: o Arke não processa pagamentos.", systemImage: "info.circle")
+                .arkeText(.caption).foregroundStyle(.secondary)
         }
-        .presentationDetents([.large]).presentationDragIndicator(.hidden)
     }
 
     private func currencySymbol(_ code: String) -> String {
