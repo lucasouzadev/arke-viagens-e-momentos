@@ -150,7 +150,7 @@ fun ArkeFormSheet(
             IconButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart).size(48.dp).testTag("sheet.cancel")) {
                 Icon(painterResource(R.drawable.ic_close), contentDescription = "Cancelar")
             }
-            Text(title, Modifier.align(Alignment.Center).semantics { heading() }, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, Modifier.align(Alignment.Center).testTag("sheet.title").semantics { heading() }, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 16.dp),

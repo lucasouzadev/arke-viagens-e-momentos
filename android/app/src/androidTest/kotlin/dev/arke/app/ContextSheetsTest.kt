@@ -37,7 +37,7 @@ class ContextSheetsTest {
                 compose.onNodeWithTag("home.addPlace").performClick()
                 compose.waitUntil(3_000) { compose.onAllNodesWithTag(primary).fetchSemanticsNodes().isNotEmpty() }
                 println("Sheet $title abriu em ${(System.nanoTime() - started) / 1_000_000} ms")
-                compose.onNodeWithText(title).assertExists()
+                compose.onNodeWithTag("sheet.title").assertTextEquals(title)
                 assertEquals("Abriu Adicionar lugar em $label", 0, compose.onAllNodesWithText("Adicionar lugar").fetchSemanticsNodes().size)
                 compose.onNodeWithTag("sheet.cancel").performClick()
                 compose.waitUntil(5_000) { compose.onAllNodesWithTag("sheet.cancel").fetchSemanticsNodes().isEmpty() }

@@ -326,6 +326,7 @@ struct ArkeFormSheet<Content: View>: View {
             ZStack {
                 Text(title).font(.system(size: 17, weight: .semibold)).lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("sheet.title")
                 HStack {
                     Button(action: onCancel) {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))

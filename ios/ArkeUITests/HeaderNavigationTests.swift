@@ -446,15 +446,6 @@ final class HeaderNavigationTests: XCTestCase {
         }
         XCTAssertEqual(field.value as? String, value)
     }
-}
-
-private extension XCUIApplication {
-    /// Arrasta o sheet para baixo a partir do título, como o usuário faz.
-    func swipeDownFromSheetTitle() {
-        let title = staticTexts["place.title"]
-        let start = title.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        start.press(forDuration: 0.1, thenDragTo: coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
-    }
 
     /// O "+" do cabeçalho precisa abrir o sheet DO CONTEXTO atual (e nunca "Adicionar lugar"), rapidamente.
     func testHeaderPlusOpensTheSheetOfTheCurrentContext() {
@@ -475,13 +466,23 @@ private extension XCUIApplication {
             waitForExpectations(timeout: 5)
             let started = Date()
             plus.tap()
-            let title = app.staticTexts[item.title]
+            let title = app.staticTexts["sheet.title"].firstMatch
             XCTAssertTrue(title.waitForExistence(timeout: 3), "Sheet \(item.title) não abriu em 3 s")
-            XCTAssertFalse(app.staticTexts["Adicionar lugar"].exists, "Abriu Adicionar lugar no contexto \(item.label)")
+            XCTAssertEqual(title.label, item.title)
+            XCTAssertNotEqual(title.label, "Adicionar lugar", "Abriu Adicionar lugar no contexto \(item.label)")
             print("Sheet \(item.title) abriu em \(Date().timeIntervalSince(started)) s")
             app.buttons["Cancelar"].firstMatch.tap()
             expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: title)
             waitForExpectations(timeout: 5)
         }
+    }
+}
+
+private extension XCUIApplication {
+    /// Arrasta o sheet para baixo a partir do título, como o usuário faz.
+    func swipeDownFromSheetTitle() {
+        let title = staticTexts["place.title"]
+        let start = title.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
     }
 }
