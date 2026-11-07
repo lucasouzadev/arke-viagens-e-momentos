@@ -28,7 +28,8 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(colorScheme = colors, typography = ArkeTypography) {
                 ArkeHome(places, captureDetails = BuildConfig.DEBUG && intent.getBooleanExtra("capturePlaceDetails", false),
                     captureEdit = BuildConfig.DEBUG && intent.getBooleanExtra("capturePlaceEdit", false),
-                    journalCapture = if (BuildConfig.DEBUG) intent.getStringExtra("captureJournal") else null)
+                    journalCapture = if (BuildConfig.DEBUG) intent.getStringExtra("captureJournal") else null,
+                    seedTrip = BuildConfig.DEBUG && intent.getBooleanExtra("seedTrip", false))
             }
         }
     }

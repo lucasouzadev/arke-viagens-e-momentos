@@ -232,6 +232,13 @@ struct HomeView: View {
         }
         .task {
             pinPlan = try? await places.loadPinPlan()
+            #if DEBUG
+            // Só em Debug: viagem de exemplo em memória para testes de UI dos formulários por contexto.
+            if ProcessInfo.processInfo.arguments.contains("--seed-trip") {
+                pinPlan = try? JSONDecoder().decode(LocalPinPlan.self, from: Data(
+                    #"{"pins":[],"trips":[{"id":"seed","title":"Rio em família"}]}"#.utf8))
+            }
+            #endif
             frameSavedPins()
         }
         .sheet(isPresented: $showingTrips) {

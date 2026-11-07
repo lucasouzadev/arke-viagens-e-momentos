@@ -81,7 +81,7 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false, journalCapture: String? = null) {
+fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false, journalCapture: String? = null, seedTrip: Boolean = false) {
     val placeState by places.state.collectAsState()
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -102,6 +102,8 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
     LaunchedEffect(places) {
         try { pinPlan = places.loadPinPlan() }
         catch (error: Exception) { if (error is kotlinx.coroutines.CancellationException) throw error }
+        // Só em Debug: viagem de exemplo em memória para testes de UI dos formulários por contexto.
+        if (BuildConfig.DEBUG && seedTrip) pinPlan = LocalPinPlan(emptyList(), listOf(LocalPinTrip("seed", "Rio em família")))
     }
     var focusedIdeaID by remember { mutableStateOf<String?>(null) }
     var mapExpanded by remember { mutableStateOf(false) }

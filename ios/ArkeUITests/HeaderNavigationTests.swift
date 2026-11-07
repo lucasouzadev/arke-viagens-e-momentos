@@ -455,4 +455,33 @@ private extension XCUIApplication {
         let start = title.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         start.press(forDuration: 0.1, thenDragTo: coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
     }
+
+    /// O "+" do cabeçalho precisa abrir o sheet DO CONTEXTO atual (e nunca "Adicionar lugar"), rapidamente.
+    func testHeaderPlusOpensTheSheetOfTheCurrentContext() {
+        let app = XCUIApplication()
+        app.launchArguments += ["--seed-trip"]
+        app.launch()
+        let plus = app.buttons["home.addPlace"]
+        XCTAssertTrue(plus.waitForExistence(timeout: 15))
+        let expectations: [(next: Int, label: String, title: String)] = [
+            (1, "Adicionar gasto", "Adicionar gasto"),
+            (1, "Adicionar reserva ou meta", "Definir meta"),
+            (1, "Avaliar um lugar", "Avaliar um lugar"),
+            (1, "Nova memória", "Nova memória"),
+        ]
+        for item in expectations {
+            app.buttons["home.contextNext"].tap()
+            expectation(for: NSPredicate(format: "label == %@", item.label), evaluatedWith: plus)
+            waitForExpectations(timeout: 5)
+            let started = Date()
+            plus.tap()
+            let title = app.staticTexts[item.title]
+            XCTAssertTrue(title.waitForExistence(timeout: 3), "Sheet \(item.title) não abriu em 3 s")
+            XCTAssertFalse(app.staticTexts["Adicionar lugar"].exists, "Abriu Adicionar lugar no contexto \(item.label)")
+            print("Sheet \(item.title) abriu em \(Date().timeIntervalSince(started)) s")
+            app.buttons["Cancelar"].firstMatch.tap()
+            expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: title)
+            waitForExpectations(timeout: 5)
+        }
+    }
 }
