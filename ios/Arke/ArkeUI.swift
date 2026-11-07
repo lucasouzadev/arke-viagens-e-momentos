@@ -362,3 +362,145 @@ struct ArkeFormSheet<Content: View>: View {
         .accessibilityAction(.escape) { onCancel() }
     }
 }
+
+
+/// Selo (moldura com perfurações) para fotos de capa: o papel envolve a foto, que preenche todo o espaço reservado.
+struct ArkeStampShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path(rect)
+        let radius: CGFloat = 3
+        let spacing: CGFloat = max(10, min(rect.width, rect.height) / 7)
+        var x = rect.minX + spacing
+        while x < rect.maxX - radius {
+            path.addEllipse(in: CGRect(x: x - radius, y: rect.minY - radius, width: radius * 2, height: radius * 2))
+            path.addEllipse(in: CGRect(x: x - radius, y: rect.maxY - radius, width: radius * 2, height: radius * 2))
+            x += spacing
+        }
+        var y = rect.minY + spacing
+        while y < rect.maxY - radius {
+            path.addEllipse(in: CGRect(x: rect.minX - radius, y: y - radius, width: radius * 2, height: radius * 2))
+            path.addEllipse(in: CGRect(x: rect.maxX - radius, y: y - radius, width: radius * 2, height: radius * 2))
+            y += spacing
+        }
+        return path
+    }
+}
+
+struct ArkeStamp: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let image: UIImage?
+    var symbol = "photo"
+    var body: some View {
+        ZStack {
+            Rectangle().fill(colorScheme == .dark ? Color(white: 0.92) : Color.white)
+            Group {
+                if let image {
+                    Image(uiImage: image).resizable().scaledToFill()
+                } else {
+                    Color(uiColor: .tertiarySystemFill)
+                        .overlay { Image(systemName: symbol).font(.system(size: 22)).foregroundStyle(.secondary) }
+                }
+            }
+            .padding(6)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+        }
+        .clipShape(ArkeStampShape(), style: FillStyle(eoFill: true))
+        .overlay(ArkeStampShape().stroke(Color.black.opacity(0.08), lineWidth: 0.5))
+        .accessibilityHidden(true)
+    }
+}
+
+/// Estado vazio de cartão: ícone, título, texto e uma ação (a mesma do "+").
+struct ArkeEmptyState: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let symbol: String
+    let title: String
+    let message: String
+    var actionTitle: String?
+    var action: (() -> Void)?
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: symbol).font(.system(size: 26)).foregroundStyle(ArkeUI.ink)
+                .frame(width: 56, height: 56).background(Color(uiColor: .tertiarySystemFill), in: Circle())
+                .accessibilityHidden(true)
+            Text(title).font(.system(size: 17, weight: .semibold))
+            Text(message).font(.system(size: 15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            if let actionTitle, let action {
+                ArkeFooterButton(actionTitle, systemImage: "plus", action: action).padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 20)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// Botão secundário de rodapé do cartão: cápsula de vidro (iOS 26) 44 pt, texto 15 semibold, centralizado.
+struct ArkeFooterButton: View {
+    let title: String
+    var systemImage: String?
+    let action: () -> Void
+    init(_ title: String, systemImage: String? = nil, action: @escaping () -> Void) {
+        self.title = title; self.systemImage = systemImage; self.action = action
+    }
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if let systemImage { Image(systemName: systemImage).font(.system(size: 14, weight: .semibold)) }
+                Text(title).font(.system(size: 15, weight: .semibold))
+            }
+            .foregroundStyle(Color(uiColor: .label))
+            .padding(.horizontal, 18).frame(minHeight: 44)
+            .arkeGlassCapsule().contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+
+/// Deslizar para a esquerda revela "Excluir" (D-7). Também exposto como ação de acessibilidade.
+struct ArkeSwipeToDelete: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    let onDelete: () -> Void
+    @State private var open = false
+    @State private var drag: CGFloat = 0
+    private let width: CGFloat = 88
+
+    private var offset: CGFloat { min(0, max(-width, (open ? -width : 0) + drag)) }
+
+    func body(content: Content) -> some View {
+        ZStack(alignment: .trailing) {
+            Button {
+                withAnimation(.snappy(duration: 0.2)) { open = false; drag = 0 }
+                onDelete()
+            } label: {
+                Text("Excluir").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: width).frame(maxHeight: .infinity)
+                    .background(Color(uiColor: .systemRed))
+            }
+            .buttonStyle(.plain).opacity(offset < -4 ? 1 : 0).accessibilityHidden(true)
+            content
+                .background(ArkeUI.insetSurface(colorScheme))
+                .offset(x: offset)
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 20)
+                        .onChanged { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                            drag = value.translation.width
+                        }
+                        .onEnded { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else { drag = 0; return }
+                            withAnimation(.snappy(duration: 0.2)) {
+                                open = (open ? -width : 0) + value.translation.width < -width / 2
+                                drag = 0
+                            }
+                        }
+                )
+        }
+        .clipped()
+        .accessibilityAction(named: "Excluir") { onDelete() }
+    }
+}
+extension View {
+    func arkeSwipeToDelete(_ onDelete: @escaping () -> Void) -> some View { modifier(ArkeSwipeToDelete(onDelete: onDelete)) }
+}

@@ -5,6 +5,7 @@ struct PlaceIdeasContent: View {
     @ObservedObject var store: PlaceIdeasStore
     let onDelete: (String) -> Void
     let onPin: (PlaceIdea) -> Void
+    let onAdd: () -> Void
     var onDetailsVisibilityChanged: (Bool) -> Void = { _ in }
     @Binding var focusedID: String?
     let detent: PanelDetent
@@ -21,8 +22,10 @@ struct PlaceIdeasContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if store.ideas.isEmpty {
-                Text("Guarde seu próximo lugar com +").arkeText(.body)
-                    .foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 48)
+                ArkeEmptyState(symbol: "mappin.and.ellipse", title: "Seu primeiro lugar",
+                               message: "Guarde ideias antes mesmo de ter uma viagem.",
+                               actionTitle: "Adicionar lugar", action: onAdd)
+                    .accessibilityIdentifier("home.emptyPlaces")
             } else if detent == .explore {
                 ScrollView(.horizontal) {
                     HStack(spacing: 12) {
@@ -52,17 +55,8 @@ struct PlaceIdeasContent: View {
                 // Cartão do lugar como no protótipo: selo, nome, endereço, posição, nota, Detalhes e Marcar no mapa.
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .top, spacing: 12) {
-                        Group {
-                            if let cover = idea.cover, let image = UIImage(data: cover) {
-                                Image(uiImage: image).resizable().scaledToFill()
-                            } else {
-                                Image(systemName: "photo").font(.system(size: 22)).foregroundStyle(.secondary)
-                            }
-                        }
-                        .frame(width: 76, height: 76)
-                        .background(ArkeUI.sheetSurface(colorScheme))
-                        .clipShape(.rect(cornerRadius: 10))
-                        .accessibilityHidden(true)
+                        ArkeStamp(image: idea.cover.flatMap { UIImage(data: $0) }, symbol: "mappin")
+                            .frame(width: 84, height: 84)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(idea.name).arkeText(.contextTitle).lineLimit(1)
                                 .accessibilityIdentifier("home.ideaName")
@@ -77,22 +71,23 @@ struct PlaceIdeasContent: View {
                     }
                     HStack(spacing: 8) {
                         Button { selected = idea } label: {
-                            Text("Detalhes").arkeText(.label)
+                            Text("Detalhes").font(.system(size: 15, weight: .semibold))
                                 .frame(maxWidth: .infinity, minHeight: 44)
-                                .background(ArkeUI.sheetSurface(colorScheme), in: Capsule())
+                                .arkeGlassCapsule()
                                 .contentShape(Capsule())
                         }
                         .accessibilityLabel("Ver detalhes de \(idea.name)")
                         .accessibilityIdentifier("place.open.\(idea.id)")
                         Button { onPin(idea) } label: {
-                            Label("Marcar no mapa", systemImage: "mappin").arkeText(.label)
+                            Label("Marcar no mapa", systemImage: "mappin").font(.system(size: 15, weight: .semibold))
                                 .frame(maxWidth: .infinity, minHeight: 44)
+                                .arkeGlassCapsule()
                                 .contentShape(Capsule())
                         }
                         .accessibilityIdentifier("place.pin.\(idea.id)")
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(colorScheme == .dark ? Color(uiColor: .label) : ArkeUI.blue)
+                    .foregroundStyle(Color(uiColor: .label))
                 }
                 .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                 .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 26))
@@ -184,6 +179,10 @@ struct PlaceDetails: View {
                     VStack(alignment: .leading, spacing: 16) {
                         if let index {
                             let idea = ideas[index]
+                            if let cover = idea.cover, let image = UIImage(data: cover) {
+                                ArkeStamp(image: image).frame(width: 112, height: 112)
+                                    .accessibilityHidden(false).accessibilityLabel("Foto de capa de \(idea.name)")
+                            }
                             // Sheet contínuo: o nome é o título e rola com o conteúdo.
                             Text(idea.name).font(.title.bold()).accessibilityAddTraits(.isHeader)
                                 .fixedSize(horizontal: false, vertical: true)

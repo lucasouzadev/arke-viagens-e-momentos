@@ -84,7 +84,7 @@ struct HomeView: View {
                                         PlaceIdeasContent(store: places, onDelete: { id in
                                             savedNotice = false
                                             Task { await places.remove(id: id) }
-                                        }, onPin: { pinIdea = $0 }, onDetailsVisibilityChanged: { showingSavedDetails = $0 }, focusedID: $focusedIdeaID, detent: state.detent)
+                                        }, onPin: { pinIdea = $0 }, onAdd: { showingAddPlace = true }, onDetailsVisibilityChanged: { showingSavedDetails = $0 }, focusedID: $focusedIdeaID, detent: state.detent)
                                     } else {
                                         if state.context == .expenses || state.context == .savings {
                                             if state.detent == .explore {
@@ -109,7 +109,9 @@ struct HomeView: View {
                                                                 selectedTrip: $activeTripID, openForm: $openForm)
                                                     .tint(Color(uiColor: .label)).id(state.context.rawValue)
                                                 if state.detent == .balanced {
-                                                    Button("Ver detalhes") { settlePanel(.details) }
+                                                    ArkeFooterButton("Mostrar tudo", systemImage: "chevron.up") { settlePanel(.details) }
+                                                        .frame(maxWidth: .infinity)
+                                                        .accessibilityIdentifier("home.showAll")
                                                 }
                                             }
                                         }
@@ -192,7 +194,7 @@ struct HomeView: View {
         } message: { Text(location.message ?? "") }
         .arkeText(.body)
         .scrollIndicators(.hidden)
-        .padding(16)
+        .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
         .background(Color(uiColor: .systemGroupedBackground))
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
@@ -807,7 +809,8 @@ private struct TripJournalView: View {
             VStack(alignment: .leading, spacing: 12) {
                 if reviews {
                     if entries.isEmpty {
-                        Text("Nenhuma avaliação nesta viagem.").arkeText(.body).foregroundStyle(.secondary)
+                        ArkeEmptyState(symbol: "star", title: "Nenhuma avaliação",
+                                       message: "Conte o que achou dos lugares desta viagem.", actionTitle: "Avaliar um lugar") { openForm = true }
                     }
                     ForEach(detailed ? entries.reversed().map { $0 } : Array(entries.suffix(1))) { entry in
                         VStack(alignment: .leading, spacing: 6) {
@@ -823,21 +826,16 @@ private struct TripJournalView: View {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                         ForEach(shown) { entry in
                             VStack(alignment: .leading, spacing: 6) {
-                                Group {
-                                    if let image = journalCover(entry) {
-                                        Image(uiImage: image).resizable().scaledToFill()
-                                    } else {
-                                        Image(systemName: "photo").font(.system(size: 22)).foregroundStyle(.secondary)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity).frame(height: 84).background(ArkeUI.sheetSurface(colorScheme))
-                                .clipShape(.rect(cornerRadius: 10)).accessibilityHidden(true)
+                                ArkeStamp(image: journalCover(entry)).frame(maxWidth: .infinity).frame(height: 104)
                                 Text(entry.text).arkeText(.caption).lineLimit(2)
                             }
                             .padding(8).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 18))
                         }
                     }
-                    if entries.isEmpty { Text("Nenhuma memória nesta viagem.").arkeText(.body).foregroundStyle(.secondary) }
+                    if entries.isEmpty {
+                        ArkeEmptyState(symbol: "photo.on.rectangle", title: "Nenhuma memória",
+                                       message: "Guarde um momento desta viagem.", actionTitle: "Nova memória") { openForm = true }
+                    }
                 }
             }
             .onChange(of: openForm, initial: true) { _, requested in
@@ -963,6 +961,7 @@ private struct LocalFinanceView: View {
     @State private var editing: UUID?
     @State private var error: String?
     @State private var showingForm = false
+    @State private var deletingID: UUID?
 
     private let currencies = ["BRL", "USD", "EUR", "GBP", "JPY", "KWD"]
 
@@ -980,15 +979,17 @@ private struct LocalFinanceView: View {
             VStack(alignment: .leading, spacing: 12) {
                 if savings { savingsSummary(entries: entries, goal: goal) } else { totals(entries: entries) }
                 if entries.isEmpty {
-                    Text(savings ? "Defina uma meta para começar. É só um registro: o Arke não guarda dinheiro."
-                                 : "Nenhum gasto nesta viagem ainda.")
-                        .arkeText(.body).foregroundStyle(.secondary)
+                    ArkeEmptyState(symbol: savings ? "target" : "receipt",
+                                   title: savings ? "Defina uma meta" : "Nenhum gasto ainda",
+                                   message: savings ? "Registre quanto quer guardar. O Arke não movimenta dinheiro."
+                                                    : "Anote o que você prevê gastar nesta viagem.",
+                                   actionTitle: savings ? "Definir meta" : "Adicionar gasto") { openForm = true }
                 } else {
                     VStack(spacing: 0) {
                         let shown = detailed ? entries : Array(entries.suffix(3))
                         ForEach(Array(shown.enumerated()), id: \.element.id) { index, entry in
                             if index > 0 { Divider().padding(.leading, 56) }
-                            recordRow(entry)
+                            recordRow(entry).arkeSwipeToDelete { deletingID = entry.id }
                         }
                     }
                     .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
@@ -998,6 +999,10 @@ private struct LocalFinanceView: View {
                         .arkeText(.caption).foregroundStyle(.secondary)
                 }
             }
+            .alert("Excluir registro?", isPresented: Binding(get: { deletingID != nil }, set: { if !$0 { deletingID = nil } })) {
+                Button("Excluir", role: .destructive) { deleteRecord() }
+                Button("Cancelar", role: .cancel) { deletingID = nil }
+            } message: { Text("Este registro some deste aparelho.") }
             .onChange(of: openForm, initial: true) { _, requested in
                 guard requested else { return }
                 openForm = false
@@ -1007,6 +1012,13 @@ private struct LocalFinanceView: View {
         } else {
             Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
         }
+    }
+
+    private func deleteRecord() {
+        guard let id = deletingID else { return }
+        deletingID = nil
+        let remaining = records.filter { $0.id != id }
+        if let encoded = try? JSONEncoder().encode(remaining) { stored = encoded }
     }
 
     private func startForm(goal: Entry?) {
