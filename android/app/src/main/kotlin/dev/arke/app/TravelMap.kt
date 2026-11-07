@@ -126,6 +126,7 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
     var matches by remember { mutableStateOf<List<android.location.Address>>(emptyList()) }
     var plan by remember { mutableStateOf<LocalPinPlan?>(null) }
     var point by remember { mutableStateOf<LatLng?>(null) }
+    var approximateAddress by remember { mutableStateOf<String?>(null) }
     var tripID by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf("") }
     var creating by remember { mutableStateOf(false) }
@@ -195,6 +196,27 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
         } catch (failure: Exception) {
             if (failure is kotlinx.coroutines.CancellationException) throw failure
             error = "Não foi possível abrir os Pins."
+        }
+    }
+    // ADR-014: geocodificação reversa nativa, só após o ponto parar de mudar; o texto não é salvo nem enviado a ninguém.
+    LaunchedEffect(point) {
+        approximateAddress = null
+        val coordinate = point ?: return@LaunchedEffect
+        kotlinx.coroutines.delay(600)
+        approximateAddress = try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                @Suppress("DEPRECATION")
+                if (android.location.Geocoder.isPresent()) {
+                    android.location.Geocoder(context).getFromLocation(coordinate.latitude, coordinate.longitude, 1)
+                        ?.firstOrNull()?.let { address ->
+                            listOfNotNull(address.thoroughfare ?: address.featureName, address.subLocality ?: address.locality)
+                                .filter { it.isNotBlank() }.joinToString(", ").ifEmpty { null }
+                        }
+                } else null
+            }
+        } catch (failure: Exception) {
+            if (failure is kotlinx.coroutines.CancellationException) throw failure
+            null
         }
     }
     val canConfirm = point != null && plan != null && !busy && (!creating || title.isNotBlank())
@@ -294,7 +316,7 @@ fun PinEditor(idea: PlaceIdea, places: PlaceIdeasViewModel, onClose: () -> Unit,
                             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     }
                     Text(
-                        point?.let { "Ponto marcado: %.4f, %.4f".format(java.util.Locale.US, it.latitude, it.longitude) } ?: "Nenhum ponto marcado ainda",
+                        point?.let { approximateAddress?.let { place -> "Perto de $place" } ?: "Ponto marcado no mapa" } ?: "Nenhum ponto marcado ainda",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.testTag("pin.point"),
                     )

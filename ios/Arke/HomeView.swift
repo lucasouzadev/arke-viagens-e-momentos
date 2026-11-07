@@ -1283,6 +1283,8 @@ private struct PinEditor: View {
     @State private var creating = false
     @State private var busy = false
     @State private var error: String?
+    @State private var approximateAddress: String?
+    @State private var geocodeTask: Task<Void, Never>?
 
     private var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var canConfirm: Bool { point != nil && plan != nil && !busy && !(creating && trimmedTitle.isEmpty) }
@@ -1296,8 +1298,25 @@ private struct PinEditor: View {
     }
 
     private var pointDescription: String {
-        guard let point else { return "Nenhum ponto marcado ainda" }
-        return String(format: "Ponto marcado: %.4f, %.4f", point.latitude, point.longitude)
+        guard point != nil else { return "Nenhum ponto marcado ainda" }
+        if let approximateAddress { return "Perto de \(approximateAddress)" }
+        return "Ponto marcado no mapa"
+    }
+
+    /// ADR-014: geocodificação reversa nativa, só após parar de mover o mapa; o texto não é salvo nem enviado a ninguém.
+    private func lookUpAddress(near coordinate: CLLocationCoordinate2D) {
+        geocodeTask?.cancel()
+        approximateAddress = nil
+        geocodeTask = Task {
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            guard !Task.isCancelled else { return }
+            let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            let marks = try? await CLGeocoder().reverseGeocodeLocation(location)
+            guard !Task.isCancelled, let mark = marks?.first else { return }
+            let parts = [mark.thoroughfare ?? mark.name, mark.subLocality ?? mark.locality]
+                .compactMap { $0 }.filter { !$0.isEmpty }
+            approximateAddress = parts.isEmpty ? nil : parts.joined(separator: ", ")
+        }
     }
 
     var body: some View {
@@ -1305,6 +1324,9 @@ private struct PinEditor: View {
             Map(position: $camera)
                 .onMapCameraChange(frequency: .continuous) { update in
                     if camera.positionedByUser { point = update.region.center }
+                }
+                .onMapCameraChange(frequency: .onEnd) { update in
+                    if camera.positionedByUser { lookUpAddress(near: update.region.center) }
                 }
                 .ignoresSafeArea()
                 .accessibilityLabel("Mapa. Mova para posicionar a marca no centro.")
@@ -1447,6 +1469,7 @@ private struct PinEditor: View {
         point = coordinate
         camera = .region(MKCoordinateRegion(center: coordinate,
             span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)))
+        lookUpAddress(near: coordinate)
     }
 
     private func save() {
