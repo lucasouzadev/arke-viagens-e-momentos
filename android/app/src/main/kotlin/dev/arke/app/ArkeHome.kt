@@ -209,7 +209,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                     if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState,
                                         onUpdate = places::update, onEditCancel = places::load,
                                         onDetailsVisibilityChanged = { showingSavedDetails = it },
-                                        onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }, detent = state.detent) { id -> savedNotice = false; places.remove(id) }
+                                        onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }, detent = state.detent, onAdd = { showingAddPlace = true }) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         if (state.context == TravelContext.EXPENSES || state.context == TravelContext.SAVINGS) {
                                             if (state.detent == PanelDetent.EXPLORE) {
@@ -233,7 +233,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                                         selectedTripID = activeTripID, openForm = openForm, onFormOpened = { openForm = false })
                                                 }
                                                 if (state.detent == PanelDetent.BALANCED) {
-                                                    TextButton(onClick = { state = state.setDetent(PanelDetent.DETAILS) }) { Text("Ver detalhes") }
+                                                    ArkeFooterButton("Mostrar tudo", Modifier.align(Alignment.CenterHorizontally).testTag("home.showAll"), R.drawable.ic_expand) { state = state.setDetent(PanelDetent.DETAILS) }
                                                 }
                                             }
                                         }
@@ -621,7 +621,8 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
     val entries = source.filter { it.optString("trip") == trip.id && (it.optInt("rating") > 0) == reviews }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (reviews) {
-            if (entries.isEmpty()) Text("Nenhuma avaliação nesta viagem.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (entries.isEmpty()) ArkeEmptyState(R.drawable.ic_star, "Nenhuma avaliação", "Conte o que achou dos lugares desta viagem.",
+                actionTitle = "Avaliar um lugar", onAction = { draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true })
             (if (detailed) entries.asReversed() else entries.takeLast(1)).forEach { entry ->
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(arkeInsetColor()).padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -637,7 +638,7 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
                     rowCells.forEach { entry ->
                         Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(arkeInsetColor()).padding(8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(84.dp))
+                            JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(104.dp))
                             Text(entry.getString("text"), maxLines = 2, style = MaterialTheme.typography.bodySmall,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
@@ -645,7 +646,8 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
                     if (rowCells.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
-            if (entries.isEmpty()) Text("Nenhuma memória nesta viagem.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (entries.isEmpty()) ArkeEmptyState(R.drawable.ic_photo, "Nenhuma memória", "Guarde um momento desta viagem.",
+                actionTitle = "Nova memória", onAction = { draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true })
         }
     }
     if (showingForm) {
@@ -710,11 +712,7 @@ private fun JournalMemoryCover(ideas: List<PlaceIdea>, placeID: String, preview:
         if (preview) android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_arke)
         else cover?.let { decodePlaceCover(it) }
     }
-    Box(modifier.clip(RoundedCornerShape(10.dp)).background(arkeSheetColor()), contentAlignment = Alignment.Center) {
-        if (image != null) androidx.compose.foundation.Image(image.asImageBitmap(), null, Modifier.fillMaxSize(),
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop)
-        else Icon(painterResource(R.drawable.ic_photo), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
+    ArkeStamp(image, modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -731,6 +729,7 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, det
         return
     }
     var showingForm by remember(trip.id, savings) { mutableStateOf(false) }
+    var deletingID by remember(trip.id, savings) { mutableStateOf<String?>(null) }
     var kind by remember(trip.id, savings) { mutableStateOf("") }
     var name by remember(trip.id, savings) { mutableStateOf("") }
     var currency by remember(trip.id, savings) { mutableStateOf("BRL") }
@@ -801,14 +800,22 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, det
             }
         }
         if (entries.isEmpty()) {
-            Text(if (savings) "Defina uma meta para começar. É só um registro: o Arke não guarda dinheiro." else "Nenhum gasto nesta viagem ainda.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ArkeEmptyState(if (savings) R.drawable.ic_target else R.drawable.ic_receipt,
+                if (savings) "Defina uma meta" else "Nenhum gasto ainda",
+                if (savings) "Registre quanto quer guardar. O Arke não movimenta dinheiro." else "Anote o que você prevê gastar nesta viagem.",
+                actionTitle = if (savings) "Definir meta" else "Adicionar gasto",
+                onAction = {
+                    clearDraft()
+                    if (savings) { kind = if (goal == null) "goal" else "saving"; if (goalCurrency != null) currency = goalCurrency } else kind = "planned"
+                    showingForm = true
+                })
         } else {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(arkeInsetColor())) {
                 (if (detailed) entries else entries.takeLast(3)).forEachIndexed { i, entry ->
                     if (i > 0) HorizontalDivider(Modifier.padding(start = 56.dp))
                     val code = entry.getString("currency")
                     val label = "${entry.getString("name")}, ${kindLabel(entry.getString("kind"))}, ${money(entry.getLong("amount"), code)}"
+                    ArkeSwipeToDelete({ deletingID = entry.getString("id") }) {
                     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable {
                         editing = entry.getString("id"); kind = entry.getString("kind"); name = entry.getString("name")
                         currency = code; amount = display(entry.getLong("amount"), code); error = null; showingForm = true
@@ -822,11 +829,25 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, det
                         }
                         Text(money(entry.getLong("amount"), code), fontWeight = FontWeight.SemiBold)
                     }
+                    }
                 }
             }
         }
         if (savings) Text("Registro informativo: o Arke não processa pagamentos nem guarda dinheiro.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+
+    deletingID?.let { id ->
+        AlertDialog(onDismissRequest = { deletingID = null },
+            title = { Text("Excluir registro?") }, text = { Text("Este registro some deste aparelho.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val remaining = org.json.JSONArray(records.filter { it.optString("id") != id }).toString()
+                    if (prefs.edit().putString("records", remaining).commit()) raw = remaining
+                    deletingID = null
+                }, modifier = Modifier.testTag("finance.deleteConfirm")) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deletingID = null }) { Text("Cancelar") } })
     }
 
     if (showingForm) {

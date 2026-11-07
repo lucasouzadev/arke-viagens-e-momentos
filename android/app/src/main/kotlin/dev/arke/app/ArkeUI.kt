@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -160,4 +161,54 @@ fun ArkeFormSheet(
             Text(primaryTitle, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
     }
+}
+
+/** Selo para fotos de capa: o papel envolve a foto, que preenche todo o espaço reservado. */
+@Composable
+fun ArkeStamp(image: android.graphics.Bitmap?, modifier: Modifier = Modifier, symbol: Int = R.drawable.ic_photo) {
+    val paper = if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFFEBEBEB) else Color.White
+    Box(modifier.arkeStamp(paper).padding(6.dp).clip(RoundedCornerShape(2.dp)).background(arkeFieldColor()),
+        contentAlignment = Alignment.Center) {
+        if (image != null) androidx.compose.foundation.Image(image.asImageBitmap(), null, Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+        else Icon(painterResource(symbol), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** Botão secundário de rodapé do cartão: tonal, 44 dp, centralizado. */
+@Composable
+fun ArkeFooterButton(title: String, modifier: Modifier = Modifier, icon: Int? = null, onClick: () -> Unit) {
+    FilledTonalButton(onClick = onClick, modifier = modifier.heightIn(min = 48.dp)) {
+        if (icon != null) { Icon(painterResource(icon), null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)) }
+        Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** Estado vazio de cartão: ícone, título, texto e uma ação (a mesma do "+"). */
+@Composable
+fun ArkeEmptyState(icon: Int, title: String, message: String, actionTitle: String? = null, tag: String? = null, onAction: () -> Unit = {}) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 20.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(56.dp).clip(androidx.compose.foundation.shape.CircleShape).background(arkeFieldColor()), contentAlignment = Alignment.Center) {
+            Icon(painterResource(icon), null, tint = if (androidx.compose.foundation.isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary)
+        }
+        Text(title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(message, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        if (actionTitle != null) ArkeFooterButton(actionTitle, Modifier.padding(top = 4.dp), R.drawable.ic_add, onAction)
+    }
+}
+
+/** Deslizar para a esquerda pede para excluir (D-7). Sempre volta à posição; a confirmação é do chamador. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArkeSwipeToDelete(onDelete: () -> Unit, content: @Composable () -> Unit) {
+    val state = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+        if (value == SwipeToDismissBoxValue.EndToStart) onDelete()
+        false
+    })
+    SwipeToDismissBox(state, enableDismissFromStartToEnd = false, backgroundContent = {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.error).padding(end = 24.dp), contentAlignment = Alignment.CenterEnd) {
+            Text("Excluir", color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.SemiBold)
+        }
+    }) { Box(Modifier.background(arkeInsetColor())) { content() } }
 }

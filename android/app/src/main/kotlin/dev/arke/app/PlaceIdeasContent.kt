@@ -50,7 +50,7 @@ import dev.arke.core.PlaceIdea
 
 @Composable
 fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea, String) -> Unit, onEditCancel: () -> Unit,
-    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onFocus: (String?) -> Unit, onPin: (PlaceIdea) -> Unit, detent: PanelDetent, onDelete: (String) -> Unit) {
+    onDetailsVisibilityChanged: (Boolean) -> Unit = {}, onFocus: (String?) -> Unit, onPin: (PlaceIdea) -> Unit, detent: PanelDetent, onAdd: () -> Unit = {}, onDelete: (String) -> Unit) {
     var focusedID by rememberSaveable { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf<PlaceIdea?>(null) }
     var selectedID by rememberSaveable { mutableStateOf<String?>(null) }
@@ -72,8 +72,8 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
     }
     DisposableEffect(Unit) { onDispose { onDetailsVisibilityChanged(false) } }
     if (state.ideas.isEmpty()) {
-        Text("Guarde seu próximo lugar com +", style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), textAlign = TextAlign.Center)
+        ArkeEmptyState(R.drawable.ic_pin, "Seu primeiro lugar", "Guarde ideias antes mesmo de ter uma viagem.",
+            actionTitle = "Adicionar lugar", tag = "home.emptyPlaces", onAction = onAdd)
     } else if (detent == PanelDetent.EXPLORE) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             state.ideas.forEach { idea ->
@@ -111,10 +111,7 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
             }) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                        Box(Modifier.size(76.dp).clip(RoundedCornerShape(12.dp)).background(arkeSheetColor()), contentAlignment = Alignment.Center) {
-                            if (cover != null) Image(cover.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                            else Icon(painterResource(R.drawable.ic_photo), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        ArkeStamp(cover, Modifier.size(84.dp), R.drawable.ic_pin)
                         Column(Modifier.weight(1f)) {
                             Text(idea.name, style = MaterialTheme.typography.titleMedium, maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.testTag("home.ideaName"))
@@ -128,11 +125,10 @@ fun PlaceIdeasContent(state: PlaceIdeasUiState, onUpdate: (PlaceDraft, PlaceIdea
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         val openLabel = stringResource(R.string.view_place_details_label, idea.name)
-                        TextButton(onClick = { selectedID = idea.id },
-                            colors = ButtonDefaults.textButtonColors(contentColor = ink),
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).background(arkeSheetColor(), CircleShape)
-                                .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) { Text("Detalhes") }
-                        TextButton(onClick = { onPin(idea) }, colors = ButtonDefaults.textButtonColors(contentColor = ink),
+                        FilledTonalButton(onClick = { selectedID = idea.id },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                .testTag("place.open.${idea.id}").semantics { contentDescription = openLabel }) { Text("Detalhes", fontWeight = FontWeight.SemiBold) }
+                        FilledTonalButton(onClick = { onPin(idea)},
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("place.pin.${idea.id}")) {
                             Icon(painterResource(R.drawable.ic_pin), null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
