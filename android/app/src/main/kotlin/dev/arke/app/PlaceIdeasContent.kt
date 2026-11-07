@@ -207,6 +207,8 @@ fun PlaceDetails(ideas: List<PlaceIdea>, initialID: String, onClose: () -> Unit,
                     if (index >= 0) {
                         val idea = ideas[index]
                         val positionLabel = stringResource(R.string.place_position, index + 1, ideas.size)
+                        val detailCover = remember(idea.cover) { decodePlaceCover(idea.cover) }
+                        if (detailCover != null) ArkeStamp(detailCover, Modifier.size(112.dp).semantics { contentDescription = "Foto de capa de ${idea.name}" })
                         Text(idea.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
                             modifier = Modifier.fillMaxWidth().testTag("detail.name").semantics {
                                 heading(); liveRegion = LiveRegionMode.Polite; stateDescription = positionLabel

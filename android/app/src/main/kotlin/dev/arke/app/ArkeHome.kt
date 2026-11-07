@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -607,7 +608,7 @@ private fun Stars(rating: Int) {
         modifier = Modifier.semantics { contentDescription = "Nota $rating de 5" })
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, reviews: Boolean, detailed: Boolean, preview: Boolean = false,
                                selectedTripID: String = "", openForm: Boolean = false, onFormOpened: () -> Unit = {}) {
@@ -628,6 +629,7 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
     var placeID by remember(trip.id, reviews) { mutableStateOf("") }
     var failed by remember(trip.id, reviews) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var deletingEntry by remember(trip.id, reviews) { mutableStateOf<org.json.JSONObject?>(null) }
     val photos = remember(trip.id, reviews) { mutableStateListOf<ByteArray>() }
     var photoError by remember(trip.id, reviews) { mutableStateOf(false) }
     val photoPicker = rememberLauncherForActivityResult(
@@ -661,11 +663,15 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
             if (entries.isEmpty()) ArkeEmptyState(R.drawable.ic_star, "Nenhuma avaliação", "Conte o que achou dos lugares desta viagem.",
                 actionTitle = "Avaliar um lugar", onAction = { draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true })
             (if (detailed) entries.asReversed() else entries.takeLast(1)).forEach { entry ->
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(arkeInsetColor()).padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Stars(entry.getInt("rating"))
-                    Text(entry.getString("text"), maxLines = if (detailed) Int.MAX_VALUE else 3,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Box(Modifier.clip(RoundedCornerShape(22.dp))) {
+                    ArkeSwipeToDelete({ deletingEntry = entry }) {
+                        Column(Modifier.fillMaxWidth().background(arkeInsetColor()).padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Stars(entry.getInt("rating"))
+                            Text(entry.getString("text"), maxLines = if (detailed) Int.MAX_VALUE else 3,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
                 }
             }
         } else {
@@ -673,7 +679,9 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
             shown.chunked(2).forEach { rowCells ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     rowCells.forEach { entry ->
-                        Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(arkeInsetColor()).padding(8.dp),
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(arkeInsetColor())
+                            .combinedClickable(onClick = {}, onLongClickLabel = "Excluir memória", onLongClick = { deletingEntry = entry })
+                            .padding(8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(104.dp),
                                 photo = entry.optJSONArray("photos")?.optString(0)?.takeIf { it.isNotEmpty() },
@@ -689,6 +697,19 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
                 actionTitle = "Nova memória", onAction = { draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true })
         }
     }
+    deletingEntry?.let { target ->
+        AlertDialog(onDismissRequest = { deletingEntry = null },
+            title = { Text(if (reviews) "Excluir avaliação?" else "Excluir memória?") }, text = { Text("Isto some deste aparelho.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val remaining = org.json.JSONArray(records.filter { it !== target }).toString()
+                    if (prefs.edit().putString("records", remaining).commit()) raw = remaining
+                    deletingEntry = null
+                }) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deletingEntry = null }) { Text("Cancelar") } })
+    }
+
     if (showingForm) {
         val text = draft.trim()
         val valid = !preview && text.isNotEmpty() && draft.length <= 1000 && (!reviews || rating > 0)

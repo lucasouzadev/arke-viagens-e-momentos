@@ -826,6 +826,7 @@ private struct TripJournalView: View {
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var photoData: [Data] = []
     @State private var photoError = false
+    @State private var deletingEntryID: UUID?
     @State private var draft = ""
     @State private var error = false
 
@@ -854,6 +855,8 @@ private struct TripJournalView: View {
                         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                         .background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 22))
                         .accessibilityElement(children: .combine)
+                        .arkeSwipeToDelete { deletingEntryID = entry.id }
+                        .clipShape(RoundedRectangle(cornerRadius: 22))
                     }
                 } else {
                     let shown = detailed ? entries.reversed().map { $0 } : Array(entries.suffix(2))
@@ -865,6 +868,7 @@ private struct TripJournalView: View {
                                 Text(entry.text).arkeText(.caption).lineLimit(2)
                             }
                             .padding(8).background(ArkeUI.insetSurface(colorScheme), in: RoundedRectangle(cornerRadius: 18))
+                            .contextMenu { Button("Excluir", systemImage: "trash", role: .destructive) { deletingEntryID = entry.id } }
                         }
                     }
                     if entries.isEmpty {
@@ -873,6 +877,11 @@ private struct TripJournalView: View {
                     }
                 }
             }
+            .alert(reviews ? "Excluir avaliação?" : "Excluir memória?",
+                   isPresented: Binding(get: { deletingEntryID != nil }, set: { if !$0 { deletingEntryID = nil } })) {
+                Button("Excluir", role: .destructive) { deleteEntry() }
+                Button("Cancelar", role: .cancel) { deletingEntryID = nil }
+            } message: { Text("Isto some deste aparelho.") }
             .onChange(of: openForm, initial: true) { _, requested in
                 guard requested else { return }
                 openForm = false
@@ -882,6 +891,13 @@ private struct TripJournalView: View {
         } else {
             Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
         }
+    }
+
+    private func deleteEntry() {
+        guard let id = deletingEntryID else { return }
+        deletingEntryID = nil
+        guard let all = try? JSONDecoder().decode([Entry].self, from: data) else { return }
+        if let encoded = try? JSONEncoder().encode(all.filter { $0.id != id }) { data = encoded }
     }
 
     private func stars(_ rating: Int) -> some View {
