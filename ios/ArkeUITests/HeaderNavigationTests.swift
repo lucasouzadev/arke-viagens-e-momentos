@@ -451,32 +451,27 @@ final class HeaderNavigationTests: XCTestCase {
         XCTAssertEqual(field.value as? String, value)
     }
 
-    /// O "+" do cabeçalho precisa abrir o sheet DO CONTEXTO atual (e nunca "Adicionar lugar"), rapidamente.
-    func testHeaderPlusOpensTheSheetOfTheCurrentContext() {
+    /// A ação de cada contexto (no estado vazio, o botão do meio do cartão) abre o sheet DO CONTEXTO atual,
+    /// nunca "Adicionar lugar", em até 3 s. O "+" do cabeçalho some enquanto o cartão está vazio.
+    func testContextActionOpensTheSheetOfTheCurrentContext() {
         let app = XCUIApplication()
         app.launchArguments += ["--seed-trip"]
         app.launch()
-        let plus = app.buttons["home.addPlace"]
-        XCTAssertTrue(plus.waitForExistence(timeout: 15))
-        let expectations: [(next: Int, label: String, title: String)] = [
-            (1, "Adicionar gasto", "Adicionar gasto"),
-            (1, "Adicionar reserva ou meta", "Definir meta"),
-            (1, "Avaliar um lugar", "Avaliar um lugar"),
-            (1, "Nova memória", "Nova memória"),
-        ]
-        for item in expectations {
-            app.buttons["home.contextNext"].tap()
-            expectation(for: NSPredicate(format: "label == %@", item.label), evaluatedWith: plus)
-            waitForExpectations(timeout: 5)
+        XCTAssertTrue(app.staticTexts["home.contextTitle"].waitForExistence(timeout: 15))
+        let titles = ["Adicionar gasto", "Definir meta", "Avaliar um lugar", "Nova memória"]
+        for (position, title) in titles.enumerated() {
+            app.buttons["home.contextDot.\(position + 1)"].tap()
+            let action = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+            XCTAssertTrue(action.waitForExistence(timeout: 5), "Ação \(title) não apareceu")
+            XCTAssertFalse(app.buttons["home.addPlace"].exists, "O + deve sumir com o cartão vazio")
             let started = Date()
-            plus.tap()
-            let title = app.descendants(matching: .any).matching(identifier: "sheet.title").firstMatch
-            XCTAssertTrue(title.waitForExistence(timeout: 3), "Sheet \(item.title) não abriu em 3 s")
-            XCTAssertEqual(title.label, item.title)
-            XCTAssertNotEqual(title.label, "Adicionar lugar", "Abriu Adicionar lugar no contexto \(item.label)")
-            print("Sheet \(item.title) abriu em \(Date().timeIntervalSince(started)) s")
+            action.tap()
+            let sheetTitle = app.descendants(matching: .any).matching(identifier: "sheet.title").firstMatch
+            XCTAssertTrue(sheetTitle.waitForExistence(timeout: 3), "Sheet \(title) não abriu em 3 s")
+            XCTAssertEqual(sheetTitle.label, title)
+            print("Sheet \(title) abriu em \(Date().timeIntervalSince(started)) s")
             app.buttons["Cancelar"].firstMatch.tap()
-            expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: title)
+            expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: sheetTitle)
             waitForExpectations(timeout: 5)
         }
     }

@@ -26,6 +26,7 @@ struct HomeView: View {
     @State private var showingAddPlace = false
     @State private var activeTripID = ""
     @State private var openForm = false
+    @State private var contextEmpty = false
     @State private var showingDetailPreview = false
     @State private var showingEditPreview = false
     @State private var showingSavedDetails = false
@@ -96,7 +97,7 @@ struct HomeView: View {
                                             } else {
                                                 LocalFinanceView(trips: pinPlan?.trips ?? [], savings: state.context == .savings,
                                                                  detailed: state.detent == .details,
-                                                                 selectedTrip: $activeTripID, openForm: $openForm)
+                                                                 selectedTrip: $activeTripID, openForm: $openForm, isEmpty: $contextEmpty)
                                                     .id(state.context.rawValue)
                                             }
                                         } else {
@@ -107,7 +108,7 @@ struct HomeView: View {
                                             } else {
                                                 TripJournalView(plan: pinPlan, ideas: places.ideas, reviews: state.context == .reviews,
                                                                 detailed: state.detent == .details, preview: journalCapture != nil,
-                                                                selectedTrip: $activeTripID, openForm: $openForm)
+                                                                selectedTrip: $activeTripID, openForm: $openForm, isEmpty: $contextEmpty)
                                                     .tint(Color(uiColor: .label)).id(state.context.rawValue)
                                                 if state.detent == .balanced {
                                                     ArkeFooterButton("Mostrar tudo", systemImage: "chevron.up") { settlePanel(.details) }
@@ -415,37 +416,38 @@ struct HomeView: View {
         camera = .region(MKCoordinateRegion(center: center, span: span))
     }
 
-    /// Barra de navegação do cartão: título entre chevrons + "+" contextual; abaixo, viagem e metadado.
+    /// Barra de navegação do cartão: viagem (só ícone) · título com pontos navegáveis · "+" contextual.
+    /// Sem chevrons: navegar por deslizar o título ou tocar nos pontos. O "+" some quando o estado vazio já tem a ação.
     private var cardHeader: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 4) {
-                let options = TravelContext.allCases
-                let index = options.firstIndex(of: state.context) ?? 0
-                contextNeighbor(index - 1, forward: false)
-                VStack(spacing: 4) {
-                    Text(state.context.title)
-                        .arkeText(.contextTitle)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityIdentifier("home.contextTitle")
-                    contextDots(index: index, count: options.count)
+        let options = TravelContext.allCases
+        let index = options.firstIndex(of: state.context) ?? 0
+        return HStack(spacing: 8) {
+            tripChip
+            VStack(spacing: 2) {
+                Text(state.context.title)
+                    .arkeText(.contextTitle)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityValue(headerValue)
+                    .accessibilityIdentifier("home.contextTitle")
+                contextDots(index: index, count: options.count)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+            .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                selectContext(index + (value.translation.width < 0 ? 1 : -1))
+            })
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: selectContext(index + 1)
+                case .decrement: selectContext(index - 1)
+                @unknown default: break
                 }
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .contentShape(Rectangle())
-                .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
-                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                    selectContext(index + (value.translation.width < 0 ? 1 : -1))
-                })
-                .accessibilityAdjustableAction { direction in
-                    switch direction {
-                    case .increment: selectContext(index + 1)
-                    case .decrement: selectContext(index - 1)
-                    @unknown default: break
-                    }
-                }
-                contextNeighbor(index + 1, forward: true)
+            }
+            if showsAddButton {
                 Button { addForCurrentContext() } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
@@ -453,16 +455,31 @@ struct HomeView: View {
                         .background(ArkeUI.blue, in: Circle())
                         .contentShape(Circle())
                 }
-                .padding(.leading, 4)
                 .disabled(!places.ready || places.busy)
                 .accessibilityLabel(addLabel)
                 .accessibilityIdentifier("home.addPlace")
+            } else {
+                Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
             }
-            if state.detent != .explore || state.context == .planning { tripRow }
         }
         .buttonStyle(.plain)
         .foregroundStyle(controlStyle)
         .sensoryFeedback(.selection, trigger: contextValue)
+        .onChange(of: contextValue) { _, _ in contextEmpty = false }
+    }
+
+    /// Resumo que antes ficava numa segunda linha visível; agora só no valor de acessibilidade do título.
+    private var headerValue: String {
+        switch state.context {
+        case .planning: places.ready ? (places.ideas.count == 1 ? "1 lugar" : "\(places.ideas.count) lugares") : ""
+        case .savings: "Só você vê"
+        case .memories: "Privado"
+        default: ""
+        }
+    }
+
+    private var showsAddButton: Bool {
+        state.context == .planning ? !(places.ready && places.ideas.isEmpty) : !contextEmpty
     }
 
     private var addLabel: String {
@@ -481,23 +498,6 @@ struct HomeView: View {
         guard !(pinPlan?.trips.isEmpty ?? true) else { return }
         if state.detent == .explore { settlePanel(.balanced) }
         openForm = true
-    }
-
-    private var tripRow: some View {
-        HStack(spacing: 8) {
-            tripChip
-            Spacer(minLength: 8)
-            switch state.context {
-            case .planning:
-                if places.ready {
-                    Text(places.ideas.count == 1 ? "1 lugar" : "\(places.ideas.count) lugares")
-                        .arkeText(.caption).foregroundStyle(.secondary)
-                }
-            case .savings: Label("Só você vê", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary)
-            case .memories: Label("Privado", systemImage: "lock").arkeText(.caption).foregroundStyle(.secondary)
-            default: EmptyView()
-            }
-        }
     }
 
     @ViewBuilder
@@ -519,14 +519,11 @@ struct HomeView: View {
     }
 
     private func chipLabel(_ title: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: "suitcase").font(.system(size: 15))
-            Text(title).arkeText(.label).lineLimit(1)
-            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
-        }
-        .padding(.horizontal, 14).frame(minHeight: 44)
-        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
-        .contentShape(Capsule())
+        Image(systemName: "suitcase").font(.system(size: 18, weight: .medium))
+            .frame(width: 44, height: 44)
+            .background(Color(uiColor: .tertiarySystemFill), in: Circle())
+            .contentShape(Circle())
+            .accessibilityLabel("Viagem: " + title)
     }
 
     private func selectContext(_ index: Int) {
@@ -534,36 +531,22 @@ struct HomeView: View {
         contextValue = TravelContext.allCases[index].rawValue
     }
 
-    /// Vizinho do contexto atual: botão tocável (nunca texto cortado). O nome completo vai para a acessibilidade.
-    @ViewBuilder
-    private func contextNeighbor(_ index: Int, forward: Bool) -> some View {
-        let options = TravelContext.allCases
-        if options.indices.contains(index) {
-            Button { selectContext(index) } label: {
-                Image(systemName: forward ? "chevron.right" : "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .foregroundStyle(.secondary)
-            .accessibilityLabel((forward ? "Próximo contexto: " : "Contexto anterior: ") + options[index].title)
-            .accessibilityIdentifier(forward ? "home.contextNext" : "home.contextPrevious")
-        } else {
-            Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
-        }
-    }
-
     /// Posição entre os cinco contextos, só como apoio visual (a posição é anunciada pelo seletor ajustável).
     private func contextDots(index: Int, count: Int) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 0) {
             ForEach(0..<count, id: \.self) { position in
-                Capsule()
-                    .fill(position == index ? AnyShapeStyle(ArkeUI.ink) : AnyShapeStyle(Color.secondary.opacity(0.45)))
-                    .frame(width: position == index ? 16 : 6, height: 6)
+                Button { selectContext(position) } label: {
+                    Capsule()
+                        .fill(position == index ? AnyShapeStyle(ArkeUI.ink) : AnyShapeStyle(Color.secondary.opacity(0.45)))
+                        .frame(width: position == index ? 16 : 6, height: 6)
+                        .frame(width: 28, height: 20)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Ir para " + TravelContext.allCases[position].title)
+                .accessibilityIdentifier("home.contextDot.\(position)")
             }
         }
         .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: index)
-        .accessibilityHidden(true)
     }
 
     private func settlePanel(_ detent: PanelDetent) {
@@ -820,6 +803,7 @@ private struct TripJournalView: View {
     var preview = false
     @Binding var selectedTrip: String
     @Binding var openForm: Bool
+    @Binding var isEmpty: Bool
     @AppStorage("arke.trip-journal.v1") private var data = Data()
     @State private var placeID: String?
     @State private var rating = 0
@@ -882,6 +866,7 @@ private struct TripJournalView: View {
                 Button("Excluir", role: .destructive) { deleteEntry() }
                 Button("Cancelar", role: .cancel) { deletingEntryID = nil }
             } message: { Text("Isto some deste aparelho.") }
+            .onChange(of: entries.isEmpty, initial: true) { _, empty in isEmpty = empty }
             .onChange(of: openForm, initial: true) { _, requested in
                 guard requested else { return }
                 openForm = false
@@ -890,6 +875,7 @@ private struct TripJournalView: View {
             .sheet(isPresented: $showingForm) { formSheet(trip: trip, plan: plan) }
         } else {
             Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
+                .onAppear { isEmpty = true }
         }
     }
 
@@ -1055,6 +1041,7 @@ private struct LocalFinanceView: View {
     let detailed: Bool
     @Binding var selectedTrip: String
     @Binding var openForm: Bool
+    @Binding var isEmpty: Bool
     @AppStorage("arke.local-finance.v1") private var stored = Data()
     @State private var name = ""
     @State private var amount = ""
@@ -1106,6 +1093,7 @@ private struct LocalFinanceView: View {
                 Button("Excluir", role: .destructive) { deleteRecord() }
                 Button("Cancelar", role: .cancel) { deletingID = nil }
             } message: { Text("Este registro some deste aparelho.") }
+            .onChange(of: entries.isEmpty, initial: true) { _, empty in isEmpty = empty }
             .onChange(of: openForm, initial: true) { _, requested in
                 guard requested else { return }
                 openForm = false
@@ -1114,6 +1102,7 @@ private struct LocalFinanceView: View {
             .sheet(isPresented: $showingForm, onDismiss: { clearDraft() }) { formSheet(trip: trip, goal: goal) }
         } else {
             Text("Crie uma viagem marcando um lugar no mapa para começar.").foregroundStyle(.secondary)
+                .onAppear { isEmpty = true }
         }
     }
 
