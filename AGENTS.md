@@ -1,6 +1,6 @@
 # AGENTS.md — Arke
 
-Single entry point for every agent (Claude Code, Codex, Cursor, reviewers, design, iOS, Android, backend, CI). Built on agent-kit 1.6.0: generic rules in `docs/agents/standard/`; Arke rules in the Portuguese docs listed in §4, which stay authoritative.
+Single entry point for every agent (Claude Code, Codex, Cursor, reviewers, design, iOS, Android, backend, CI). Built on agent-kit 1.7.0: generic rules in `docs/agents/standard/`; Arke rules in the Portuguese docs listed in §4, which stay authoritative.
 Dated owner authorizations (phase exceptions, TestFlight, APK, slices): [`docs/agents/OWNER_DECISIONS.md`](docs/agents/OWNER_DECISIONS.md).
 
 ## 0. Session start (no "start" prompt needed)
@@ -71,3 +71,5 @@ cd android && bash gradlew --no-daemon :core:test :app:lintDebug :app:assembleDe
 Explicit current owner instruction > ADR > accepted spec requirement > OWNER_DECISIONS slice > proposed plan > `docs/agents/standard/`. STATUS reports progress; it never redefines the product. On conflict, record it; never invent approval.
 
 **Tools without hooks (Codex, Cursor):** do the hook duties by hand, see `docs/agents/standard/NO-HOOKS.md`. In Claude Code the `action-guard` hook asks before risky commands (standing authorizations live in `.claude/agent-kit/guard-allow`).
+
+**PRs:** skill `pr-quality` — honest QUALITY-G1/G2 evidence; lint the description before opening with `python3 .github/scripts/pr_quality.py --body-file PR.md --git-base origin/<default-branch>` (it checks structure and honesty, not correctness).
