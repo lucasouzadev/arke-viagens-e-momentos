@@ -1,5 +1,7 @@
 # CANARY — Nome somente nas respostas privadas do chat
 
+> **Atualização 2026-11-08 (decisão do responsável):** a fonte do nome passa a ser o próprio responsável, **no início de cada sessão**. O nome fica só na conversa (o hook PreCompact o preserva na compactação) e nunca é gravado em arquivo. Sem nome informado: perguntar uma vez e marcar `CANARY NÃO CONFIGURADO`. Prevalece sobre os itens 2–4 abaixo. Regra genérica: `docs/agents/standard/CANARY.md`.
+
 **Status:** diretriz aprovada. Este arquivo contém somente a regra genérica, **nunca o valor do nome**. O canário é um sinal fraco de que a instrução foi seguida, não prova de ausência de alucinações.
 
 ## Fonte da preferência e ordem de prioridade

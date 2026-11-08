@@ -3,6 +3,9 @@
 Dated log of the owner's standing instructions (format: `docs/agents/standard/OWNER-DECISIONS-TEMPLATE.md`). Newest first; never delete, mark `SUPERSEDED`. The current one-line rule lives in `AGENTS.md`.
 Entries up to 2026-11-02 were moved verbatim in meaning from the top of the old `AGENTS.md` (2026-11-08); links point to the canonical contracts/ADRs.
 
+## 2026-11-08 — Canary per session, early compaction, security/performance skills (agent-kit 1.1.0)
+Rule: the owner gives the form of address at the start of each session; agents use it in every reply, keep it only in the conversation, never store it. Auto-compaction at a 200k-token window (`autoCompactWindow`), statusline shows context use; handoff from 70 %. Security/performance skills: `security-core`, `identity-session`, `data-privacy`, `supply-chain`, `performance-core`, `platform-security` (CI repos: the security subset). Kit source: `lucasouzadev/agent-kit-skill`.
+
 ## 2026-11-08 — Agent docs standard
 Rule: agent-kit 1.0.0. Agent entry docs in English; the existing Portuguese docs under `docs/agents/` and `docs/standards/` stay authoritative as project overlays. Replies to the owner in Portuguese, caveman style. Canary unchanged: private form of address in every chat reply, never stored in files.
 
