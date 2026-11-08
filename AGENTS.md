@@ -1,6 +1,6 @@
 # AGENTS.md — Arke
 
-Single entry point for every agent (Claude Code, Codex, Cursor, reviewers, design, iOS, Android, backend, CI). Built on agent-kit 1.3.0: generic rules in `docs/agents/standard/`; Arke rules in the Portuguese docs listed in §4, which stay authoritative.
+Single entry point for every agent (Claude Code, Codex, Cursor, reviewers, design, iOS, Android, backend, CI). Built on agent-kit 1.4.0: generic rules in `docs/agents/standard/`; Arke rules in the Portuguese docs listed in §4, which stay authoritative.
 Dated owner authorizations (phase exceptions, TestFlight, APK, slices): [`docs/agents/OWNER_DECISIONS.md`](docs/agents/OWNER_DECISIONS.md).
 
 ## 0. Session start (no "start" prompt needed)
@@ -25,7 +25,7 @@ The owner opens sessions with a short, meeting-style message.
 
 - Reply in **Brazilian Portuguese**; ≤ 15 short lines; result → evidence → not proven → next step / decision. Long material goes to STATUS/HANDOFF/contract, reply gives the path.
 - **Canary (G-15):** the owner gives a form of address at the start of each session; use it in every chat reply, keep it only in the conversation (it survives compaction via the PreCompact hook); never in code, commits, docs, PRs, logs, handoffs or artifacts. Not given yet → ask once, then prefix `CANARY NÃO CONFIGURADO`; never infer. Rules: [CANARY](docs/agents/CANARY.md) + `docs/agents/standard/CANARY.md`.
-- **Lead, don't wait for prompts:** the owner talks, the agent briefs, restates goal + acceptance and asks one question at a time (skill `session-guide`). Near the weekly/5-hour limit (hook `usage-guard`) offer a continuation prompt for another tool (skill `baton-pass`).
+- **Lead, don't wait for prompts:** the owner talks; the agent compiles each message into an invisible brief (skill `intent-compiler`), briefs, restates goal + acceptance and asks one question at a time (skill `session-guide`). Near the weekly/5-hour limit (hook `usage-guard`) offer a continuation prompt for another tool (skill `baton-pass`).
 
 ## 3. Change protocol
 
