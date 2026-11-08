@@ -78,3 +78,21 @@ Cada slice: iOS e Android em paridade, G-01..G-15, CI verde **verificado por run
 - D-A: "+" do cabeçalho passa a ser contextual e o botão duplicado sai do conteúdo? (recomendado)
 - D-B: Memórias com foto: uma ou várias por memória; limite?
 - D-C: Mapa expandido: cartão some totalmente ou fica uma faixa mínima (resumo + ação)?
+
+## Decisões do dono (7/11/2026) — resposta à REVISAO-UIUX-01
+| # | Decisão |
+| --- | --- |
+| D-1 | **A**: X de vidro no topo esquerdo (nome acessível "Cancelar") + título inline 17. |
+| D-2 | Formulários **opacos**; vidro só em sheets de leitura. |
+| D-3 | Aprovado: azul **opaco** nas primárias; vidro neutro nas secundárias e chevrons. |
+| D-4 | Aprovado: mapa cresce para baixo com pílula de resumo. (Responde também D-C.) |
+| D-5 | Aprovado: salvar direto na criação; revisar só alterações. |
+| D-6 | "Pode fazer completo": endereço aproximado em Marcar no mapa. **Exige ADR** (rede/privacidade, M5-PLACES-01 proíbe geocoding) — fica para a Slice E, não entra na A. |
+| D-7 | Excluir por **deslizar** na lista. |
+| D-8 | Remover o ícone do contexto da barra. |
+| D-9 | Título de contexto **17/22**. |
+| D-10 | Recomendado: `#4C728A`; registrar no ADR-006. |
+| D-11 | **Menu no símbolo** da moeda ("R$ ▾"). |
+| D-12 | Remover "Ver meus lugares". |
+| D-A | Implícita: "+" do cabeçalho contextual; botão duplicado sai do conteúdo. |
+| D-B | **Pendente** (fotos em Memórias: uma ou várias, limite). Não entra na Slice A. |

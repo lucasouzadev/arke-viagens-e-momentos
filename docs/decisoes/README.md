@@ -18,3 +18,4 @@ Status **Aceita** significa decisão de produto/arquitetura/documentação, **n�
 Uma alteração que contradiga decisão aceita precisa registrar motivo, alternativas e consequências em novo ADR. **Aprovação de uma regra não aprova propostas anexas ainda pendentes.**
 
 - [ADR-013 — Acesso a viagens compartilhadas](ADR-013.md)
+- [ADR-014 — Endereço aproximado em Marcar no mapa](ADR-014.md)

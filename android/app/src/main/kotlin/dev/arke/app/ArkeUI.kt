@@ -1,7 +1,16 @@
 package dev.arke.app
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -82,3 +91,169 @@ fun Modifier.arkeScrollEdges(surface: Color = MaterialTheme.colorScheme.surface)
         drawRect(Brush.verticalGradient(listOf(Color.Transparent, surface), (size.height - minOf(24.dp.toPx(), size.height * 0.12f)).coerceAtLeast(0f), size.height))
     }
 )
+
+/** Fundo de campo com contraste próprio sobre a superfície do sheet. */
+@Composable
+fun arkeFieldColor() = if (androidx.compose.foundation.isSystemInDarkTheme())
+    MaterialTheme.colorScheme.surfaceContainerHighest
+else MaterialTheme.colorScheme.surfaceContainerLow
+
+/** Campo com rótulo persistente (DESIGN-007). */
+@Composable
+fun ArkeField(title: String, optional: Boolean = false, content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (optional) Text("Opcional", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Box(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(20.dp)).background(arkeFieldColor())
+            .padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.CenterStart) { content() }
+    }
+}
+
+/** Segmentado com estado selecionado visível: cápsula da marca, texto branco e ✓ (não depende só de cor). */
+@Composable
+fun <T> ArkeSegmented(options: List<Pair<T, String>>, selected: T, tagPrefix: String, enabled: Boolean = true, onSelect: (T) -> Unit) {
+    Row(Modifier.fillMaxWidth().alpha(if (enabled) 1f else 0.5f).clip(RoundedCornerShape(24.dp))
+        .background(arkeFieldColor()).padding(3.dp)) {
+        options.forEach { (value, title) ->
+            val isSelected = value == selected
+            Row(Modifier.weight(1f).heightIn(min = 42.dp).clip(RoundedCornerShape(21.dp))
+                .background(if (isSelected) ArkeColors.brand else Color.Transparent)
+                .selectable(selected = isSelected, enabled = enabled, role = Role.RadioButton) { onSelect(value) }
+                .testTag("$tagPrefix.$title"),
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                if (isSelected) {
+                    Icon(painterResource(R.drawable.ic_check), null, Modifier.size(16.dp), tint = Color.White)
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(title, fontSize = 15.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface)
+            }
+        }
+    }
+}
+
+/**
+ * Sheet de formulário compacto: altura pelo conteúdo (sem área morta), fundo opaco, X no topo esquerdo
+ * (descrição "Cancelar") e primária colada ao conteúdo.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArkeFormSheet(
+    title: String, tagPrefix: String, primaryTitle: String, primaryTag: String,
+    primaryEnabled: Boolean = true, onCancel: () -> Unit, onPrimary: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ArkeFloatingSheet(onDismiss = onCancel, tagPrefix = tagPrefix, modifier = Modifier.imePadding()) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 12.dp, vertical = 4.dp)) {
+            IconButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart).size(48.dp).testTag("sheet.cancel")) {
+                Icon(painterResource(R.drawable.ic_close), contentDescription = "Cancelar")
+            }
+            Text(title, Modifier.align(Alignment.Center).testTag("sheet.title").semantics { heading() }, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
+        Button(onClick = onPrimary, enabled = primaryEnabled, shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = Color.White),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 20.dp).heightIn(min = 56.dp).testTag(primaryTag)) {
+            Text(primaryTitle, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+/** Selo para fotos de capa: o papel envolve a foto, que preenche todo o espaço reservado. */
+@Composable
+fun ArkeStamp(image: android.graphics.Bitmap?, modifier: Modifier = Modifier, symbol: Int = R.drawable.ic_photo) {
+    val paper = if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFFEBEBEB) else Color.White
+    Box(modifier.arkeStamp(paper).padding(6.dp).clip(RoundedCornerShape(2.dp)).background(arkeFieldColor()),
+        contentAlignment = Alignment.Center) {
+        if (image != null) androidx.compose.foundation.Image(image.asImageBitmap(), null, Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+        else Icon(painterResource(symbol), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** Botão secundário de rodapé do cartão: tonal, 44 dp, centralizado. */
+@Composable
+fun ArkeFooterButton(title: String, modifier: Modifier = Modifier, icon: Int? = null, onClick: () -> Unit) {
+    FilledTonalButton(onClick = onClick, modifier = modifier.heightIn(min = 48.dp)) {
+        if (icon != null) { Icon(painterResource(icon), null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)) }
+        Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** Estado vazio de cartão: ícone, título, texto e uma ação (a mesma do "+"). */
+@Composable
+fun ArkeEmptyState(icon: Int, title: String, message: String, actionTitle: String? = null, tag: String? = null,
+                   actionTag: String? = null, onAction: () -> Unit = {}) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 20.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(56.dp).clip(androidx.compose.foundation.shape.CircleShape).background(arkeFieldColor()), contentAlignment = Alignment.Center) {
+            Icon(painterResource(icon), null, tint = if (androidx.compose.foundation.isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary)
+        }
+        Text(title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(message, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        if (actionTitle != null) ArkeFooterButton(actionTitle,
+            Modifier.padding(top = 4.dp).then(if (actionTag != null) Modifier.testTag(actionTag) else Modifier), R.drawable.ic_add, onAction)
+    }
+}
+
+/** Deslizar para a esquerda pede para excluir (D-7). Sempre volta à posição; a confirmação é do chamador. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArkeSwipeToDelete(onDelete: () -> Unit, content: @Composable () -> Unit) {
+    val state = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+        if (value == SwipeToDismissBoxValue.EndToStart) onDelete()
+        false
+    })
+    SwipeToDismissBox(state, enableDismissFromStartToEnd = false, backgroundContent = {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.error).padding(end = 24.dp), contentAlignment = Alignment.CenterEnd) {
+            Text("Excluir", color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.SemiBold)
+        }
+    }) { Box(Modifier.background(arkeInsetColor())) { content() } }
+}
+
+/**
+ * Fotos das memórias (até 5): JPEG reduzido guardado em arquivo no aparelho (noBackupFilesDir), nunca dentro do JSON;
+ * miniaturas decodificadas fora da thread principal.
+ */
+internal object MemoryPhotos {
+    const val LIMIT = 5
+
+    private fun dir(context: android.content.Context) = java.io.File(context.noBackupFilesDir, "memories").apply { mkdirs() }
+
+    fun compress(resolver: android.content.ContentResolver, uri: android.net.Uri): ByteArray? = runCatching {
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        resolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, bounds) }
+        val largest = maxOf(bounds.outWidth, bounds.outHeight)
+        if (largest <= 0) return null
+        val options = android.graphics.BitmapFactory.Options()
+        while (largest / options.inSampleSize.coerceAtLeast(1) > 960) options.inSampleSize = options.inSampleSize.coerceAtLeast(1) * 2
+        val bitmap = resolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, options) } ?: return null
+        val output = java.io.ByteArrayOutputStream()
+        for (quality in listOf(74, 55, 40)) {
+            output.reset()
+            if (bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, quality, output) && output.size() <= 512_000) return output.toByteArray()
+        }
+        null
+    }.getOrNull()
+
+    fun save(context: android.content.Context, photos: List<ByteArray>): List<String> = photos.take(LIMIT).map { bytes ->
+        val name = java.util.UUID.randomUUID().toString() + ".jpg"
+        java.io.File(dir(context), name).outputStream().use { it.write(bytes) }
+        name
+    }
+
+    fun thumbnail(context: android.content.Context, name: String, maxPixel: Int = 360): android.graphics.Bitmap? = runCatching {
+        val file = java.io.File(dir(context), name)
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeFile(file.path, bounds)
+        val options = android.graphics.BitmapFactory.Options()
+        while (maxOf(bounds.outWidth, bounds.outHeight) / options.inSampleSize.coerceAtLeast(1) > maxPixel * 2) {
+            options.inSampleSize = options.inSampleSize.coerceAtLeast(1) * 2
+        }
+        android.graphics.BitmapFactory.decodeFile(file.path, options)
+    }.getOrNull()
+}

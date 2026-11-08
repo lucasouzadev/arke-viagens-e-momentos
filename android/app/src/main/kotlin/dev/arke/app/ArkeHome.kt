@@ -1,5 +1,6 @@
 package dev.arke.app
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
@@ -13,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -45,10 +47,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.arke.core.PlaceIdea
 import dev.arke.core.HomeState
 import dev.arke.core.PanelDetent
@@ -80,7 +84,7 @@ private val HomeStateSaver = Saver<HomeState, List<String>>(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false, journalCapture: String? = null) {
+fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captureEdit: Boolean = false, journalCapture: String? = null, seedTrip: Boolean = false) {
     val placeState by places.state.collectAsState()
     var savedNotice by rememberSaveable { mutableStateOf(false) }
     var pendingSaveId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -101,9 +105,14 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
     LaunchedEffect(places) {
         try { pinPlan = places.loadPinPlan() }
         catch (error: Exception) { if (error is kotlinx.coroutines.CancellationException) throw error }
+        // Só em Debug: viagem de exemplo em memória para testes de UI dos formulários por contexto.
+        if (BuildConfig.DEBUG && seedTrip) pinPlan = LocalPinPlan(emptyList(), listOf(LocalPinTrip("seed", "Rio em família")))
     }
     var focusedIdeaID by remember { mutableStateOf<String?>(null) }
     var mapExpanded by remember { mutableStateOf(false) }
+    var activeTripID by remember { mutableStateOf("") }
+    var openForm by remember { mutableStateOf(false) }
+    var contextEmpty by remember { mutableStateOf(false) }
     var showingSavedDetails by remember { mutableStateOf(false) }
     var showingAddPlace by rememberSaveable { mutableStateOf(false) }
     var showingDetailPreview by rememberSaveable { mutableStateOf(captureDetails) }
@@ -149,13 +158,16 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     if (dragHeight == null) position.animateTo(restingPx)
                 }
                 val mapHeight = with(density) { (dragHeight ?: position.value).toDp() }
+                // Tokens de motion (REVISAO-UIUX-01 §6): mola única; expandir mais firme que recolher.
                 val mapExtension by animateDpAsState(
-                    if (mapExpanded) (availableHeight - mapHeight - 52.dp).coerceAtLeast(0.dp) else 0.dp,
+                    if (mapExpanded) (availableHeight - mapHeight).coerceAtLeast(0.dp) else 0.dp,
+                    animationSpec = if (mapExpanded) androidx.compose.animation.core.spring(0.88f, 420f)
+                        else androidx.compose.animation.core.spring(0.90f, 320f),
                     label = "mapExpansion",
                 )
-                val contentRecess by animateDpAsState(if (mapExpanded) 12.dp else 0.dp, label = "contentRecess")
-                // Com o mapa expandido só a borda do cartão fica à mostra: sem texto sob a alça.
-                val peekSurface = MaterialTheme.colorScheme.surface
+                // Mapa expandido (D-4): o cartão afunda e some, com cantos preservados; sem alça nem faixa vazia.
+                val contentRecess by animateDpAsState(if (mapExpanded) 24.dp else 0.dp, label = "contentRecess")
+                val cardAlpha by animateFloatAsState(if (mapExpanded) 0f else 1f, label = "cardAlpha")
                 val dragModifier = Modifier.draggable(
                     orientation = Orientation.Vertical,
                     enabled = !keyboardVisible,
@@ -180,15 +192,12 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                 ) {
                     Spacer(Modifier.height(mapHeight))
 
-                    Box(Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().graphicsLayer { alpha = cardAlpha }, contentAlignment = androidx.compose.ui.Alignment.Center) {
                         DetentMenu(state.detent, dragModifier) { state = state.setDetent(it) }
                     }
 
                     Card(
-                        modifier = Modifier.fillMaxWidth().weight(1f).offset(y = contentRecess).drawWithContent {
-                            drawContent()
-                            if (mapExpanded) drawRect(peekSurface)
-                        },
+                        modifier = Modifier.fillMaxWidth().weight(1f).offset(y = contentRecess).graphicsLayer { alpha = cardAlpha },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -198,21 +207,6 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                         Box(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                             Column(Modifier.fillMaxSize().testTag("home.contentBody").verticalScroll(scroll)
                                 .padding(top = with(density) { headerHeight.toDp() })) {
-                                if (state.context == TravelContext.PLANNING) {
-                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween) {
-                                        TextButton(onClick = { showingTrips = true },
-                                            modifier = Modifier.heightIn(min = 48.dp).testTag("home.trips"),
-                                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
-                                            Icon(painterResource(R.drawable.ic_suitcase), null, Modifier.size(18.dp))
-                                            Spacer(Modifier.width(6.dp))
-                                            Text("Viagens")
-                                        }
-                                        if (placeState.ready) Text(
-                                            if (placeState.ideas.size == 1) "1 lugar" else "${placeState.ideas.size} lugares",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
                                 if (savedNotice) Text(stringResource(R.string.saved_place_notice), modifier = Modifier.testTag("place.savedNotice"), style = MaterialTheme.typography.bodySmall)
                                 if (placeState.error != null && !showingAddPlace) {
                                     Text(placeState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
@@ -222,7 +216,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                     if (state.context == TravelContext.PLANNING) PlaceIdeasContent(placeState,
                                         onUpdate = places::update, onEditCancel = places::load,
                                         onDetailsVisibilityChanged = { showingSavedDetails = it },
-                                        onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }, detent = state.detent) { id -> savedNotice = false; places.remove(id) }
+                                        onFocus = { focusedIdeaID = it }, onPin = { pinIdea = it }, detent = state.detent, onAdd = { showingAddPlace = true }) { id -> savedNotice = false; places.remove(id) }
                                     else {
                                         if (state.context == TravelContext.EXPENSES || state.context == TravelContext.SAVINGS) {
                                             if (state.detent == PanelDetent.EXPLORE) {
@@ -231,7 +225,9 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                                 }
                                             } else {
                                                 LocalFinanceContent(pinPlan?.trips.orEmpty(), savings = state.context == TravelContext.SAVINGS,
-                                                    detailed = state.detent == PanelDetent.DETAILS)
+                                                    detailed = state.detent == PanelDetent.DETAILS,
+                                                    selectedTripID = activeTripID, openForm = openForm, onFormOpened = { openForm = false },
+                                                    onEmptyChanged = { contextEmpty = it })
                                             }
                                         } else {
                                             if (state.detent == PanelDetent.EXPLORE) {
@@ -241,14 +237,15 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                             } else {
                                                 key(state.context) {
                                                     TripJournalContent(pinPlan, placeState.ideas, state.context == TravelContext.REVIEWS,
-                                                        detailed = state.detent == PanelDetent.DETAILS, preview = journalCapture != null)
+                                                        detailed = state.detent == PanelDetent.DETAILS, preview = journalCapture != null,
+                                                        selectedTripID = activeTripID, openForm = openForm, onFormOpened = { openForm = false },
+                                                    onEmptyChanged = { contextEmpty = it })
                                                 }
                                                 if (state.detent == PanelDetent.BALANCED) {
-                                                    TextButton(onClick = { state = state.setDetent(PanelDetent.DETAILS) }) { Text("Ver detalhes") }
+                                                    ArkeFooterButton("Mostrar tudo", Modifier.align(Alignment.CenterHorizontally).testTag("home.showAll"), R.drawable.ic_expand) { state = state.setDetent(PanelDetent.DETAILS) }
                                                 }
                                             }
                                         }
-                                        TextButton(onClick = { state = state.selectContext(TravelContext.PLANNING) }) { Text(stringResource(R.string.view_places)) }
                                     }
                                 } else if (placeState.busy) Text(stringResource(R.string.loading_places))
 
@@ -258,14 +255,22 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                 .background(Brush.verticalGradient(listOf(headerColor, headerColor,
                                     if (scroll.value > 0) Color.Transparent else headerColor)))
                                 .padding(top = 16.dp, bottom = 10.dp)) {
-                                CardHeader(state.context, { showingAddPlace = true }, placeState.ready && !placeState.busy) { state = state.selectContext(it) }
-                                if (state.context == TravelContext.PLANNING && state.detent != PanelDetent.EXPLORE) {
-                                    placeState.ideas.firstOrNull { it.id == focusedIdeaID }?.let { idea ->
-                                        Text(idea.name, style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                    }
-                                }
+                                val trips = pinPlan?.trips.orEmpty()
+                                CardHeader(
+                                    state.context,
+                                    onAdd = {
+                                        if (state.context == TravelContext.PLANNING) showingAddPlace = true
+                                        else if (trips.isNotEmpty()) {
+                                            if (state.detent == PanelDetent.EXPLORE) state = state.setDetent(PanelDetent.BALANCED)
+                                            openForm = true
+                                        }
+                                    },
+                                    addEnabled = placeState.ready && !placeState.busy,
+                                    showAdd = if (state.context == TravelContext.PLANNING) !(placeState.ready && placeState.ideas.isEmpty()) else !contextEmpty,
+                                    trips = trips, activeTripID = activeTripID,
+                                    placeCount = if (placeState.ready) placeState.ideas.size else null,
+                                    onTripSelect = { activeTripID = it }, onManageTrips = { showingTrips = true },
+                                ) { state = state.selectContext(it) }
                             }
                         }
                     }
@@ -276,16 +281,7 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                  ) {
-                    Box(Modifier.fillMaxSize().drawWithContent {
-                        drawContent()
-                        for (width in 2..14 step 2) {
-                            drawRoundRect(
-                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.025f),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx()),
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width.dp.toPx()),
-                            )
-                        }
-                    }) {
+                    Box(Modifier.fillMaxSize()) {
                         TravelMap(Modifier.fillMaxSize(), pins = pinPlan?.pins.orEmpty().mapNotNull { pin ->
                             placeState.ideas.firstOrNull { it.id == pin.ideaID }?.let { pin to it.name }
                         }, revealPin = revealedPin, onPinSelected = { pin ->
@@ -312,32 +308,36 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
                                 )
                             }
                         }
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = mapExpanded, modifier = Modifier.align(Alignment.BottomCenter),
+                            enter = androidx.compose.animation.slideInVertically { it } + androidx.compose.animation.fadeIn(),
+                            exit = androidx.compose.animation.slideOutVertically { it } + androidx.compose.animation.fadeOut(),
+                        ) {
+                            val focused = placeState.ideas.firstOrNull { it.id == focusedIdeaID }
+                            Surface(Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp).fillMaxWidth().heightIn(min = 52.dp),
+                                shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 3.dp) {
+                                Row(Modifier.padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(focused?.name ?: "Mapa", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                        Text(stringResource(state.context.title()), fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                    }
+                                    IconButton(onClick = { mapExpanded = false }, modifier = Modifier.size(48.dp).testTag("home.collapseMap")) {
+                                        Icon(painterResource(R.drawable.ic_expand), "Recolher mapa", Modifier.size(22.dp))
+                                    }
+                                }
+                            }
+                        }
                         FilledTonalIconButton(
                             onClick = { mapExpanded = !mapExpanded },
                             enabled = !keyboardVisible,
-                            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(40.dp).testTag("home.expandMap"),
+                            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(48.dp).testTag("home.expandMap"),
                         ) {
                             val toggleLabel = if (mapExpanded) "Recolher mapa" else "Expandir mapa"
                             Icon(painterResource(R.drawable.ic_expand), toggleLabel, Modifier.size(22.dp))
                         }
                     }
-                }
-                if (mapExpanded) {
-                    var closeDistance by remember { mutableStateOf(0f) }
-                    val closeThreshold = with(density) { 16.dp.toPx() }
-                    Box(
-                        Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp)
-                            .draggable(rememberDraggableState { closeDistance += it }, Orientation.Vertical,
-                                onDragStarted = { closeDistance = 0f },
-                                // Mesma direção da alça normal: arrastar para cima devolve espaço ao cartão.
-                                onDragStopped = { if (closeDistance < -closeThreshold) mapExpanded = false })
-                            .clickable { mapExpanded = false }
-                            .semantics {
-                                contentDescription = "Recolher mapa"
-                                customActions = listOf(CustomAccessibilityAction("Recolher mapa") { mapExpanded = false; true })
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) { Box(Modifier.size(36.dp, 4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(2.dp))) }
                 }
             }
         }
@@ -431,17 +431,43 @@ fun ArkeHome(places: PlaceIdeasViewModel, captureDetails: Boolean = false, captu
     }
 }
 
+/**
+ * Barra de navegação do cartão: viagem (só ícone) · título com pontos navegáveis · "+" contextual.
+ * Sem chevrons: navegar por deslizar o título ou tocar nos pontos. O "+" some quando o estado vazio já tem a ação.
+ */
 @Composable
-private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Boolean, onSelect: (TravelContext) -> Unit) {
-    val actionColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
+private fun CardHeader(
+    context: TravelContext, onAdd: () -> Unit, addEnabled: Boolean, showAdd: Boolean,
+    trips: List<LocalPinTrip>, activeTripID: String, placeCount: Int?,
+    onTripSelect: (String) -> Unit, onManageTrips: () -> Unit,
+    onSelect: (TravelContext) -> Unit,
+) {
     val view = androidx.compose.ui.platform.LocalView.current
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        val options = TravelContext.entries
-        val index = options.indexOf(context)
-        var drag by remember { mutableFloatStateOf(0f) }
-        val threshold = with(LocalDensity.current) { 24.dp.toPx() }
-        Row(
+    val options = TravelContext.entries
+    val index = options.indexOf(context)
+    var drag by remember { mutableFloatStateOf(0f) }
+    val threshold = with(LocalDensity.current) { 24.dp.toPx() }
+    val addLabel = when (context) {
+        TravelContext.PLANNING -> "Adicionar lugar"
+        TravelContext.EXPENSES -> "Adicionar gasto"
+        TravelContext.SAVINGS -> "Adicionar reserva ou meta"
+        TravelContext.REVIEWS -> "Avaliar um lugar"
+        TravelContext.MEMORIES -> "Nova memória"
+    }
+    val summary = when (context) {
+        TravelContext.PLANNING -> placeCount?.let { if (it == 1) "1 lugar" else "$it lugares" }
+        TravelContext.SAVINGS -> "Só você vê"
+        TravelContext.MEMORIES -> "Privado"
+        else -> null
+    }
+    val active = trips.firstOrNull { it.id == activeTripID } ?: trips.firstOrNull()
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (context == TravelContext.PLANNING || active == null) {
+            TripChip("Viagens", emptyList(), {}, onManageTrips, Modifier.testTag("home.trips"))
+        } else {
+            TripChip(active.title, trips.map { it.id to it.title }, onTripSelect, onManageTrips, Modifier.testTag("home.trips"))
+        }
+        Column(
             Modifier.weight(1f).heightIn(min = 48.dp).draggable(
                 orientation = Orientation.Horizontal,
                 state = rememberDraggableState { drag += it },
@@ -455,17 +481,13 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
                     }
                 },
             ),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
         ) {
-            ContextNeighbor(options.getOrNull(index - 1), forward = false, onSelect = onSelect)
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(context.icon()), null, Modifier.size(18.dp), tint = actionColor)
-            Spacer(Modifier.width(8.dp))
             Text(
                 stringResource(context.title()),
                 modifier = Modifier.testTag("home.contextTitle").semantics {
                     heading()
+                    summary?.let { stateDescription = it }
                     customActions = listOfNotNull(
                         options.getOrNull(index - 1)?.let { previous ->
                             CustomAccessibilityAction("Contexto anterior") { onSelect(previous); true }
@@ -475,36 +497,29 @@ private fun CardHeader(context: TravelContext, onAdd: () -> Unit, addEnabled: Bo
                         },
                     )
                 },
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, lineHeight = 22.sp),
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
+            Row {
+                options.forEachIndexed { position, option ->
+                    val selected = position == index
+                    Box(Modifier.size(28.dp, 24.dp).clickable { onSelect(option) }.testTag("home.contextDot.$position")
+                        .semantics { contentDescription = "Ir para " + option.name },
+                        contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(if (selected) 16.dp else 6.dp, 6.dp).background(
+                            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                            RoundedCornerShape(3.dp)))
+                    }
+                }
             }
-            ContextDots(index, options.size)
+        }
+        if (showAdd) {
+            IconButton(onClick = onAdd, enabled = addEnabled,
+                modifier = Modifier.size(48.dp).background(ArkeColors.brand, androidx.compose.foundation.shape.CircleShape).testTag("home.addPlace")) {
+                Icon(painterResource(R.drawable.ic_add), contentDescription = addLabel, tint = androidx.compose.ui.graphics.Color.White)
             }
-            ContextNeighbor(options.getOrNull(index + 1), forward = true, onSelect = onSelect)
-        }
-        IconButton(onClick = onAdd, enabled = addEnabled,
-            modifier = Modifier.size(44.dp).background(ArkeColors.brand, androidx.compose.foundation.shape.CircleShape).testTag("home.addPlace")) {
-            Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add_place), tint = androidx.compose.ui.graphics.Color.White)
-        }
-    }
-}
-
-/** Vizinho do contexto atual: botão tocável, nunca texto cortado. O nome completo vai para a acessibilidade. */
-@Composable
-private fun ContextNeighbor(option: TravelContext?, forward: Boolean, onSelect: (TravelContext) -> Unit) {
-    if (option == null) {
-        Spacer(Modifier.size(44.dp, 48.dp))
-        return
-    }
-    val label = (if (forward) "Próximo contexto: " else "Contexto anterior: ") + stringResource(option.title())
-    IconButton(
-        onClick = { onSelect(option) },
-        modifier = Modifier.size(44.dp, 48.dp).testTag(if (forward) "home.contextNext" else "home.contextPrevious"),
-    ) {
-        Icon(painterResource(option.icon()), contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else Spacer(Modifier.size(48.dp))
     }
 }
 
@@ -548,18 +563,21 @@ private fun DetentMenu(selected: PanelDetent, modifier: Modifier, onSelect: (Pan
 
 
 @Composable
-private fun TripChip(title: String, choices: List<Pair<String, String>>, onSelect: (String) -> Unit) {
+private fun TripChip(title: String, choices: List<Pair<String, String>>, onSelect: (String) -> Unit,
+                     onManage: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     var open by remember { mutableStateOf(false) }
     Box {
-        Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(22.dp)).background(arkeInsetColor())
-            .clickable { open = true }.padding(horizontal = 14.dp).semantics { contentDescription = "Viagem: $title" },
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(painterResource(R.drawable.ic_suitcase), null, Modifier.size(18.dp))
-            Text(title, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text("⌄")
+        Box(modifier.size(48.dp).clip(androidx.compose.foundation.shape.CircleShape).background(arkeInsetColor())
+            .clickable { if (choices.isEmpty()) onManage?.invoke() else open = true }
+            .semantics { contentDescription = "Viagem: $title" }, contentAlignment = Alignment.Center) {
+            Icon(painterResource(R.drawable.ic_suitcase), null, Modifier.size(22.dp))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             choices.forEach { (id, text) -> DropdownMenuItem(text = { Text(text) }, onClick = { open = false; onSelect(id) }) }
+            if (onManage != null) {
+                HorizontalDivider()
+                DropdownMenuItem(text = { Text("Gerenciar viagens…") }, onClick = { open = false; onManage() })
+            }
         }
     }
 }
@@ -582,24 +600,43 @@ private fun Stars(rating: Int) {
         modifier = Modifier.semantics { contentDescription = "Nota $rating de 5" })
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, reviews: Boolean, detailed: Boolean, preview: Boolean = false) {
+private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, reviews: Boolean, detailed: Boolean, preview: Boolean = false,
+                               selectedTripID: String = "", openForm: Boolean = false, onFormOpened: () -> Unit = {}, onEmptyChanged: (Boolean) -> Unit = {}) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("arke.trip-journal.v1", 0) }
     var raw by remember(prefs) { mutableStateOf(prefs.getString("records", "[]") ?: "[]") }
-    var tripID by remember { mutableStateOf<String?>(null) }
+    val tripID = selectedTripID
     val activePlan = if (preview) LocalPinPlan(emptyList(), listOf(LocalPinTrip("preview", "Milano"))) else plan
     val trip = activePlan?.trips?.firstOrNull { it.id == tripID } ?: activePlan?.trips?.firstOrNull()
     if (activePlan == null || trip == null) {
+        LaunchedEffect(Unit) { onEmptyChanged(true) }
         Text("Crie uma viagem marcando um lugar no mapa para começar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
     var showingForm by remember(trip.id, reviews) { mutableStateOf(false) }
     var draft by remember(trip.id, reviews) { mutableStateOf("") }
-    var rating by remember(trip.id, reviews) { mutableIntStateOf(5) }
+    var rating by remember(trip.id, reviews) { mutableIntStateOf(0) }
+
     var placeID by remember(trip.id, reviews) { mutableStateOf("") }
     var failed by remember(trip.id, reviews) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var deletingEntry by remember(trip.id, reviews) { mutableStateOf<org.json.JSONObject?>(null) }
+    val photos = remember(trip.id, reviews) { mutableStateListOf<ByteArray>() }
+    var photoError by remember(trip.id, reviews) { mutableStateOf(false) }
+    val photoPicker = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia(MemoryPhotos.LIMIT)) { uris ->
+        scope.launch {
+            for (uri in uris.take(MemoryPhotos.LIMIT - photos.size)) {
+                val jpeg = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { MemoryPhotos.compress(context.contentResolver, uri) }
+                if (jpeg != null && photos.size < MemoryPhotos.LIMIT) photos.add(jpeg) else photoError = true
+            }
+        }
+    }
+    LaunchedEffect(openForm) {
+        if (openForm) { onFormOpened(); draft = ""; placeID = ""; rating = 0; failed = false; photos.clear(); photoError = false; showingForm = true }
+    }
     val records = remember(raw) {
         runCatching {
             val array = org.json.JSONArray(raw)
@@ -614,131 +651,181 @@ private fun TripJournalContent(plan: LocalPinPlan?, ideas: List<PlaceIdea>, revi
         .put("text", if (reviews) "Chegamos cedo e encontramos a praça tranquila." else "A primeira manhã na praça do Duomo.")
         .put("rating", if (reviews) 4 else 0)) else records
     val entries = source.filter { it.optString("trip") == trip.id && (it.optInt("rating") > 0) == reviews }
+    LaunchedEffect(entries.isEmpty()) { onEmptyChanged(entries.isEmpty()) }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            TripChip(trip.title, activePlan.trips.map { it.id to it.title }) { tripID = it }
-            if (!reviews) Text("Privado", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
         if (reviews) {
-            if (entries.isEmpty()) Text("Nenhuma avaliação nesta viagem.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (entries.isEmpty()) ArkeEmptyState(R.drawable.ic_star, "Nenhuma avaliação", "Conte o que achou dos lugares desta viagem.",
+                actionTitle = "Avaliar um lugar", onAction = { draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true })
             (if (detailed) entries.asReversed() else entries.takeLast(1)).forEach { entry ->
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(arkeInsetColor()).padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Stars(entry.getInt("rating"))
-                    Text(entry.getString("text"), maxLines = if (detailed) Int.MAX_VALUE else 3,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Box(Modifier.clip(RoundedCornerShape(22.dp))) {
+                    ArkeSwipeToDelete({ deletingEntry = entry }) {
+                        Column(Modifier.fillMaxWidth().background(arkeInsetColor()).padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Stars(entry.getInt("rating"))
+                            Text(entry.getString("text"), maxLines = if (detailed) Int.MAX_VALUE else 3,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
                 }
             }
-            Button(onClick = { showingForm = true }, enabled = !preview, shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("reviews.add")) { Text("Avaliar este lugar") }
         } else {
             val shown = if (detailed) entries.asReversed() else entries.takeLast(2)
-            val cells: List<org.json.JSONObject?> = shown + listOf<org.json.JSONObject?>(null)
-            cells.chunked(2).forEach { rowCells ->
+            shown.chunked(2).forEach { rowCells ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     rowCells.forEach { entry ->
-                        if (entry != null) {
-                            Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(arkeInsetColor()).padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(84.dp))
-                                Text(entry.getString("text"), maxLines = 2, style = MaterialTheme.typography.bodySmall,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                            }
-                        } else {
-                            Box(Modifier.weight(1f).heightIn(min = 120.dp).clip(RoundedCornerShape(18.dp))
-                                .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp))
-                                .clickable(enabled = !preview) { showingForm = true }.testTag("memories.add"),
-                                contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(painterResource(R.drawable.ic_add), null)
-                                    Text("Nova memória", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(arkeInsetColor())
+                            .combinedClickable(onClick = {}, onLongClickLabel = "Excluir memória", onLongClick = { deletingEntry = entry })
+                            .padding(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            JournalMemoryCover(ideas, entry.optString("place"), preview, Modifier.fillMaxWidth().height(104.dp),
+                                photo = entry.optJSONArray("photos")?.optString(0)?.takeIf { it.isNotEmpty() },
+                                extra = ((entry.optJSONArray("photos")?.length() ?: 0) - 1).coerceAtLeast(0))
+                            Text(entry.getString("text"), maxLines = 2, style = MaterialTheme.typography.bodySmall,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                     }
                     if (rowCells.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
-            if (entries.isEmpty()) Text("Nenhuma memória nesta viagem.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (entries.isEmpty()) ArkeEmptyState(R.drawable.ic_photo, "Nenhuma memória", "Guarde um momento desta viagem.",
+                actionTitle = "Nova memória", onAction = { draft = ""; placeID = ""; rating = 0; failed = false; showingForm = true })
         }
     }
+    deletingEntry?.let { target ->
+        AlertDialog(onDismissRequest = { deletingEntry = null },
+            title = { Text(if (reviews) "Excluir avaliação?" else "Excluir memória?") }, text = { Text("Isto some deste aparelho.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val remaining = org.json.JSONArray(records.filter { it !== target }).toString()
+                    if (prefs.edit().putString("records", remaining).commit()) raw = remaining
+                    deletingEntry = null
+                }) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deletingEntry = null }) { Text("Cancelar") } })
+    }
+
     if (showingForm) {
-        ArkeFloatingSheet(onDismiss = { showingForm = false }, tagPrefix = "journal",
-            modifier = Modifier.fillMaxHeight(0.9f).imePadding()) {
-            Box(Modifier.fillMaxWidth().weight(1f)) {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(top = 28.dp, bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(if (reviews) "Avaliar este lugar" else "Nova memória", style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-                    if (reviews) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            (1..5).forEach { index ->
-                                IconButton(onClick = { rating = index }, modifier = Modifier.size(48.dp)
-                                    .semantics { contentDescription = "$index de 5" }) {
-                                    Text(if (index <= rating) "★" else "☆", style = MaterialTheme.typography.headlineMedium,
-                                        color = androidx.compose.ui.graphics.Color(0xFFB26A00))
+        val text = draft.trim()
+        val valid = !preview && text.isNotEmpty() && draft.length <= 1000 && (!reviews || rating > 0)
+        ArkeFormSheet(title = if (reviews) "Avaliar um lugar" else "Nova memória", tagPrefix = "journal",
+            primaryTitle = if (reviews) "Salvar avaliação" else "Salvar memória",
+            primaryTag = if (reviews) "reviews.save" else "memories.save", primaryEnabled = valid,
+            onCancel = { showingForm = false },
+            onPrimary = {
+                val entry = org.json.JSONObject().put("trip", trip.id).put("text", text)
+                if (reviews) entry.put("rating", rating) else {
+                    entry.put("place", placeID)
+                    val names = MemoryPhotos.save(context, photos.toList())
+                    if (names.isNotEmpty()) entry.put("photos", org.json.JSONArray(names))
+                }
+                val updated = org.json.JSONArray(records + entry).toString()
+                if (prefs.edit().putString("records", updated).commit()) {
+                    raw = updated; draft = ""; placeID = ""; rating = 0; failed = false; photos.clear(); showingForm = false
+                } else failed = true
+            }) {
+            if (reviews) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(if (rating == 0) "Toque para dar uma nota" else "Nota $rating de 5", fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        (1..5).forEach { index ->
+                            IconButton(onClick = { rating = index }, modifier = Modifier.size(48.dp)
+                                .semantics { contentDescription = "Nota $index de 5" }) {
+                                Text(if (index <= rating) "★" else "☆", style = MaterialTheme.typography.headlineMedium,
+                                    color = androidx.compose.ui.graphics.Color(0xFFB26A00))
+                            }
+                        }
+                    }
+                }
+            } else {
+                val covers = ideas.filter { idea ->
+                    idea.cover.isNotEmpty() && activePlan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Fotos", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${photos.size} de ${MemoryPhotos.LIMIT}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        photos.forEachIndexed { index, bytes ->
+                            val bitmap = remember(bytes) { android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
+                            Box(Modifier.size(76.dp)) {
+                                ArkeStamp(bitmap, Modifier.fillMaxSize())
+                                IconButton(onClick = { photos.removeAt(index) }, modifier = Modifier.align(Alignment.TopEnd).size(48.dp)
+                                    .semantics { contentDescription = "Remover foto ${index + 1}" }) {
+                                    Text("✕", color = Color.White, modifier = Modifier.background(Color.Black.copy(alpha = 0.65f), CircleShape).padding(horizontal = 6.dp, vertical = 2.dp))
                                 }
                             }
                         }
-                    } else {
-                        val covers = ideas.filter { idea ->
-                            idea.cover.isNotEmpty() && activePlan.pins.any { it.ideaID == idea.id && it.tripID == trip.id }
+                        if (photos.size < MemoryPhotos.LIMIT) {
+                            Column(Modifier.size(76.dp).clip(RoundedCornerShape(14.dp)).background(arkeFieldColor())
+                                .clickable { photoError = false; photoPicker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                                .testTag("memories.addPhotos"),
+                                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                Icon(painterResource(R.drawable.ic_photo), null)
+                                Text("Adicionar", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
                         }
-                        FinanceChoice("Capa", covers.firstOrNull { it.id == placeID }?.name ?: "Sem capa",
-                            listOf("" to "Sem capa") + covers.map { it.id to it.name }) { placeID = it }
                     }
-                    OutlinedTextField(draft, { draft = it }, minLines = 4, modifier = Modifier.fillMaxWidth(),
-                        label = { Text(if (reviews) "Escreva sua avaliação" else "Escreva sua memória") })
-                    if (failed) Text("Não foi possível salvar.", color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = { showingForm = false }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Cancelar") }
+                    if (photoError) Text("Algumas fotos não puderam ser abertas.", color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
                 }
-                Button(onClick = {
-                    val entry = org.json.JSONObject().put("trip", trip.id).put("text", draft.trim())
-                    if (reviews) entry.put("rating", rating) else entry.put("place", placeID)
-                    val updated = org.json.JSONArray(records + entry).toString()
-                    if (prefs.edit().putString("records", updated).commit()) {
-                        raw = updated; draft = ""; placeID = ""; failed = false; showingForm = false
-                    } else failed = true
-                }, enabled = !preview && draft.isNotBlank() && draft.length <= 1000, shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp).heightIn(min = 56.dp)) {
-                    Text(if (reviews) "Salvar avaliação" else "Salvar memória")
+                ArkeField("Lugar da capa", optional = true) {
+                    FinanceChoice("Lugar", covers.firstOrNull { it.id == placeID }?.name ?: "Nenhum",
+                        listOf("" to "Nenhum") + covers.map { it.id to it.name }) { placeID = it }
                 }
             }
+            ArkeField(if (reviews) "Sua avaliação" else "Sua memória") {
+                androidx.compose.foundation.text.BasicTextField(draft, { draft = it },
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                    minLines = 4, modifier = Modifier.fillMaxWidth().testTag("journal.text"),
+                    decorationBox = { inner ->
+                        if (draft.isEmpty()) Text(if (reviews) "O que você achou?" else "O que você quer lembrar?",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        inner()
+                    })
+            }
+            if (failed) Text("Não foi possível salvar.", color = MaterialTheme.colorScheme.error)
         }
     }
 }
 
 @Composable
-private fun JournalMemoryCover(ideas: List<PlaceIdea>, placeID: String, preview: Boolean, modifier: Modifier) {
+private fun JournalMemoryCover(ideas: List<PlaceIdea>, placeID: String, preview: Boolean, modifier: Modifier,
+                               photo: String? = null, extra: Int = 0) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val cover = ideas.firstOrNull { it.id == placeID }?.cover
-    val image = remember(cover, preview) {
+    val fallback = remember(cover, preview) {
         if (preview) android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher_arke)
         else cover?.let { decodePlaceCover(it) }
     }
-    Box(modifier.clip(RoundedCornerShape(10.dp)).background(arkeSheetColor()), contentAlignment = Alignment.Center) {
-        if (image != null) androidx.compose.foundation.Image(image.asImageBitmap(), null, Modifier.fillMaxSize(),
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop)
-        else Icon(painterResource(R.drawable.ic_photo), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    val own by produceState<android.graphics.Bitmap?>(null, photo) {
+        value = if (photo == null) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { MemoryPhotos.thumbnail(context, photo) }
+    }
+    Box(modifier) {
+        ArkeStamp(own ?: fallback, Modifier.fillMaxSize())
+        if (extra > 0) Text("+$extra", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp).background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                .padding(horizontal = 8.dp, vertical = 3.dp).semantics { contentDescription = "Mais $extra fotos" })
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, detailed: Boolean) {
+private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, detailed: Boolean,
+                                selectedTripID: String = "", openForm: Boolean = false, onFormOpened: () -> Unit = {}, onEmptyChanged: (Boolean) -> Unit = {}) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val financeFocus = LocalFocusManager.current
     val prefs = remember(context) { context.getSharedPreferences("arke.local-finance.v1", 0) }
     var raw by remember(prefs) { mutableStateOf(prefs.getString("records", "[]") ?: "[]") }
-    var tripID by remember { mutableStateOf<String?>(null) }
-    val trip = trips.firstOrNull { it.id == tripID } ?: trips.firstOrNull()
+    val trip = trips.firstOrNull { it.id == selectedTripID } ?: trips.firstOrNull()
     if (trip == null) {
+        LaunchedEffect(Unit) { onEmptyChanged(true) }
         Text("Crie uma viagem marcando um lugar no mapa para começar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
     var showingForm by remember(trip.id, savings) { mutableStateOf(false) }
+    var deletingID by remember(trip.id, savings) { mutableStateOf<String?>(null) }
     var kind by remember(trip.id, savings) { mutableStateOf("") }
     var name by remember(trip.id, savings) { mutableStateOf("") }
     var currency by remember(trip.id, savings) { mutableStateOf("BRL") }
@@ -772,15 +859,19 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, det
 
     val acceptedKinds = if (savings) setOf("goal", "saving") else setOf("planned", "incurred")
     val entries = records.filter { it.optString("trip") == trip.id && it.optString("kind") in acceptedKinds }
+    LaunchedEffect(entries.isEmpty()) { onEmptyChanged(entries.isEmpty()) }
     val goal = entries.firstOrNull { it.getString("kind") == "goal" }
     val goalCurrency = goal?.getString("currency")
     val contributions = entries.filter { it.getString("kind") == "saving" }
+    LaunchedEffect(openForm) {
+        if (openForm) {
+            onFormOpened(); clearDraft()
+            if (savings) { kind = if (goal == null) "goal" else "saving"; if (goalCurrency != null) currency = goalCurrency } else kind = "planned"
+            showingForm = true
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            TripChip(trip.title, trips.map { it.id to it.title }) { tripID = it }
-            if (savings) Text("Só você vê", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
         if (savings && goal != null && goalCurrency != null) {
             val total = contributions.filter { it.getString("currency") == goalCurrency }.sumOf { it.getLong("amount") }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(arkeInsetColor()).padding(16.dp),
@@ -806,14 +897,22 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, det
             }
         }
         if (entries.isEmpty()) {
-            Text(if (savings) "Defina uma meta para começar. É só um registro: o Arke não guarda dinheiro." else "Nenhum gasto nesta viagem ainda.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ArkeEmptyState(if (savings) R.drawable.ic_target else R.drawable.ic_receipt,
+                if (savings) "Defina uma meta" else "Nenhum gasto ainda",
+                if (savings) "Registre quanto quer guardar. O Arke não movimenta dinheiro." else "Anote o que você prevê gastar nesta viagem.",
+                actionTitle = if (savings) "Definir meta" else "Adicionar gasto",
+                onAction = {
+                    clearDraft()
+                    if (savings) { kind = if (goal == null) "goal" else "saving"; if (goalCurrency != null) currency = goalCurrency } else kind = "planned"
+                    showingForm = true
+                })
         } else {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(arkeInsetColor())) {
                 (if (detailed) entries else entries.takeLast(3)).forEachIndexed { i, entry ->
                     if (i > 0) HorizontalDivider(Modifier.padding(start = 56.dp))
                     val code = entry.getString("currency")
                     val label = "${entry.getString("name")}, ${kindLabel(entry.getString("kind"))}, ${money(entry.getLong("amount"), code)}"
+                    ArkeSwipeToDelete({ deletingID = entry.getString("id") }) {
                     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable {
                         editing = entry.getString("id"); kind = entry.getString("kind"); name = entry.getString("name")
                         currency = code; amount = display(entry.getLong("amount"), code); error = null; showingForm = true
@@ -827,20 +926,25 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, det
                         }
                         Text(money(entry.getLong("amount"), code), fontWeight = FontWeight.SemiBold)
                     }
+                    }
                 }
             }
         }
-        Button(onClick = {
-            clearDraft()
-            if (savings) { kind = if (goal == null) "goal" else "saving"; if (goalCurrency != null) currency = goalCurrency } else kind = "planned"
-            showingForm = true
-        }, shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(if (savings) "savings.add" else "expenses.add")) {
-            Text(if (savings) (if (goal == null) "Definir meta" else "Registrar valor") else "Adicionar gasto")
-        }
         if (savings) Text("Registro informativo: o Arke não processa pagamentos nem guarda dinheiro.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+
+    deletingID?.let { id ->
+        AlertDialog(onDismissRequest = { deletingID = null },
+            title = { Text("Excluir registro?") }, text = { Text("Este registro some deste aparelho.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val remaining = org.json.JSONArray(records.filter { it.optString("id") != id }).toString()
+                    if (prefs.edit().putString("records", remaining).commit()) raw = remaining
+                    deletingID = null
+                }, modifier = Modifier.testTag("finance.deleteConfirm")) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deletingID = null }) { Text("Cancelar") } })
     }
 
     if (showingForm) {
@@ -848,78 +952,88 @@ private fun LocalFinanceContent(trips: List<LocalPinTrip>, savings: Boolean, det
         val types = if (savings) {
             if (goal == null) listOf("goal" to "Meta") else listOf("goal" to "Meta", "saving" to "Valor reservado")
         } else listOf("planned" to "Prevista", "incurred" to "Realizada")
-        ArkeFloatingSheet(onDismiss = { showingForm = false; clearDraft() }, tagPrefix = "finance",
-            modifier = Modifier.fillMaxHeight(0.9f).imePadding()) {
-            Box(Modifier.fillMaxWidth().weight(1f)) {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(top = 28.dp, bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(if (editing == null) (if (savings) (if (goal == null) "Definir meta" else "Registrar valor") else "Adicionar gasto") else "Editar registro",
-                        style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(arkeInsetColor()).padding(16.dp)) {
-                        Text("Valor", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val lockedCurrency = savings && (kind == "saving" || contributions.isNotEmpty())
+        val title = if (editing != null) (if (savings) "Editar registro" else "Editar gasto")
+            else if (savings) (if (goal == null) "Definir meta" else "Adicionar reserva") else "Adicionar gasto"
+        ArkeFormSheet(title = title, tagPrefix = "finance",
+            primaryTitle = if (editing == null) "Salvar registro" else "Salvar alterações", primaryTag = "finance.save",
+            onCancel = { showingForm = false; clearDraft() },
+            onPrimary = {
+                    val separator = java.text.DecimalFormatSymbols.getInstance().decimalSeparator
+                val pieces = amount.trim().split(separator)
+                val value = pieces.joinToString(".").toBigDecimalOrNull()
+                val valid = pieces.size <= 2 && pieces.all { it.isNotEmpty() && it.all { digit -> digit in '0'..'9' } } &&
+                    (pieces.getOrNull(1)?.length ?: 0) <= digits(code) && value != null &&
+                    value > java.math.BigDecimal.ZERO && value <= java.math.BigDecimal("1000000000")
+                if (!valid || kind.isEmpty() || (!savings && name.isBlank()) || (kind == "saving" && goal == null)) {
+                    error = "Informe uma descrição (nos gastos) e um valor válido para a moeda."
+                    return@ArkeFormSheet
+                }
+                val existing = editing ?: if (kind == "goal") goal?.getString("id") else null
+                if (existing == null && records.size >= 10_000) {
+                    error = "Limite de registros atingido."
+                    return@ArkeFormSheet
+                }
+                val id = existing ?: java.util.UUID.randomUUID().toString()
+                val label = if (!savings) name.trim() else if (kind == "goal") "Meta" else "Valor reservado"
+                val record = org.json.JSONObject().put("id", id).put("trip", trip.id).put("name", label)
+                    .put("currency", code).put("kind", kind).put("amount", requireNotNull(value).movePointRight(digits(code)).longValueExact())
+                val updated = records.toMutableList()
+                val index = updated.indexOfFirst { it.optString("id") == id }
+                if (index >= 0) updated[index] = record else updated.add(record)
+                val encoded = org.json.JSONArray(updated).toString()
+                if (prefs.edit().putString("records", encoded).commit()) {
+                    raw = encoded
+                    financeFocus.clearFocus()
+                    showingForm = false
+                    clearDraft()
+                } else {
+                    error = "Não foi possível salvar os registros."
+                }
+            }) {
+            ArkeField("Valor") {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    var currencyOpen by remember { mutableStateOf(false) }
+                    Box {
+                        Row(Modifier.heightIn(min = 44.dp).clickable(enabled = !lockedCurrency) { currencyOpen = true }
+                            .semantics { contentDescription = "Moeda: $code" }.testTag("finance.currency"),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(java.util.Currency.getInstance(code).symbol, style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            androidx.compose.foundation.text.BasicTextField(amount, { amount = it }, singleLine = true,
-                                textStyle = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface),
-                                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
-                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                                modifier = Modifier.weight(1f).testTag("finance.amount"))
+                            Text("⌄", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        DropdownMenu(expanded = currencyOpen, onDismissRequest = { currencyOpen = false }) {
+                            listOf("BRL", "USD", "EUR", "GBP", "JPY", "KWD").forEach { c ->
+                                DropdownMenuItem(text = { Text("${java.util.Currency.getInstance(c).symbol} · $c") },
+                                    onClick = { currencyOpen = false; currency = c })
+                            }
                         }
                     }
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("BRL", "USD", "EUR", "GBP", "JPY", "KWD").forEach { c ->
-                            val locked = savings && (kind == "saving" || contributions.isNotEmpty())
-                            PillOption(c, selected = code == c, enabled = !locked) { currency = c }
-                        }
-                    }
-                    if (!savings) OutlinedTextField(name, { name = it }, label = { Text("Descrição") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        types.forEach { (id, title) -> PillOption(title, selected = kind == id, enabled = !savings || editing == null) { kind = id } }
-                    }
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    Text("Registro informativo: o Arke não processa pagamentos.", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick = { showingForm = false; clearDraft() }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Cancelar") }
-                }
-                Button(onClick = {
-                    val separator = java.text.DecimalFormatSymbols.getInstance().decimalSeparator
-                    val pieces = amount.trim().split(separator)
-                    val value = pieces.joinToString(".").toBigDecimalOrNull()
-                    val valid = pieces.size <= 2 && pieces.all { it.isNotEmpty() && it.all { digit -> digit in '0'..'9' } } &&
-                        (pieces.getOrNull(1)?.length ?: 0) <= digits(code) && value != null &&
-                        value > java.math.BigDecimal.ZERO && value <= java.math.BigDecimal("1000000000")
-                    if (!valid || kind.isEmpty() || (!savings && name.isBlank()) || (kind == "saving" && goal == null)) {
-                        error = "Informe uma descrição (nos gastos) e um valor válido para a moeda."
-                        return@Button
-                    }
-                    val existing = editing ?: if (kind == "goal") goal?.getString("id") else null
-                    if (existing == null && records.size >= 10_000) {
-                        error = "Limite de registros atingido."
-                        return@Button
-                    }
-                    val id = existing ?: java.util.UUID.randomUUID().toString()
-                    val label = if (!savings) name.trim() else if (kind == "goal") "Meta" else "Valor reservado"
-                    val record = org.json.JSONObject().put("id", id).put("trip", trip.id).put("name", label)
-                        .put("currency", code).put("kind", kind).put("amount", requireNotNull(value).movePointRight(digits(code)).longValueExact())
-                    val updated = records.toMutableList()
-                    val index = updated.indexOfFirst { it.optString("id") == id }
-                    if (index >= 0) updated[index] = record else updated.add(record)
-                    val encoded = org.json.JSONArray(updated).toString()
-                    if (prefs.edit().putString("records", encoded).commit()) {
-                        raw = encoded
-                        financeFocus.clearFocus()
-                        showingForm = false
-                        clearDraft()
-                    } else {
-                        error = "Não foi possível salvar os registros."
-                    }
-                }, shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = ArkeColors.brand, contentColor = androidx.compose.ui.graphics.Color.White),
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp).heightIn(min = 56.dp).testTag("finance.save")) {
-                    Text(if (editing == null) "Salvar registro" else "Salvar alterações")
+                    androidx.compose.foundation.text.BasicTextField(amount, { amount = it }, singleLine = true,
+                        textStyle = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                        decorationBox = { inner -> if (amount.isEmpty()) Text("0,00", style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant); inner() },
+                        modifier = Modifier.weight(1f).testTag("finance.amount"))
                 }
             }
+            if (!savings) ArkeField("Descrição") {
+                androidx.compose.foundation.text.BasicTextField(name, { name = it }, singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                    decorationBox = { inner -> if (name.isEmpty()) Text("Ex.: jantar", color = MaterialTheme.colorScheme.onSurfaceVariant); inner() },
+                    modifier = Modifier.fillMaxWidth().testTag("finance.name"))
+            }
+            if (!(savings && goal == null && editing == null)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Tipo", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    ArkeSegmented(types, kind, "finance.kind", enabled = !savings || editing == null) { kind = it }
+                }
+            }
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            Text("Registro informativo: o Arke não processa pagamentos.", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
