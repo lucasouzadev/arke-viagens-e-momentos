@@ -1,3 +1,5 @@
+> **Overridden in this project by [`docs/agents/THREAT-MODEL.md`](../../../docs/agents/THREAT-MODEL.md).** Follow that file; read this one only for what it does not cover.
+
 # THREAT-MODEL — reusable template
 
 Required before implementing or changing: auth/invites, sharing, uploads/media, location, payments/limits, deep links, sync/APIs, analytics/export, deletion/backup, release infrastructure, native bridges/IPC, auto-update/OTA.

@@ -1,3 +1,5 @@
+> **Overridden in this project by [`docs/agents/SAFEGUARDS.md`](../../../docs/agents/SAFEGUARDS.md).** Follow that file; read this one only for what it does not cover.
+
 # SAFEGUARDS — Authorization per action, stop conditions, recovery
 
 A failure handled transparently is acceptable. A hidden unsafe or destructive action is not. Never quietly "fix" an access failure, leak, legal error or data loss to finish a task.

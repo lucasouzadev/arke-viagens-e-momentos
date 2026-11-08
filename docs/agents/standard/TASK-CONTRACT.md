@@ -1,3 +1,5 @@
+> **Overridden in this project by [`docs/agents/TASK-CONTRACT.md`](../../../docs/agents/TASK-CONTRACT.md).** Follow that file; read this one only for what it does not cover.
+
 # TASK-CONTRACT — Template for any non-trivial task
 
 Use for issues, sub-agent briefs and roadmap items. A task without acceptance criteria is not ready.
