@@ -1,0 +1,7 @@
+QUALITY-GATES.md=docs/agents/QUALITY-GATES.md
+SAFEGUARDS.md=docs/agents/SAFEGUARDS.md
+TASK-CONTRACT.md=docs/agents/TASK-CONTRACT.md
+THREAT-MODEL.md=docs/agents/THREAT-MODEL.md
+CHANGELOG-GUIDE.md=docs/agents/CHANGELOG-GUIDE.md
+WORKFLOW.md=docs/agents/WORKFLOW.md
+CANARY.md=docs/agents/CANARY.md

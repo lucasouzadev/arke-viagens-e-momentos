@@ -1,3 +1,5 @@
+> **Overridden in this project by [`docs/agents/CANARY.md`](../../../docs/agents/CANARY.md).** Follow that file; read this one only for what it does not cover.
+
 # CANARY — The owner's form of address, chat only
 
 A weak signal that the agent loaded the rules. It proves nothing about tests, sources or correctness.

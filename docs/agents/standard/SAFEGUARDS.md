@@ -1,9 +1,13 @@
+> **Overridden in this project by [`docs/agents/SAFEGUARDS.md`](../../../docs/agents/SAFEGUARDS.md).** Follow that file; read this one only for what it does not cover.
+
 # SAFEGUARDS — Authorization per action, stop conditions, recovery
 
 A failure handled transparently is acceptable. A hidden unsafe or destructive action is not. Never quietly "fix" an access failure, leak, legal error or data loss to finish a task.
 
 ## 1. Authorization is per action
 Reading ≠ drafting ≠ writing ≠ external communication ≠ deploy ≠ money. Permission to create a branch is not permission to merge, delete, migrate, sign, publish, rotate keys or spend. Past approvals do not cover new executions. When in doubt whether something reaches users or the owner's devices, it is a release: ask.
+
+> **Enforcement (Claude Code):** the `action-guard` hook prompts the owner (or blocks) for the commands in section 3. In tools without hooks, you apply this by hand (`NO-HOOKS.md`). Standing authorizations belong in `.claude/agent-kit/guard-allow` and in `OWNER_DECISIONS.md`.
 
 ## 2. Before a risky action
 Classify (docs, visual, data, accounts, security, migration, infra, release) · blast radius · exact authorization · checkpoint (commit/version, verified backup if needed) · how to detect failure and return to a safe state · threat model for auth, data, uploads, APIs.

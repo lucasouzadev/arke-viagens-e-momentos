@@ -1,3 +1,5 @@
+> **Overridden in this project by [`docs/agents/WORKFLOW.md`](../../../docs/agents/WORKFLOW.md).** Follow that file; read this one only for what it does not cover.
+
 # WORKFLOW — From a short owner message to a verified handoff
 
 ## 1. Intake

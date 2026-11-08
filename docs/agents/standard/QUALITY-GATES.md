@@ -1,3 +1,5 @@
+> **Overridden in this project by [`docs/agents/QUALITY-GATES.md`](../../../docs/agents/QUALITY-GATES.md).** Follow that file; read this one only for what it does not cover.
+
 # QUALITY-GATES — Two checkpoints in every task
 
 Applies to fixes, features, refactors, specs, plans, backend and infra work. Gates do not authorize edits before owner approval, nor builds, nor turn a merge into a deploy. Projects append their concrete matrix (viewports, devices, commands) in their own gates doc.
