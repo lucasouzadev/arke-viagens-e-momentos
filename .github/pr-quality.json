@@ -1,0 +1,7 @@
+{
+  "_comment": "agent-kit PR quality config for Arke (headings in Portuguese; states from docs/agents/QUALITY-GATES.md).",
+  "required_sections": [["resumo"], ["qualidade e seguran"]],
+  "evidence_sections": ["qualidade e seguran"],
+  "delivery": { "labels": ["entrega"], "options": ["N/A"], "required": false },
+  "min_body_chars": 300
+}
