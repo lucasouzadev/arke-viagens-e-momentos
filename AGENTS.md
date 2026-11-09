@@ -1,6 +1,6 @@
 # AGENTS.md — Arke
 
-Single entry point for every agent (Claude Code, Codex, Cursor, reviewers, design, iOS, Android, backend, CI). Built on agent-kit 1.7.0: generic rules in `docs/agents/standard/`; Arke rules in the Portuguese docs listed in §4, which stay authoritative.
+Single entry point for every agent (Claude Code, Codex, Cursor, reviewers, design, iOS, Android, backend, CI). Built on agent-kit 1.7.1: generic rules in `docs/agents/standard/`; Arke rules in the Portuguese docs listed in §4, which stay authoritative.
 Dated owner authorizations (phase exceptions, TestFlight, APK, slices): [`docs/agents/OWNER_DECISIONS.md`](docs/agents/OWNER_DECISIONS.md).
 
 ## 0. Session start (no "start" prompt needed)
